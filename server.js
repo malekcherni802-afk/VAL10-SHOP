@@ -44,6 +44,16 @@ app.get('/api/products', async (req, res) => {
     const products = await Product.find().sort({ date: -1 });
     res.json(products);
 });
+// Route bech tfassakh commande b-el ID
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        // Thabbet esm el model "Order" kima msemmih enti l-fouq
+        await Order.findByIdAndDelete(req.params.id); 
+        res.status(200).json({ message: "✅ Commande t-fasskhet mrigla!" });
+    } catch (err) {
+        res.status(500).json({ error: "Ma najemch nfassakhha" });
+    }
+});
 
 // 2. A3mel Commande
 app.post('/api/order', async (req, res) => {
