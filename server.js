@@ -12,10 +12,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- DATABASE (MONGODB) ---
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://placeholder:placeholder@cluster.mongodb.net/val10?retryWrites=true&w=majority";
+const MONGOURI = process.env.MONGOURI || "mongodb+srv://placeholder:placeholder@cluster.mongodb.net/val10?retryWrites=true&w=majority";
 // NOTE: Itha ma7attitch MONGO_URI, el code bech yeplanté. Lazem database.
 
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGOURI)
     .then(() => console.log('✅ MongoDB Connecté'))
     .catch(err => console.error('❌ Erreur MongoDB:', err));
 
