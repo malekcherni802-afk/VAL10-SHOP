@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAL10 | Product Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <style>
+        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; }
+        .gothic-text { font-family: 'Pirata One', cursive; }
+        .size-btn.active { background-color: white; color: black; border-color: white; }
+        .swiper-pagination-bullet { background: white !important; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="p-8">
+        <h1 class="text-3xl gothic-text tracking-widest cursor-pointer inline-block" onclick="window.location.href='index.html'">← VAL10</h1>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 pb-24">
+        
+        <div class="swiper mySwiper h-[70vh] w-full border border-white/10 bg-zinc-950 overflow-hidden">
+            <div class="swiper-wrapper" id="image-wrapper">
+                </div>
+            <div class="swiper-pagination"></div>
+        </div>
+
+        <div class="flex flex-col justify-center space-y-8">
+            <div>
+                <h2 id="p-name" class="text-6xl font-extrabold uppercase tracking-tighter mb-2 italic">Loading...</h2>
+                <span id="p-price" class="text-2xl font-mono text-gray-500">-- DT</span>
+            </div>
+
+            <div class="border-l border-white/20 pl-6 py-2">
+                <p id="p-desc" class="text-gray-400 leading-relaxed text-sm uppercase tracking-widest">
+                    Fetching product details from the underground...
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-600">Available Sizes</h3>
+                <div class="flex gap-3" id="size-container">
+                    </div>
+                <input type="hidden" id="selectedSize">
+            </div>
+
+            <hr class="border-white/5 my-4">
+
+            <form id="orderForm" class="space-y-6">
+                <h3 class="text-2xl gothic-text tracking-widest">Reserve Piece</h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <input type="text" id="custName" placeholder="Full Name" required class="w-full bg-transparent border-b border-zinc-800 py-3 outline-none focus:border-white transition-colors uppercase text-xs tracking-widest">
+                    <input type="tel" id="custPhone" placeholder="Phone Number" required class="w-full bg-transparent border-b border-zinc-800 py-3 outline-none focus:border-white transition-colors uppercase text-xs tracking-widest">
+                </div>
+                <button type="submit" class="w-full bg-white text-black py-5 font-bold uppercase tracking-[0.4em] hover:invert transition duration-500">Confirm Order</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = window.location.origin + "/api";
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        async function loadProduct() {
+            try {
+                const res = await fetch(`${API_URL}/products/${productId}`);
+                const product = await res.json();
+
+                document.getElementById('p-name').innerText = product.name;
+                document.getElementById('p-price').innerText = product.price + " DT";
+                document.getElementById('p-desc').innerText = product.description;
+
+                // Load Image
+                document.getElementById('image-wrapper').innerHTML = `
+                    <div class="swiper-slide"><img src="${product.image}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"></div>
+                `;
+
+                // Load Sizes
+                const sizeContainer = document.getElementById('size-container');
+                product.sizes.forEach(size => {
+                    const btn = document.createElement('button');
+                    btn.innerText = size;
+                    btn.className = "size-btn border border-white/10 px-6 py-2 text-xs hover:border-white transition-all uppercase tracking-widest";
+                    btn.onclick = (e) => {
+                        e.preventDefault();
+                        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById('selectedSize').value = size;
+                    };
+                    sizeContainer.appendChild(btn);
+                });
+
+                // Init Swiper
+                new Swiper(".mySwiper", { 
+                    direction: "vertical", 
+                    pagination: { el: ".swiper-pagination", clickable: true },
+                    mousewheel: true
+                });
+
+            } catch (err) {
+                console.error("Error:", err);
+            }
+        }
+
+        document.getElementById('orderForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const size = document.getElementById('selectedSize').value;
+            if(!size) return alert("Please select a size first!");
+
+            const orderData = {
+                fullName: document.getElementById('custName').value,
+                phone: document.getElementById('custPhone').value,
+                size: size,
+                productName: document.getElementById('p-name').innerText,
+                productId: productId
+            };
+
+            const res = await fetch(`${API_URL}/order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+
+            if(res.ok) {
+                alert("Order Placed Successfully. We will contact you soon.");
+                window.location.href = "index.html";
+            }
+        };
+
+        loadProduct();
+    </script>
+</body>
+</html>

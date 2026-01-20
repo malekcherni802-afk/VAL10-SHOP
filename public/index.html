@@ -6,6 +6,9 @@
     <title>VAL10 | Underground Luxury</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -20,14 +23,15 @@
         .gothic-text { font-family: 'Pirata One', cursive; }
         .fade-in { animation: fadeIn 1s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .product-card:hover img { transform: scale(1.05); }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-            <h1 class="text-5xl gothic-text tracking-widest cursor-pointer">VAL10</h1>
-            <button class="text-sm font-bold tracking-widest border border-white px-6 py-2 hover:bg-white hover:text-black transition uppercase">2026</button>
+            <h1 class="text-5xl gothic-text tracking-widest cursor-pointer" onclick="window.location.href='index.html'">VAL10</h1>
+            <button class="text-sm font-bold tracking-widest border border-white px-6 py-2 hover:bg-white hover:text-black transition uppercase" onclick="toggleAdmin()">ADMIN</button>
         </div>
     </nav>
 
@@ -37,50 +41,68 @@
         </div>
         <div class="z-10 fade-in px-4">
             <h2 class="text-6xl md:text-9xl font-extrabold uppercase tracking-tighter mb-4 leading-none">Define <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white">Your Ego</span></h2>
-            <a href="#shop" class="bg-white text-black px-10 py-4 font-bold text-lg hover:scale-105 transition duration-300 mt-10 inline-block">EXPLORE DROP</a>
+            <a href="#shop" class="bg-white text-black px-10 py-4 font-bold text-lg hover:scale-105 transition duration-300 mt-10 inline-block tracking-widest">EXPLORE DROP</a>
         </div>
     </header>
 
     <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
         <div class="flex justify-between items-end mb-16">
-            <h3 class="text-4xl gothic-text text-gray-200">LATEST ARRIVALS</h3>
+            <h3 class="text-4xl gothic-text text-gray-200 uppercase">Latest Collection</h3>
         </div>
-        <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-            <p class="text-gray-500 text-center w-full col-span-3">Loading Collection...</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="product-grid">
+            <p class="text-gray-500 text-center w-full col-span-full">Loading Collection...</p>
         </div>
     </main>
 
-    <footer class="border-t border-white/10 bg-black py-12 text-center">
-        <h2 class="text-4xl gothic-text mb-4">VAL10</h2>
-        <p class="text-gray-600 text-xs tracking-[0.2em]">© 2026 VAL10 STUDIO.</p>
-    </footer>
-
-    <div id="checkoutModal" class="fixed inset-0 bg-black/95 flex items-center justify-center hidden z-50 p-4 backdrop-blur-sm">
-        <div class="bg-[#0a0a0a] border border-white/20 p-8 max-w-md w-full relative">
-            <button onclick="closeCheckout()" class="absolute top-4 right-4 text-gray-500 hover:text-white text-xl">✕</button>
-            <h2 class="text-3xl gothic-text mb-1 text-white">SECURE ORDER</h2>
-            
-            <div class="flex items-center gap-4 mb-8 bg-white/5 p-4 border border-white/10 mt-6">
-                <img id="modalImg" src="" class="w-16 h-16 object-cover">
+    <section id="adminSection" class="max-w-7xl mx-auto px-6 py-32 hidden border-t border-white/10">
+        <h3 class="text-4xl gothic-text text-gray-200 mb-8">ADMIN PANEL</h3>
+        <form id="productForm" class="space-y-6 bg-[#0a0a0a] border border-white/20 p-8 mb-20">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h3 id="modalTitle" class="font-bold text-lg">Product</h3>
-                    <p id="modalPrice" class="text-gray-400 font-mono">$00</p>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Product Name</label>
+                    <input type="text" id="productNameInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Price (DT)</label>
+                    <input type="number" id="priceInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white">
                 </div>
             </div>
-            
-            <form id="orderForm" class="space-y-4">
-                <input type="hidden" id="productName">
-                <input type="text" id="fullName" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white placeholder-gray-800" placeholder="Full Name">
-                <input type="tel" id="phone" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white placeholder-gray-800" placeholder="Phone Number">
-                <button type="submit" class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200 transition mt-6">CONFIRM ORDER</button>
-            </form>
-        </div>
-    </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Description</label>
+                <textarea id="descriptionInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white resize-none h-24"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Available Sizes</label>
+                <div class="flex gap-6">
+                    <label class="flex items-center gap-2"><input type="checkbox" value="S" class="sizeCheckbox"> S</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" value="M" class="sizeCheckbox"> M</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" value="L" class="sizeCheckbox"> L</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" value="XL" class="sizeCheckbox"> XL</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" value="XXL" class="sizeCheckbox"> XXL</label>
+                </div>
+            </div>
+            <div>
+                <button type="button" id="uploadBtn" class="bg-zinc-800 text-white px-6 py-3 font-bold text-xs uppercase hover:bg-zinc-700 transition">Upload Image</button>
+                <input type="hidden" id="imageUrlInput">
+                <span id="uploadStatus" class="ml-4 text-xs text-gray-500 italic">No image selected</span>
+            </div>
+            <button type="submit" class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200 transition">Habet el-Produit</button>
+        </form>
+
+        <h3 class="text-2xl gothic-text mb-6">Manage Inventory</h3>
+        <div id="adminProducts" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+    </section>
+
+    <footer class="border-t border-white/10 bg-black py-20 text-center">
+        <h2 class="text-5xl gothic-text mb-6 tracking-widest">VAL10</h2>
+        <p class="text-gray-600 text-[10px] tracking-[0.5em] uppercase">© 2026 Underground Luxury Studio.</p>
+    </footer>
 
     <script>
         const API_URL = window.location.origin + "/api"; 
         const grid = document.getElementById('product-grid');
-        const modal = document.getElementById('checkoutModal');
+        const adminProducts = document.getElementById('adminProducts');
         let products = [];
 
         async function fetchProducts() {
@@ -88,87 +110,102 @@
                 const res = await fetch(`${API_URL}/products`);
                 products = await res.json();
                 renderProducts();
+                renderAdminProducts();
             } catch (err) {
-                grid.innerHTML = "<p class='text-red-500 text-center w-full col-span-3'>System Offline.</p>";
+                grid.innerHTML = "<p class='text-red-500 text-center w-full'>Connection Error (Backend Offline).</p>";
             }
         }
 
         function renderProducts() {
             grid.innerHTML = '';
             if(products.length === 0) {
-                grid.innerHTML = "<p class='text-gray-500 text-center w-full col-span-3'>SOLD OUT (No stock)</p>";
+                grid.innerHTML = "<p class='text-gray-500 text-center w-full'>COLLECTION EMPTY.</p>";
                 return;
             }
             products.forEach(product => {
                 const card = document.createElement('div');
-                card.className = "group cursor-pointer fade-in";
+                card.className = "group cursor-pointer fade-in product-card";
+                // L-faza hna: window.location.href bech n-hezouh lel page jdida
+                card.onclick = () => window.location.href = `product.html?id=${product._id}`;
                 card.innerHTML = `
-                    <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-4">
-                        <img src="${product.image}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100">
-                        <button onclick="openCheckout('${product._id}')" class="absolute bottom-0 left-0 w-full bg-white text-black py-4 font-bold translate-y-full group-hover:translate-y-0 transition duration-300 uppercase tracking-widest text-sm">BUY NOW</button>
-                    </div>
-                    <div class="flex justify-between items-start">
-                        <div><h3 class="text-lg font-bold uppercase tracking-tight text-gray-200">${product.name}</h3></div>
-                        <div class="text-right">
-                            <span class="text-white font-mono border border-white/20 px-2 py-1 text-sm">${product.price}</span>
+                    <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-6 border border-white/5">
+                        <img src="${product.image}" class="w-full h-full object-cover transition-all duration-1000 group-hover:opacity-80">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="bg-white text-black px-6 py-2 font-bold text-xs tracking-widest">VIEW DETAILS</span>
                         </div>
+                    </div>
+                    <div class="flex justify-between items-center px-1">
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200">${product.name}</h3>
+                        <span class="text-white font-mono text-sm">${product.price} DT</span>
                     </div>`;
                 grid.appendChild(card);
             });
         }
 
+        function renderAdminProducts() {
+            adminProducts.innerHTML = '';
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = "bg-[#0a0a0a] border border-white/10 p-4 text-xs";
+                card.innerHTML = `
+                    <img src="${product.image}" class="w-full h-24 object-cover mb-2 grayscale">
+                    <p class="font-bold uppercase">${product.name}</p>
+                    <button onclick="deleteProduct('${product._id}')" class="mt-2 text-red-500 hover:underline">DELETE</button>
+                `;
+                adminProducts.appendChild(card);
+            });
+        }
+
         async function deleteProduct(id) {
-            if (confirm("Bech tfassakh el product hadha mel sela?")) {
-                try {
-                    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-                    if (res.ok) {
-                        alert("✅ Product t-fassakh!");
-                        location.reload();
-                    } else {
-                        alert("❌ Ma najemtech nfassakh.");
-                    }
-                } catch (err) {
-                    alert("❌ Server Error.");
-                }
+            if (confirm("Bech tfassakh el product hadha?")) {
+                await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+                fetchProducts();
             }
         }
+
+        function toggleAdmin() {
+            document.getElementById('adminSection').classList.toggle('hidden');
+            window.scrollTo({ top: document.getElementById('adminSection').offsetTop, behavior: 'smooth' });
+        }
+
+        // Cloudinary setup (Same as you had)
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            const widget = cloudinary.createUploadWidget({
+                cloudName: 'your-cloud-name', // REPLACE THIS
+                uploadPreset: 'your-preset'   // REPLACE THIS
+            }, (error, result) => {
+                if (!error && result && result.event === "success") {
+                    document.getElementById('imageUrlInput').value = result.info.secure_url;
+                    document.getElementById('uploadStatus').innerText = "✅ Image Ready";
+                }
+            });
+            widget.open();
+        });
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sizes = Array.from(document.querySelectorAll('.sizeCheckbox:checked')).map(cb => cb.value);
+            const productData = {
+                name: document.getElementById('productNameInput').value,
+                price: parseFloat(document.getElementById('priceInput').value),
+                description: document.getElementById('descriptionInput').value,
+                sizes: sizes,
+                image: document.getElementById('imageUrlInput').value
+            };
+            const res = await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+            if (res.ok) {
+                alert("Produit Added!");
+                fetchProducts();
+                e.target.reset();
+                document.getElementById('uploadStatus').innerText = "No image selected";
+            }
+        });
 
         fetchProducts();
-
-        function openCheckout(id) {
-            const product = products.find(p => p._id == id);
-            document.getElementById('modalTitle').innerText = product.name;
-            document.getElementById('modalPrice').innerText = product.price;
-            document.getElementById('modalImg').src = product.image;
-            document.getElementById('productName').value = product.name;
-            modal.classList.remove('hidden');
-        }
-
-        function closeCheckout() { modal.classList.add('hidden'); }
-
-        document.getElementById('orderForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const originalText = btn.innerText;
-            btn.innerText = "PROCESSING...";
-            
-            try {
-                await fetch(`${API_URL}/order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fullName: document.getElementById('fullName').value,
-                        phone: document.getElementById('phone').value,
-                        productName: document.getElementById('productName').value
-                    })
-                });
-                alert("Order Placed Successfully!");
-                closeCheckout();
-            } catch (err) {
-                alert("Error connecting to server.");
-            }
-            btn.innerText = originalText;
-        };
     </script>
 </body>
 </html>

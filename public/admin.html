@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAL10 | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+    <style>
+        body { background-color: #050505; color: #ffffff; font-family: sans-serif; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-10 border-b border-white/10 pb-4 uppercase tracking-tighter">VAL10 Management</h1>
+        
+        <div class="bg-zinc-900 p-8 border border-white/5 mb-20">
+            <h2 class="text-xl mb-6 font-bold">Add New Product</h2>
+            <form id="productForm" class="space-y-4">
+                <input type="text" id="name" placeholder="Product Name" required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white">
+                <input type="number" id="price" placeholder="Price (DT)" required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white">
+                <textarea id="description" placeholder="Product Description..." required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white h-32"></textarea>
+                
+                <div class="p-4 border border-white/5 bg-black">
+                    <p class="text-sm mb-3 text-gray-400">Select Sizes:</p>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2"><input type="checkbox" value="S" class="size"> S</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" value="M" class="size"> M</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" value="L" class="size"> L</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" value="XL" class="size"> XL</label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button type="button" id="uploadBtn" class="bg-zinc-800 px-6 py-2 text-sm uppercase font-bold hover:bg-zinc-700">Upload Image</button>
+                    <input type="hidden" id="imageUrl">
+                    <span id="status" class="text-xs text-gray-500 italic">No file selected</span>
+                </div>
+
+                <button type="submit" class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200">Post Product</button>
+            </form>
+        </div>
+
+        <h2 class="text-xl mb-6 font-bold">Current Stock</h2>
+        <div id="inventory" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + "/api";
+
+        // Cloudinary Widget
+        const myWidget = cloudinary.createUploadWidget({
+            cloudName: 'YOUR_CLOUD_NAME', // Badal b-ismek fi Cloudinary
+            uploadPreset: 'YOUR_PRESET'    // Badal b-preset mte3ek
+        }, (error, result) => { 
+            if (!error && result && result.event === "success") { 
+                document.getElementById('imageUrl').value = result.info.secure_url;
+                document.getElementById('status').innerText = "✅ Image Uploaded";
+            }
+        });
+        document.getElementById("uploadBtn").addEventListener("click", () => myWidget.open());
+
+        // Load Products to Delete
+        async function loadInventory() {
+            const res = await fetch(`${API_URL}/products`);
+            const products = await res.json();
+            const inv = document.getElementById('inventory');
+            inv.innerHTML = '';
+            products.forEach(p => {
+                inv.innerHTML += `
+                    <div class="bg-zinc-900 p-4 border border-white/5">
+                        <img src="${p.image}" class="w-full h-32 object-cover mb-4 grayscale">
+                        <p class="font-bold text-sm">${p.name}</p>
+                        <p class="text-xs text-gray-500 mb-4">${p.price} DT</p>
+                        <button onclick="deleteP('${p._id}')" class="text-red-500 text-xs font-bold hover:underline">DELETE</button>
+                    </div>`;
+            });
+        }
+
+        async function deleteP(id) {
+            if(confirm("Tfassakh?")) {
+                await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+                loadInventory();
+            }
+        }
+
+        // Handle Submit
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const sizes = Array.from(document.querySelectorAll('.size:checked')).map(c => c.value);
+            const data = {
+                name: document.getElementById('name').value,
+                price: document.getElementById('price').value,
+                description: document.getElementById('description').value,
+                image: document.getElementById('imageUrl').value,
+                sizes: sizes
+            };
+            await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            alert("Success!");
+            loadInventory();
+            e.target.reset();
+        };
+
+        loadInventory();
+    </script>
+</body>
+</html>
