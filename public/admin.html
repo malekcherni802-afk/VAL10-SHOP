@@ -2,130 +2,261 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VAL10 | ADMIN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAL10 | CONTROL PANEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; }
-        .card { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 20px; border-radius: 15px; }
-        input, textarea { background: #000 !important; border: 1px solid #222 !important; color: white !important; width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+        input, textarea { background: #000 !important; border: 1px solid #1a1a1a !important; color: white !important; }
+        input:focus { border-color: #eab308 !important; outline: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
     </style>
 </head>
-<body class="p-6">
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-2xl font-black mb-10 uppercase italic">Val10 Control Center</h1>
-        
-        <div class="grid lg:grid-cols-2 gap-8">
-            <div class="card h-fit">
-                <h2 id="title" class="text-xs font-bold uppercase text-zinc-500 mb-4">Add New Piece</h2>
-                <input type="hidden" id="p-id">
-                <input type="text" id="p-name" placeholder="Piece Name">
-                <input type="number" id="p-price" placeholder="Price (DT)">
-                <textarea id="p-desc" placeholder="Description"></textarea>
-                
-                <div class="flex gap-2 mb-4">
-                    <input type="file" id="f1" class="text-[10px]">
-                    <input type="file" id="f2" class="text-[10px]">
-                </div>
+<body class="p-4 md:p-10">
+    <div class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-center mb-12 border-b border-white/5 pb-8">
+            <div>
+                <h1 class="text-3xl font-black italic tracking-tighter text-yellow-500 uppercase">VAL10 ADMIN</h1>
+                <p class="text-[10px] text-gray-500 tracking-[0.3em] uppercase mt-1">Underground Luxury Management</p>
+            </div>
+            <div class="flex gap-4">
+                <a href="/" class="text-[9px] font-bold border border-white/10 px-6 py-3 hover:bg-white hover:text-black transition uppercase tracking-widest">Live Site</a>
+                <button onclick="refreshData()" class="text-[9px] font-bold bg-white text-black px-6 py-3 uppercase tracking-widest hover:bg-yellow-500 transition">Sync Data</button>
+            </div>
+        </header>
 
-                <div class="flex gap-4 mb-6 text-[10px]">
-                    <span>SIZES:</span>
-                    <label><input type="checkbox" value="S" class="sz"> S</label>
-                    <label><input type="checkbox" value="M" class="sz"> M</label>
-                    <label><input type="checkbox" value="L" class="sz"> L</label>
-                </div>
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-2xl sticky top-10">
+                    <h2 id="form-title" class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">New Drop Entry</h2>
+                    <div class="space-y-4">
+                        <input type="hidden" id="p-id">
+                        <div>
+                            <label class="text-[9px] uppercase text-gray-500 ml-1">Product Name</label>
+                            <input type="text" id="p-name" class="w-full p-3 mt-1 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[9px] uppercase text-gray-500 ml-1">Price (DT)</label>
+                            <input type="number" id="p-price" class="w-full p-3 mt-1 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[9px] uppercase text-gray-500 ml-1">Description</label>
+                            <textarea id="p-desc" class="w-full p-3 mt-1 rounded-xl text-sm h-24"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="relative">
+                                <button onclick="document.getElementById('f1').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Front Image</button>
+                                <input type="file" id="f1" class="hidden" accept="image/*">
+                            </div>
+                            <div class="relative">
+                                <button onclick="document.getElementById('f2').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Back Image</button>
+                                <input type="file" id="f2" class="hidden" accept="image/*">
+                            </div>
+                        </div>
 
-                <button onclick="habet()" id="btn" class="w-full bg-white text-black font-bold py-3 uppercase text-xs">Confirm Drop</button>
-                <button id="cnl" onclick="resetForm()" class="hidden w-full mt-2 text-[10px] text-zinc-500">Cancel Edit</button>
+                        <div class="p-3 bg-black/40 rounded-xl border border-white/5">
+                            <p class="text-[9px] uppercase text-gray-500 mb-3 text-center">Available Sizes</p>
+                            <div class="flex justify-around">
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" value="S" class="size-cb accent-yellow-500"> S</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" value="M" class="size-cb accent-yellow-500"> M</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" value="L" class="size-cb accent-yellow-500"> L</label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" value="XL" class="size-cb accent-yellow-500"> XL</label>
+                            </div>
+                        </div>
+
+                        <button onclick="habet()" id="btn" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-[0.98] transition">Confirm Release</button>
+                        <button id="cancel-btn" onclick="resetForm()" class="hidden w-full text-[9px] uppercase font-bold text-gray-500 hover:text-white transition">Discard Edit</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="card">
-                    <h2 class="text-xs font-bold uppercase text-zinc-500 mb-4">Inventory</h2>
-                    <div id="inventory" class="space-y-2"></div>
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-2xl h-full">
+                    <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">Stock Inventory</h2>
+                    <div id="inventory-list" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+                        </div>
                 </div>
-                <div class="card border-yellow-900/30">
-                    <h2 class="text-xs font-bold uppercase text-yellow-600 mb-4">Orders</h2>
-                    <div id="orders" class="space-y-2"></div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-2xl h-full border-yellow-500/10">
+                    <h2 class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-6">Incoming Orders</h2>
+                    <div id="orders-list" class="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+                        </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // CONFIGURATION
+        const CLOUD_NAME = "dcdgsml-yy";
+        const UPLOAD_PRESET = "vai10_preset";
         let editMode = false;
-        const PRESET = "vai10_preset";
-        const CLOUD = "dcdgsml-yy";
 
-        async function load() {
-            const [pr, or] = await Promise.all([fetch('/api/products').then(r=>r.json()), fetch('/api/orders').then(r=>r.json())]);
+        function refreshData() { loadInventory(); loadOrders(); }
+
+        // LOAD PRODUCTS
+        async function loadInventory() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = products.length ? '' : '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">Inventory Empty</p>';
             
-            document.getElementById('inventory').innerHTML = pr.map(p => `
-                <div class="flex justify-between items-center p-2 bg-zinc-900/50 rounded">
-                    <span class="text-[11px] uppercase">${p.name} - ${p.price}DT</span>
-                    <div class="flex gap-3 text-[9px] font-bold">
-                        <button onclick='editP(${JSON.stringify(p)})' class="text-blue-500">EDIT</button>
-                        <button onclick="delP('${p._id}')" class="text-red-500">DEL</button>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('orders').innerHTML = or.map(o => `
-                <div class="p-3 bg-zinc-900/30 rounded border border-white/5 text-[10px]">
-                    <div class="flex justify-between"><b>${o.customerName}</b><span>${o.totalPrice}DT</span></div>
-                    <p class="text-zinc-500">${o.productName} (${o.size}) - ${o.customerPhone}</p>
-                    <button onclick="delO('${o._id}')" class="mt-2 text-[8px] underline">Mark Done</button>
-                </div>
-            `).join('');
+            products.forEach(p => {
+                const img = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/100?text=VAL10';
+                list.innerHTML += `
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group">
+                        <img src="${img}" class="w-14 h-14 object-cover rounded-lg grayscale group-hover:grayscale-0 transition duration-500">
+                        <div class="flex-1">
+                            <h4 class="text-[11px] font-black uppercase truncate w-32">${p.name}</h4>
+                            <p class="text-yellow-500 text-[10px] font-bold mt-1">${p.price} DT</p>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick='editP(${JSON.stringify(p)})' class="text-[8px] font-bold text-blue-400 hover:text-white transition uppercase">Edit</button>
+                            <button onclick="deleteP('${p._id}')" class="text-[8px] font-bold text-red-500 hover:text-white transition uppercase">Del</button>
+                        </div>
+                    </div>`;
+            });
         }
 
-        async function up(file) {
+        // LOAD ORDERS
+        async function loadOrders() {
+            const res = await fetch('/api/orders');
+            const orders = await res.json();
+            const list = document.getElementById('orders-list');
+            list.innerHTML = orders.length ? '' : '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">No Orders Yet</p>';
+            
+            orders.forEach(o => {
+                list.innerHTML += `
+                    <div class="bg-white/5 p-5 rounded-2xl border border-yellow-500/5 hover:border-yellow-500/20 transition">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="text-xs font-black uppercase">${o.customerName}</h4>
+                                <p class="text-[9px] text-gray-500 mt-1">${o.customerPhone}</p>
+                            </div>
+                            <span class="bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded">${o.totalPrice} DT</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 border-t border-white/5 pt-3">
+                            <p>👕 <span class="text-white">${o.productName}</span> — Size: <span class="text-yellow-500 font-bold">${o.size}</span></p>
+                            <p class="mt-2 text-[9px] italic opacity-60">📍 ${o.customerAddress}</p>
+                        </div>
+                        <button onclick="deleteOrder('${o._id}')" class="mt-4 w-full py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition">Mark as Shipped</button>
+                    </div>`;
+            });
+        }
+
+        // CLOUDINARY UPLOAD
+        async function uploadToCloudinary(file) {
             if(!file) return null;
-            const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", PRESET);
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, {method:"POST", body:fd});
-            const d = await res.json(); return d.secure_url;
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", UPLOAD_PRESET);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            return data.secure_url;
         }
 
+        // ADD OR UPDATE PRODUCT
         async function habet() {
-            const b = document.getElementById('btn'); b.innerText = "UPLOADING..."; b.disabled = true;
-            try {
-                let imgs = [];
-                const [i1, i2] = [await up(document.getElementById('f1').files[0]), await up(document.getElementById('f2').files[0])];
-                if(i1) imgs.push(i1); if(i2) imgs.push(i2);
+            const btn = document.getElementById('btn');
+            const originalText = btn.innerText;
+            btn.innerText = "UPLOADING TO CLOUD...";
+            btn.disabled = true;
 
-                const data = {
+            try {
+                const f1 = document.getElementById('f1').files[0];
+                const f2 = document.getElementById('f2').files[0];
+                
+                let imageUrls = [];
+                const img1 = await uploadToCloudinary(f1);
+                const img2 = await uploadToCloudinary(f2);
+                
+                if(img1) imageUrls.push(img1);
+                if(img2) imageUrls.push(img2);
+
+                const sizes = [];
+                document.querySelectorAll('.size-cb:checked').forEach(cb => sizes.push(cb.value));
+
+                const payload = {
                     name: document.getElementById('p-name').value,
                     price: document.getElementById('p-price').value,
                     description: document.getElementById('p-desc').value,
-                    sizes: Array.from(document.querySelectorAll('.sz:checked')).map(c => c.value)
+                    sizes: sizes
                 };
-                if(imgs.length) data.images = imgs;
+
+                // Only update images if new ones are uploaded
+                if(imageUrls.length > 0) payload.images = imageUrls;
 
                 const url = editMode ? `/api/products/${document.getElementById('p-id').value}` : '/api/products';
-                await fetch(url, { method: editMode?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-                resetForm(); load();
-            } catch(e) { alert("Error!"); }
-            finally { b.innerText = "Confirm Drop"; b.disabled = false; }
+                const method = editMode ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if(res.ok) {
+                    alert(editMode ? "Vault Updated!" : "Release Confirmed!");
+                    resetForm();
+                    refreshData();
+                }
+            } catch (e) {
+                alert("Critical Error!");
+                console.error(e);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
 
+        // EDIT LOGIC
         function editP(p) {
-            editMode = true; document.getElementById('title').innerText = "Edit Mode";
+            editMode = true;
+            document.getElementById('form-title').innerText = "Update Vault Piece";
+            document.getElementById('btn').innerText = "Apply Changes";
+            document.getElementById('cancel-btn').classList.remove('hidden');
+            
             document.getElementById('p-id').value = p._id;
             document.getElementById('p-name').value = p.name;
             document.getElementById('p-price').value = p.price;
-            document.getElementById('p-desc').value = p.description;
-            document.getElementById('cnl').classList.remove('hidden');
+            document.getElementById('p-desc').value = p.description || "";
+            
+            // Clear checks then re-check
+            document.querySelectorAll('.size-cb').forEach(cb => {
+                cb.checked = p.sizes && p.sizes.includes(cb.value);
+            });
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function resetForm() {
-            editMode = false; document.getElementById('title').innerText = "Add New Piece";
-            document.getElementById('p-id').value = ""; document.getElementById('p-name').value = "";
-            document.getElementById('p-price').value = ""; document.getElementById('p-desc').value = "";
-            document.getElementById('cnl').classList.add('hidden');
+            editMode = false;
+            document.getElementById('form-title').innerText = "New Drop Entry";
+            document.getElementById('btn').innerText = "Confirm Release";
+            document.getElementById('cancel-btn').classList.add('hidden');
+            document.getElementById('p-id').value = "";
+            document.getElementById('p-name').value = "";
+            document.getElementById('p-price').value = "";
+            document.getElementById('p-desc').value = "";
+            document.querySelectorAll('.size-cb').forEach(cb => cb.checked = false);
+            document.getElementById('f1').value = "";
+            document.getElementById('f2').value = "";
         }
 
-        async function delP(id) { if(confirm("Del?")) { await fetch(`/api/products/${id}`,{method:'DELETE'}); load(); } }
-        async function delO(id) { if(confirm("Done?")) { await fetch(`/api/orders/${id}`,{method:'DELETE'}); load(); } }
-        load();
+        // DELETE FUNCTIONS
+        async function deleteP(id) { if(confirm("Permanently delete from vault?")) { await fetch(`/api/products/${id}`, {method:'DELETE'}); refreshData(); } }
+        async function deleteOrder(id) { if(confirm("Mark as fulfilled and clear?")) { await fetch(`/api/orders/${id}`, {method:'DELETE'}); refreshData(); } }
+
+        // Initial Load
+        refreshData();
     </script>
 </body>
 </html>

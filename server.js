@@ -6,85 +6,104 @@ require('dotenv').config();
 
 const app = express();
 
-// --- CONFIGURATION ---
+// --- 1. MIDDLEWARES ---
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static files (Images, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DATABASE CONNECTION ---
-// Lezem el-key esmha MONGO_URI kima rigelnaha fi Render
-const MONGO_URI = process.env.MONGO_URI;
+// --- 2. DATABASE CONNECTION (FIXED) ---
+// El-code hadha yaqra MONGOURI wala MONGO_URI bech ma3dech ya3tik "undefined"
+const DB_URL = process.env.MONGO_URI || process.env.MONGOURI;
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ VAL10 DATABASE CONNECTED'))
-    .catch(err => console.error('❌ CONNECTION ERROR:', err));
+mongoose.connect(DB_URL)
+    .then(() => console.log('✅ VAL10 DATABASE: CONNECTED SUCCESSFULLY'))
+    .catch(err => console.error('❌ DATABASE ERROR:', err));
 
-// --- SCHEMAS ---
-const Product = mongoose.model('Product', new mongoose.Schema({
+// --- 3. MODELS (The Heart of VAL10) ---
+const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     description: String,
-    images: [String],
-    sizes: [String],
+    images: [String], // Array for multiple images
+    sizes: [String],  // Array for sizes (S, M, L, XL)
+    category: { type: String, default: 'Underground' },
     createdAt: { type: Date, default: Date.now }
-}));
+});
+const Product = mongoose.model('Product', productSchema);
 
-const Order = mongoose.model('Order', new mongoose.Schema({
+const orderSchema = new mongoose.Schema({
     customerName: String,
     customerPhone: String,
     customerAddress: String,
     productName: String,
     size: String,
     totalPrice: Number,
+    status: { type: String, default: 'Pending' },
     createdAt: { type: Date, default: Date.now }
-}));
+});
+const Order = mongoose.model('Order', orderSchema);
 
-// --- API ROUTES ---
+// --- 4. API ROUTES ---
+
+// Get all products
 app.get('/api/products', async (req, res) => {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.json(products);
-});
-
-app.get('/api/products/:id', async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
-        res.json(product);
-    } catch (e) { res.status(404).json({msg: "Not found"}); }
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.json(products);
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Add new product (From Admin)
 app.post('/api/products', async (req, res) => {
-    const newP = new Product(req.body);
-    await newP.save();
-    res.status(201).json(newP);
+    try {
+        const newP = new Product(req.body);
+        await newP.save();
+        res.status(201).json(newP);
+    } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-app.put('/api/products/:id', async (req, res) => {
-    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
-});
-
+// Delete product
 app.delete('/api/products/:id', async (req, res) => {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.json({ message: "Product Deleted" });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Submit Order (From Client)
 app.post('/api/orders', async (req, res) => {
-    const order = new Order(req.body);
-    await order.save();
-    res.json(order);
+    try {
+        const order = new Order(req.body);
+        await order.save();
+        res.status(201).json({ success: true, order });
+    } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// Get all orders (For Admin)
 app.get('/api/orders', async (req, res) => {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/orders/:id', async (req, res) => {
-    await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: "Done" });
+// --- 5. PAGE ROUTING (The Fix) ---
+
+// Route l'admin (Bech ma3dech t-hezzek lel index)
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// Route el-client (Fallback)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+// --- 6. START SERVER ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 VAL10 SERVER RUNNING ON PORT ${PORT}`);
+});
