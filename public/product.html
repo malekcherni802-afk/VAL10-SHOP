@@ -3,103 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAL10 | Product Details</title>
+    <title>VAL10 | Archive Piece</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 'gothic': ['"Pirata One"'], 'body': ['"Syne"'] }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; }
-        .gothic-text { font-family: 'Pirata One', cursive; letter-spacing: 0.1em; }
-        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        body { background-color: #050505; color: #ffffff; font-family: 'Syne'; overflow-x: hidden; }
+        .gothic-text { font-family: 'Pirata One'; letter-spacing: 0.2em; }
+        .swiper-pagination-bullet { background: #fff !important; }
+        .size-btn.active { background: white; color: black; border-color: white; }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased pb-20">
+<body class="antialiased selection:bg-white selection:text-black">
 
-    <nav class="p-6 border-b border-white/10 flex justify-between items-center">
-        <h1 class="text-3xl gothic-text cursor-pointer" onclick="window.location.href='/'">VAL10</h1>
-        <a href="/" class="text-[10px] tracking-[0.3em] uppercase opacity-50 hover:opacity-100">← Return</a>
+    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+            <h1 class="text-3xl gothic-text cursor-pointer uppercase hover:opacity-70 transition" onclick="window.location.href='/'">VAL10</h1>
+            <a href="/" class="text-[10px] tracking-widest uppercase text-gray-400 hover:text-white transition">Back to Archive</a>
+        </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div class="aspect-[3/4] bg-zinc-900 border border-white/10 overflow-hidden">
-            <img id="p-image" src="" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-700">
-        </div>
-
-        <div class="flex flex-col">
-            <h2 id="p-name" class="text-5xl font-extrabold uppercase tracking-tighter mb-2 italic">Loading...</h2>
-            <p id="p-price" class="text-2xl font-mono text-gray-400 mb-8"></p>
+    <main class="pt-32 pb-20 max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             
-            <div class="glass p-6 mb-8">
-                <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Description</p>
-                <p id="p-desc" class="text-sm text-gray-300 leading-relaxed"></p>
+            <div class="space-y-4 fade-in">
+                <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden">
+                    <div class="swiper-wrapper" id="image-wrapper">
+                        </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+                <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic">Swipe to view details</p>
             </div>
 
-            <div class="space-y-4">
-                <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Select Size</p>
-                <div id="size-container" class="flex gap-3 mb-8"></div>
+            <div class="flex flex-col space-y-10 fade-in" style="animation-delay: 0.2s;">
+                <header>
+                    <h2 id="p-name" class="text-5xl md:text-7xl font-extrabold uppercase tracking-tighter leading-none mb-4">Loading...</h2>
+                    <div class="flex items-center gap-4">
+                        <span id="p-price" class="text-2xl font-mono text-white">-- DT</span>
+                        <span class="text-[10px] px-2 py-1 border border-white/10 text-gray-500 uppercase">In Stock</span>
+                    </div>
+                </header>
 
-                <div class="space-y-4 pt-4">
-                    <input type="text" id="fullName" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/20 py-3 outline-none focus:border-white transition">
-                    <input type="text" id="phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/20 py-3 outline-none focus:border-white transition">
-                    
-                    <button onclick="sendOrder()" class="w-full bg-white text-black py-5 font-bold uppercase tracking-[0.2em] hover:bg-gray-200 transition duration-300 mt-6">
-                        Confirm Order
-                    </button>
+                <div class="space-y-4">
+                    <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">The Narrative</h4>
+                    <p id="p-desc" class="text-sm text-gray-400 leading-relaxed max-w-md italic"></p>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center max-w-sm">
+                        <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Dimensions</h4>
+                        <button class="text-[9px] text-gray-600 underline uppercase tracking-widest">Size Guide</button>
+                    </div>
+                    <div id="size-container" class="flex flex-wrap gap-3">
+                        </div>
+                </div>
+
+                <button onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
+                    <span class="relative z-10">Acquire Piece</span>
+                    <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
+                </button>
+
+                <div class="pt-10 border-t border-white/5 space-y-4">
+                    <details class="group cursor-pointer">
+                        <summary class="text-[10px] uppercase tracking-widest list-none flex justify-between text-gray-500 group-open:text-white">Shipping & Returns <span>+</span></summary>
+                        <p class="text-[10px] text-gray-600 mt-4 leading-relaxed uppercase">Domestic delivery within 2-4 business days. All archive sales are final.</p>
+                    </details>
                 </div>
             </div>
         </div>
     </main>
 
+    <div id="modal" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
+        <div class="w-full max-w-lg space-y-8 fade-in">
+            <div class="flex justify-between items-center">
+                <h3 class="text-3xl gothic-text tracking-widest">ORDER FORM</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="cust-name" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
+                <input type="text" id="cust-phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
+                <input type="text" id="cust-addr" placeholder="SHIPPING ADDRESS (CITY, ZIP)" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
+            </div>
+            <button onclick="submitOrder()" class="w-full bg-white text-black py-4 font-black uppercase text-xs tracking-[0.4em]">Confirm Purchase</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
+        let currentProduct = null;
         let selectedSize = '';
 
         async function loadProduct() {
             try {
                 const res = await fetch(`/api/products/${productId}`);
-                const p = await res.json();
+                currentProduct = await res.json();
                 
-                document.getElementById('p-image').src = p.image;
-                document.getElementById('p-name').innerText = p.name;
-                document.getElementById('p-price').innerText = p.price + ' DT';
-                document.getElementById('p-desc').innerText = p.description || 'No description provided.';
+                document.title = `VAL10 | ${currentProduct.name}`;
+                document.getElementById('p-name').innerText = currentProduct.name;
+                document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
+                document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED FOR THIS PIECE.";
 
-                const sizeBox = document.getElementById('size-container');
-                if(p.sizes) {
-                    p.sizes.forEach(s => {
-                        const btn = document.createElement('button');
-                        btn.innerText = s;
-                        btn.className = "w-12 h-12 border border-white/20 flex items-center justify-center text-xs font-bold hover:border-white transition";
-                        btn.onclick = () => {
-                            document.querySelectorAll('#size-container button').forEach(b => b.classList.remove('bg-white', 'text-black'));
-                            btn.classList.add('bg-white', 'text-black');
-                            selectedSize = s;
-                        };
-                        sizeBox.appendChild(btn);
-                    });
+                // Render Images
+                const wrapper = document.getElementById('image-wrapper');
+                const imgs = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images : [currentProduct.image];
+                wrapper.innerHTML = imgs.map(img => `
+                    <div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale"></div>
+                `).join('');
+
+                new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true } });
+
+                // Render Sizes (EL-TASLI7)
+                const sizeContainer = document.getElementById('size-container');
+                if (currentProduct.sizes && currentProduct.sizes.length > 0) {
+                    sizeContainer.innerHTML = currentProduct.sizes.map(s => `
+                        <button onclick="selectSize(this, '${s}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s}</button>
+                    `).join('');
+                } else {
+                    sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
+                    selectedSize = 'One Size';
                 }
-            } catch (err) {
-                console.error("Error loading product");
-            }
+            } catch (e) { console.error(e); }
         }
 
-        async function sendOrder() {
-            const fullName = document.getElementById('fullName').value;
-            const phone = document.getElementById('phone').value;
-            const pName = document.getElementById('p-name').innerText;
+        function selectSize(btn, size) {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedSize = size;
+        }
 
-            if(!fullName || !phone || !selectedSize) {
-                alert('Please fill all fields and select a size.');
-                return;
-            }
+        function openModal() {
+            if (!selectedSize && currentProduct.sizes?.length > 0) return alert("SELECT DIMENSIONS FIRST.");
+            document.getElementById('modal').classList.remove('hidden');
+        }
 
-            const res = await fetch('/api/order', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ fullName, phone, productName: pName, size: selectedSize })
-            });
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-            if(res.ok) alert('✅ Order Sent Successfully!');
+        async function submitOrder() {
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const addr = document.getElementById('cust-addr').value;
+
+            if (!name || !phone || !addr) return alert("COMPLETE ALL FIELDS.");
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        customerName: name,
+                        customerPhone: phone,
+                        customerAddress: addr,
+                        productName: currentProduct.name,
+                        size: selectedSize,
+                        totalPrice: currentProduct.price
+                    })
+                });
+                if (res.ok) { alert("ARCHIVE SECURED. WE WILL CONTACT YOU."); window.location.href = "/"; }
+            } catch (e) { alert("SYSTEM ERROR."); }
         }
 
         loadProduct();
