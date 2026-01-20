@@ -1,14 +1,21 @@
 {
   "name": "val10-shop",
   "version": "1.0.0",
+  "description": "VAL10 Underground Luxury Shop",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mongoose": "^7.6.3"
-  }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "VAL10",
+  "license": "ISC"
 }
