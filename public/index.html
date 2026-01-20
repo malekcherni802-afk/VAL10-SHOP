@@ -109,10 +109,29 @@
                     </div>
                     <div class="flex justify-between items-start">
                         <div><h3 class="text-lg font-bold uppercase tracking-tight text-gray-200">${product.name}</h3></div>
-                        <span class="text-white font-mono border border-white/20 px-2 py-1 text-sm">${product.price}</span>
+                        <div class="text-right">
+                            <span class="text-white font-mono border border-white/20 px-2 py-1 text-sm">${product.price}</span>
+                            <button onclick="event.stopPropagation(); deleteProduct('${product._id}')" class="block text-[10px] text-red-500 mt-2 underline italic hover:text-white transition uppercase">Remove</button>
+                        </div>
                     </div>`;
                 grid.appendChild(card);
             });
+        }
+
+        async function deleteProduct(id) {
+            if (confirm("Bech tfassakh el product hadha mel sela?")) {
+                try {
+                    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        alert("✅ Product t-fassakh!");
+                        location.reload();
+                    } else {
+                        alert("❌ Ma najemtech nfassakh.");
+                    }
+                } catch (err) {
+                    alert("❌ Server Error.");
+                }
+            }
         }
 
         fetchProducts();
