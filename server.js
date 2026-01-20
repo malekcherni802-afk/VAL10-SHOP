@@ -157,12 +157,11 @@ app.get('/admin', async (req, res) => {
                 }
             }
         </script>
-        </body>
+  </body>
         </html>
-        
-        `;
-        res.send(html);
-        return;
+    `;
+    res.send(html);
+    return;
     }
 
     // Si Login Ghalet, otlob Mot de passe
