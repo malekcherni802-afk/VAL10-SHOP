@@ -3,109 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAL10 | Admin Dashboard</title>
+    <title>VAL10 - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <style>
-        body { background-color: #050505; color: #ffffff; font-family: sans-serif; }
+        body { background-color: #000; color: #fff; font-family: sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input, textarea { background: #0a0a0a !important; border: 1px solid #222 !important; color: #fff !important; outline: none; }
+        input:focus { border-color: #eab308 !important; }
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 md:p-10">
+
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-10 border-b border-white/10 pb-4 uppercase tracking-tighter">VAL10 Management</h1>
-        
-        <div class="bg-zinc-900 p-8 border border-white/5 mb-20">
-            <h2 class="text-xl mb-6 font-bold">Add New Product</h2>
-            <form id="productForm" class="space-y-4">
-                <input type="text" id="name" placeholder="Product Name" required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white">
-                <input type="number" id="price" placeholder="Price (DT)" required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white">
-                <textarea id="description" placeholder="Product Description..." required class="w-full bg-black border border-white/10 p-3 outline-none focus:border-white text-white h-32"></textarea>
-                
-                <div class="p-4 border border-white/5 bg-black">
-                    <p class="text-sm mb-3 text-gray-400">Select Sizes:</p>
-                    <div class="flex gap-4">
-                        <label class="flex items-center gap-2"><input type="checkbox" value="S" class="size"> S</label>
-                        <label class="flex items-center gap-2"><input type="checkbox" value="M" class="size"> M</label>
-                        <label class="flex items-center gap-2"><input type="checkbox" value="L" class="size"> L</label>
-                        <label class="flex items-center gap-2"><input type="checkbox" value="XL" class="size"> XL</label>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <button type="button" id="uploadBtn" class="bg-zinc-800 px-6 py-2 text-sm uppercase font-bold hover:bg-zinc-700">Upload Image</button>
-                    <input type="hidden" id="imageUrl">
-                    <span id="status" class="text-xs text-gray-500 italic">No file selected</span>
-                </div>
-
-                <button type="submit" class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200">Post Product</button>
-            </form>
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-black italic tracking-tighter text-yellow-500">VAL10 ADMIN</h1>
+            <a href="/" class="text-xs uppercase tracking-widest text-gray-500 hover:text-white">View Site →</a>
         </div>
 
-        <h2 class="text-xl mb-6 font-bold">Current Stock</h2>
-        <div id="inventory" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="glass p-8 rounded-3xl">
+                <h2 class="text-xl font-bold mb-6 uppercase">Habet Meryoul Jdid</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 ml-1">Product Name</label>
+                        <input type="text" id="p-name" class="w-full p-3 rounded-xl mt-1" placeholder="e.g. Oversized Black Hoodie">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 ml-1">Price (DT)</label>
+                        <input type="number" id="p-price" class="w-full p-3 rounded-xl mt-1" placeholder="90">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 ml-1">Description</label>
+                        <textarea id="p-desc" class="w-full p-3 rounded-xl mt-1 h-24" placeholder="Fabric details..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 ml-1">Available Sizes</label>
+                        <div class="flex gap-3 mt-2 flex-wrap">
+                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
+                                <input type="checkbox" value="S" class="size-cb"> <span>S</span>
+                            </label>
+                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
+                                <input type="checkbox" value="M" class="size-cb"> <span>M</span>
+                            </label>
+                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
+                                <input type="checkbox" value="L" class="size-cb"> <span>L</span>
+                            </label>
+                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
+                                <input type="checkbox" value="XL" class="size-cb"> <span>XL</span>
+                            </label>
+                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
+                                <input type="checkbox" value="XXL" class="size-cb"> <span>XXL</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <input type="file" id="p-file" class="hidden" onchange="previewImage(event)">
+                        <button onclick="document.getElementById('p-file').click()" class="w-full border border-dashed border-gray-700 p-4 rounded-xl text-sm text-gray-400 hover:bg-white/5 transition">
+                            SELECT IMAGE
+                        </button>
+                        <img id="img-preview" class="mt-4 w-full h-48 object-cover rounded-xl hidden border border-gray-800">
+                    </div>
+
+                    <button onclick="habetProduct()" id="btn-submit" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl mt-6 uppercase tracking-widest hover:bg-yellow-400 transition">
+                        HABET EL-PRODUIT
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass p-6 rounded-3xl h-fit">
+                <h3 class="text-gray-500 text-[10px] uppercase tracking-widest mb-4">Live Control</h3>
+                <p class="text-sm text-gray-400 italic">Ready to upload new drops to the collection.</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        const API_URL = window.location.origin + "/api";
+        // --- ⚠️ CONFIGURATION CLOUDINARY M-RIGLA ---
+        const CLOUD_NAME = "dcdgsml-yy"; //
+        const UPLOAD_PRESET = "vai10_preset"; //
 
-        // Cloudinary Widget
-        const myWidget = cloudinary.createUploadWidget({
-            cloudName: 'YOUR_CLOUD_NAME', // Badal b-ismek fi Cloudinary
-            uploadPreset: 'YOUR_PRESET'    // Badal b-preset mte3ek
-        }, (error, result) => { 
-            if (!error && result && result.event === "success") { 
-                document.getElementById('imageUrl').value = result.info.secure_url;
-                document.getElementById('status').innerText = "✅ Image Uploaded";
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = document.getElementById('img-preview');
+                img.src = reader.result;
+                img.classList.remove('hidden');
             }
-        });
-        document.getElementById("uploadBtn").addEventListener("click", () => myWidget.open());
-
-        // Load Products to Delete
-        async function loadInventory() {
-            const res = await fetch(`${API_URL}/products`);
-            const products = await res.json();
-            const inv = document.getElementById('inventory');
-            inv.innerHTML = '';
-            products.forEach(p => {
-                inv.innerHTML += `
-                    <div class="bg-zinc-900 p-4 border border-white/5">
-                        <img src="${p.image}" class="w-full h-32 object-cover mb-4 grayscale">
-                        <p class="font-bold text-sm">${p.name}</p>
-                        <p class="text-xs text-gray-500 mb-4">${p.price} DT</p>
-                        <button onclick="deleteP('${p._id}')" class="text-red-500 text-xs font-bold hover:underline">DELETE</button>
-                    </div>`;
-            });
+            reader.readAsDataURL(event.target.files[0]);
         }
 
-        async function deleteP(id) {
-            if(confirm("Tfassakh?")) {
-                await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-                loadInventory();
+        async function habetProduct() {
+            const btn = document.getElementById('btn-submit');
+            const fileInput = document.getElementById('p-file');
+            
+            if(fileInput.files.length === 0) return alert("Ekhtar taswira 9bal!");
+            
+            btn.innerText = "UPLOADING TO CLOUD...";
+            btn.disabled = true;
+
+            try {
+                // 1. Upload to Cloudinary (Unsigned)
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const cloudData = await cloudRes.json();
+                const imageUrl = cloudData.secure_url;
+
+                // 2. Lemm el-Sizes m-cochiine
+                const selectedSizes = [];
+                document.querySelectorAll('.size-cb:checked').forEach(cb => selectedSizes.push(cb.value));
+
+                // 3. Ab3ath lel Backend
+                const productData = {
+                    name: document.getElementById('p-name').value,
+                    price: document.getElementById('p-price').value,
+                    description: document.getElementById('p-desc').value,
+                    image: imageUrl,
+                    sizes: selectedSizes
+                };
+
+                const res = await fetch('/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(productData)
+                });
+
+                if(res.ok) {
+                    alert("✅ Produit t-7at s7i7 f-el-site!");
+                    location.reload();
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Erreur! Thabbet f-el-Cloud Name wala el-Preset.");
+            } finally {
+                btn.innerText = "HABET EL-PRODUIT";
+                btn.disabled = false;
             }
         }
-
-        // Handle Submit
-        document.getElementById('productForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const sizes = Array.from(document.querySelectorAll('.size:checked')).map(c => c.value);
-            const data = {
-                name: document.getElementById('name').value,
-                price: document.getElementById('price').value,
-                description: document.getElementById('description').value,
-                image: document.getElementById('imageUrl').value,
-                sizes: sizes
-            };
-            await fetch(`${API_URL}/products`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            alert("Success!");
-            loadInventory();
-            e.target.reset();
-        };
-
-        loadInventory();
     </script>
 </body>
 </html>
