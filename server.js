@@ -2,158 +2,186 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
+const path = require('path');
 const app = express();
 
-// --- CONFIG CLOUDINARY ---
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_NAME,
-    api_key: process.env.CLOUDINARY_KEY,
-    api_secret: process.env.CLOUDINARY_SECRET
-});
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: { folder: 'val10_products', allowed_formats: ['jpg', 'png', 'jpeg'] }
-});
-const upload = multer({ storage: storage });
-
-// --- MIDDLEWARES ---
+// --- CONFIGURATION ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DATABASE ---
-const MONGOURI = process.env.MONGOURI || "mongodb+srv://val10:val10@cluster.mongodb.net/val10";
-mongoose.connect(MONGOURI).then(() => console.log('✅ VAL10 DB Connected'));
+// --- DATABASE (MONGODB) ---
+const MONGOURI = process.env.MONGOURI || "mongodb+srv://placeholder:placeholder@cluster.mongodb.net/val10?retryWrites=true&w=majority";
+
+mongoose.connect(MONGOURI)
+    .then(() => console.log('✅ MongoDB Connecté'))
+    .catch(err => console.error('❌ Erreur MongoDB:', err));
 
 // --- SCHEMAS ---
-const Product = mongoose.model('Product', new mongoose.Schema({
-    name: String, price: String, image: String, size: String, date: { type: Date, default: Date.now }
-}));
-const Order = mongoose.model('Order', new mongoose.Schema({
-    fullName: String, phone: String, productName: String, date: { type: Date, default: Date.now }
-}));
-
-// --- 1. PUBLIC SITE (SWIPE) ---
-app.get('/', async (req, res) => {
-    const products = await Product.find().sort({ date: -1 });
-    let html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>VAL10 STORE</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-            .swipe { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; padding: 20px; scrollbar-width: none; }
-            .card { min-width: 85vw; scroll-snap-align: center; background: #0a0a0a; border-radius: 20px; overflow: hidden; border: 1px solid #1a1a1a; }
-        </style>
-    </head>
-    <body class="bg-black text-white">
-        <header class="p-8 text-center"><h1 class="text-5xl font-black italic text-yellow-500 tracking-tighter">VAL10</h1></header>
-        <div class="swipe">
-            ${products.map(p => `
-                <div class="card shadow-2xl">
-                    <img src="${p.image}" class="w-full h-[400px] object-cover">
-                    <div class="p-6">
-                        <div class="flex justify-between items-start mb-2">
-                            <h2 class="text-2xl font-bold uppercase">${p.name}</h2>
-                            <span class="bg-yellow-500 text-black px-2 py-1 rounded text-[10px] font-black">${p.size}</span>
-                        </div>
-                        <p class="text-3xl font-black text-gray-200">${p.price} <span class="text-sm font-normal">DT</span></p>
-                        <button onclick="order('${p.name}')" class="w-full mt-6 bg-white text-black font-black py-4 rounded-xl active:scale-95 transition">BUY NOW</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-        <script>
-            function order(n){
-                let u=prompt("Full Name:"), p=prompt("Phone:");
-                if(u && p) fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName:u,phone:p,productName:n})}).then(()=>alert("✅ Done!"));
-            }
-        </script>
-    </body>
-    </html>`;
-    res.send(html);
+const ProductSchema = new mongoose.Schema({
+    name: String,
+    price: String,
+    image: String,
+    date: { type: Date, default: Date.now }
+});
+const OrderSchema = new mongoose.Schema({
+    fullName: String,
+    phone: String,
+    productName: String,
+    status: { type: String, default: 'Pending' },
+    date: { type: Date, default: Date.now }
 });
 
-// --- 2. ADMIN PANEL (WITH UPLOAD) ---
-app.get('/admin', async (req, res) => {
-    const auth = { user: 'admin', pass: process.env.ADMIN_PASS || 'val10boss' };
-    const b64 = (req.headers.authorization || '').split(' ')[1] || '';
-    const [u, p] = Buffer.from(b64, 'base64').toString().split(':');
+const Product = mongoose.model('Product', ProductSchema);
+const Order = mongoose.model('Order', OrderSchema);
 
-    if (u === auth.user && p === auth.pass) {
-        const prods = await Product.find().sort({ date: -1 });
-        const ords = await Order.find().sort({ date: -1 });
+// --- API ROUTES ---
+
+// Jib Produits
+app.get('/api/products', async (req, res) => {
+    const products = await Product.find().sort({ date: -1 });
+    res.json(products);
+});
+
+// A3mel Commande
+app.post('/api/order', async (req, res) => {
+    try {
+        const newOrder = new Order(req.body);
+        await newOrder.save();
+        res.json({ message: "Success" });
+    } catch (e) {
+        res.status(500).json({ error: "Erreur" });
+    }
+});
+
+// Route bech tfassakh commande
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        await Order.findByIdAndDelete(req.params.id); 
+        res.status(200).json({ message: "OK" });
+    } catch (err) {
+        res.status(500).json({ error: "Error" });
+    }
+});
+
+// --- ADMIN PANEL ---
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || "val10boss";
+
+app.get('/admin', async (req, res) => {
+    const auth = { login: 'admin', password: ADMIN_PASSWORD };
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+    if (login && password && login === auth.login && password === auth.password) {
+        const products = await Product.find().sort({ date: -1 });
+        const orders = await Order.find().sort({ date: -1 });
 
         let html = `
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>VAL10 ADMIN</title>
             <script src="https://cdn.tailwindcss.com"></script>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
         </head>
-        <body class="bg-gray-950 text-white p-4">
-            <h1 class="text-yellow-500 font-black text-2xl mb-6">VAL10 DASHBOARD</h1>
+        <body class="bg-gray-900 text-white min-h-screen p-6 font-sans">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                    <h1 class="text-3xl font-bold tracking-widest">VAL10 CONTROL</h1>
+                    <span class="bg-green-600 px-3 py-1 rounded text-xs font-bold">ONLINE</span>
+                </div>
 
-            <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 mb-8">
-                <h2 class="text-xs font-bold text-gray-500 uppercase mb-4 tracking-widest">Add New Drop</h2>
-                <form action="/admin/add" method="POST" enctype="multipart/form-data" class="grid gap-4">
-                    <input name="name" placeholder="Product Name" class="bg-black p-3 rounded-lg border border-gray-700" required>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input name="price" placeholder="Price (ex: 85)" class="bg-black p-3 rounded-lg border border-gray-700" required>
-                        <input name="size" placeholder="Size (ex: S,M,L)" class="bg-black p-3 rounded-lg border border-gray-700" required>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-yellow-500 flex justify-between">
+                            COMMANDES RÉCENTES
+                            <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">${orders.length} TOTAL</span>
+                        </h2>
+                        <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                            ${orders.map(o => `
+                                <div class="bg-gray-800 p-4 rounded border-l-4 border-yellow-500 shadow-md">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="font-bold text-lg">${o.fullName}</p>
+                                            <p class="text-gray-400 text-sm font-mono">${o.phone}</p>
+                                        </div>
+                                        <span class="text-xs text-gray-500">${new Date(o.date).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
+                                        <p class="text-white font-medium">${o.productName}</p>
+                                        <div class="flex gap-3">
+                                            <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation..." target="_blank" class="text-green-400 text-xs hover:underline font-bold">WHATSAPP</a>
+                                            <button onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline font-bold">FASSAKH ✕</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${orders.length === 0 ? '<p class="text-gray-600 italic">Aucune commande.</p>' : ''}
+                        </div>
                     </div>
-                    <label class="bg-gray-800 border-2 border-dashed border-gray-700 p-4 rounded-lg text-center cursor-pointer hover:border-yellow-500">
-                        <span class="text-gray-400">Click to Upload Photo</span>
-                        <input type="file" name="image" class="hidden" required>
-                    </label>
-                    <button class="bg-yellow-500 text-black font-black py-4 rounded-xl uppercase">Publish Product</button>
-                </form>
-            </div>
 
-            <div class="grid gap-8">
-                <div>
-                    <h3 class="text-blue-500 font-bold mb-4 uppercase text-xs">Orders (${ords.length})</h3>
-                    <div class="grid gap-2">
-                        ${ords.map(o => `<div class="bg-black p-4 rounded-lg flex justify-between items-center border border-gray-900">
-                            <div><p class="font-bold text-sm">${o.fullName}</p><p class="text-yellow-500 text-xs">${o.phone}</p></div>
-                            <button onclick="delO('${o._id}')" class="text-red-500 text-xs">✕</button>
-                        </div>`).join('')}
+                    <div>
+                        <h2 class="text-xl font-bold mb-4 text-blue-500">STOCK EN LIGNE</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${products.map(p => `
+                                <div class="bg-gray-800 p-3 rounded border border-gray-700 relative group">
+                                    <div class="h-40 overflow-hidden rounded mb-2 bg-black">
+                                        <img src="${p.image}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">
+                                    </div>
+                                    <h3 class="font-bold text-sm truncate">${p.name}</h3>
+                                    <p class="text-gray-400 text-xs mb-2">${p.price}</p>
+                                    <form action="/admin/delete" method="POST" class="absolute top-2 right-2">
+                                        <input type="hidden" name="id" value="${p._id}">
+                                        <button type="submit" class="bg-red-500/80 hover:bg-red-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs shadow-lg">✕</button>
+                                    </form>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             </div>
+
             <script>
-                async function delO(id){ if(confirm('Delete?')){ await fetch('/api/orders/'+id,{method:'DELETE'}); location.reload(); }}
+                async function deleteOrder(id) {
+                    if(confirm('Bech tfassakh el commande hadhi?')) {
+                        try {
+                            const res = await fetch('/api/orders/' + id, { method: 'DELETE' });
+                            if(res.ok) {
+                                alert('✅ Commande t-fasskhet!');
+                                location.reload();
+                            } else {
+                                alert('❌ Ma najemtech nfassakh');
+                            }
+                        } catch(err) {
+                            alert('❌ Erreur Connexion');
+                        }
+                    }
+                }
             </script>
         </body>
-        </html>`;
+        </html>
+        `;
         res.send(html);
         return;
     }
+
     res.set('WWW-Authenticate', 'Basic realm="401"');
-    res.status(401).send('Admin Access Only');
+    res.status(401).send('Authentication required.');
 });
 
-// --- API & ACTIONS ---
-app.post('/admin/add', upload.single('image'), async (req, res) => {
-    try {
-        await new Product({
-            name: req.body.name,
-            price: req.body.price,
-            size: req.body.size,
-            image: req.file.path // URL mta3 Cloudinary
-        }).save();
-        res.redirect('/admin');
-    } catch(e) { res.send("Error: " + e.message); }
+// ACTIONS ADMIN
+app.post('/admin/add', async (req, res) => {
+    await new Product(req.body).save();
+    res.redirect('/admin');
 });
 
-app.post('/api/order', async (req, res) => { await new Order(req.body).save(); res.json({ok:true}); });
-app.delete('/api/orders/:id', async (req, res) => { await Order.findByIdAndDelete(req.params.id); res.json({ok:true}); });
+app.post('/admin/delete', async (req, res) => {
+    await Product.findByIdAndDelete(req.body.id);
+    res.redirect('/admin');
+});
 
+// START
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log('🚀 VAL10 CLOUD READY'));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
