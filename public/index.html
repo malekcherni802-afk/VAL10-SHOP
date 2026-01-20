@@ -15,6 +15,9 @@
                     fontFamily: { 
                         'gothic': ['"Pirata One"', 'cursive'], 
                         'body': ['"Syne"', 'sans-serif'] 
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -32,71 +35,106 @@
             letter-spacing: 0.1em;
         }
         .fade-in { 
-            animation: fadeIn 1s ease-in-out; 
+            animation: fadeIn 1.2s ease-out forwards; 
         }
         @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(20px); } 
+            from { opacity: 0; transform: translateY(30px); } 
             to { opacity: 1; transform: translateY(0); } 
         }
-        .product-card:hover img { 
-            transform: scale(1.05); 
-            transition: transform 0.5s ease;
+        .product-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-10px);
         }
         .product-card img {
-            transition: transform 0.5s ease, opacity 0.5s ease;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .selection\:bg-white::selection { background-color: white; }
-        .selection\:text-black::selection { color: black; }
+        .product-card:hover img {
+            transform: scale(1.1);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
-    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex justify-between items-center">
-            <h1 class="text-3xl sm:text-5xl gothic-text tracking-widest cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/'">VAL10</h1>
-            <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white px-4 sm:px-6 py-2 hover:bg-white hover:text-black transition duration-300 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
-                COLLECTION 2026
-            </button>
+    <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">
+                VAL10
+            </h1>
+            <div class="flex items-center gap-8">
+                <button class="hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-500 hover:text-white transition">Archive</button>
+                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
+                    COLLECTION 2026
+                </button>
+            </div>
         </div>
     </nav>
 
-    <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden pt-16">
-        <div class="absolute inset-0 z-0 opacity-40">
+    <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-black/60 z-10"></div>
             <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop" 
-                 class="w-full h-full object-cover grayscale"
-                 alt="VAL10 Hero Background">
+                 class="w-full h-full object-cover grayscale scale-110 animate-pulse-slow"
+                 alt="VAL10 Hero">
         </div>
-        <div class="z-10 fade-in px-4 max-w-4xl mx-auto">
-            <h2 class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-extrabold uppercase tracking-tighter mb-4 sm:mb-6 leading-none">
+        
+        <div class="z-20 fade-in px-4">
+            <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
+            <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
                 Define <br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white">Your Ego</span>
+                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800">Your Ego</span>
             </h2>
-            <a href="#shop" 
-               class="bg-white text-black px-8 sm:px-10 py-3 sm:py-4 font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition duration-300 mt-8 sm:mt-10 inline-block tracking-widest">
-                EXPLORE DROP
-            </a>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="#shop" class="bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">
+                    Explore Drop
+                </a>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+            <div class="w-[1px] h-12 bg-gradient-to-b from-white to-transparent"></div>
         </div>
     </header>
 
-    <main id="shop" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
-        <div class="flex justify-between items-end mb-12 sm:mb-16">
-            <h3 class="text-2xl sm:text-4xl gothic-text text-gray-200 uppercase">Latest Collection</h3>
-            <span class="text-xs text-gray-500 hidden sm:block italic">Scroll to discover</span>
+    <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-4">
+            <div>
+                <h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3>
+                <p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p>
+            </div>
+            <div class="h-[1px] flex-1 bg-white/10 mx-10 hidden md:block mb-4"></div>
+            <span class="text-[10px] text-gray-400 tracking-widest uppercase italic">Drop 1.0</span>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10" id="product-grid">
-            <p class="text-gray-500 text-center w-full col-span-full py-10 uppercase text-[10px] tracking-[0.3em]">Syncing Archive...</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
+            <div class="col-span-full flex flex-col items-center py-20">
+                <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+                <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Syncing Archive...</p>
+            </div>
         </div>
     </main>
 
-    <footer class="border-t border-white/5 py-10 text-center">
-        <p class="text-[10px] text-gray-600 tracking-[0.5em] uppercase">© VAL10 STUDIO ALL RIGHTS RESERVED</p>
+    <footer class="border-t border-white/5 py-20 bg-black">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
+            <h4 class="gothic-text text-4xl mb-8 tracking-widest">VAL10</h4>
+            <div class="flex gap-8 mb-12 text-[10px] tracking-[0.3em] uppercase text-gray-500">
+                <a href="#" class="hover:text-white transition">Instagram</a>
+                <a href="#" class="hover:text-white transition">Privacy</a>
+                <a href="#" class="hover:text-white transition">Terms</a>
+            </div>
+            <p class="text-[9px] text-gray-700 tracking-[0.5em] uppercase">© 2026 VAL10 STUDIO. ALL RIGHTS RESERVED.</p>
+        </div>
     </footer>
 
     <script>
-        const grid = document.getElementById('product-grid');
-
         async function fetchProducts() {
+            const grid = document.getElementById('product-grid');
             try {
                 const response = await fetch('/api/products');
                 const products = await response.json();
@@ -104,35 +142,45 @@
                 grid.innerHTML = '';
                 
                 if (!products || products.length === 0) {
-                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-10 uppercase tracking-widest text-[10px]">No Drops Found</p>';
+                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-20 uppercase tracking-[0.5em] text-xs">Archive Empty</p>';
                     return;
                 }
 
                 products.reverse().forEach(product => {
-                    const imgUrl = (product.images && product.images.length > 0) ? product.images[0] : (product.image || 'https://via.placeholder.com/400x500?text=VAL10');
+                    // Logic meryoula lel-tsawer
+                    let imgUrl = "";
+                    if (product.images && product.images.length > 0) {
+                        imgUrl = product.images[0];
+                    } else {
+                        imgUrl = product.image || 'https://via.placeholder.com/600x800/111/333?text=VAL10';
+                    }
                     
                     const card = document.createElement('div');
                     card.className = "group cursor-pointer fade-in product-card";
                     card.onclick = () => { window.location.href = `product.html?id=${product._id}`; };
                     
                     card.innerHTML = `
-                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-4 sm:mb-6 border border-white/5">
-                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-700" loading="lazy">
-                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60">
-                                <span class="bg-white text-black px-4 sm:px-6 py-2 font-bold text-[10px] tracking-widest uppercase">VIEW DETAILS</span>
+                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5">
+                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0" loading="lazy">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                                <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                    <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center px-1">
-                            <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200 truncate pr-2">${product.name}</h3>
-                            <span class="text-white font-mono text-sm whitespace-nowrap">${product.price} DT</span>
+                        <div class="px-2">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100">${product.name}</h3>
+                                <span class="font-mono text-gray-400">${product.price} DT</span>
+                            </div>
+                            <p class="text-[9px] tracking-[0.2em] text-gray-600 uppercase">Limited Edition Drop</p>
                         </div>
-                        ${product.sizes && product.sizes.length > 0 ? 
-                            `<p class="text-[10px] text-gray-500 mt-2 px-1 tracking-wider uppercase">Sizes: ${product.sizes.join(', ')}</p>` : ''}
                     `;
                     grid.appendChild(card);
                 });
             } catch (error) {
-                grid.innerHTML = '<p class="text-red-900 text-center w-full col-span-full py-10 text-[10px] uppercase tracking-widest">Server Error</p>';
+                console.error("Error:", error);
+                grid.innerHTML = '<p class="text-red-900 text-center w-full col-span-full py-20 text-[10px] uppercase tracking-widest">Archive Connection Error</p>';
             }
         }
 
