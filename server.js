@@ -95,16 +95,10 @@ app.get('/admin', async (req, res) => {
                     <h1 class="text-3xl font-bold tracking-widest">VAL10 CONTROL</h1>
                     <span class="bg-green-600 px-3 py-1 rounded text-xs font-bold">ONLINE</span>
                 </div>
-
-                <div class="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg border border-gray-700">
-                    <h2 class="text-xl font-bold mb-4 text-gray-300">NOUVEAU DROP</h2>
-                    <form action="/admin/add" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input type="text" name="name" placeholder="Nom du Produit" class="bg-gray-900 border border-gray-600 p-3 rounded text-white focus:border-white outline-none" required>
-                        <input type="text" name="price" placeholder="Prix (ex: 120 TND)" class="bg-gray-900 border border-gray-600 p-3 rounded text-white focus:border-white outline-none" required>
-                        <input type="text" name="image" placeholder="Lien Image (URL)" class="bg-gray-900 border border-gray-600 p-3 rounded text-white focus:border-white outline-none" required>
-                        <button type="submit" class="bg-white text-black font-bold uppercase tracking-widest hover:bg-gray-200 transition">Ajouter</button>
-                    </form>
-                </div>
+          <div class="flex gap-2">
+                  <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation commande ${o.productName}..." target="_blank" class="text-green-400 text-xs hover:underline">WHATSAPP ↗</a>
+                 <button onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline ml-2">FAKKAKH ✕</button>
+               </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
@@ -124,7 +118,10 @@ app.get('/admin', async (req, res) => {
                                     </div>
                                     <div class="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
                                         <p class="text-white font-medium">${o.productName}</p>
-                                        <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation commande ${o.productName}..." target="_blank" class="text-green-400 text-xs hover:underline">WHATSAPP ↗</a>
+                                        <div class="flex gap-2">
+    <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation..." target="_blank" class="text-green-400 text-xs hover:underline">WHATSAPP</a>
+    <button type="button" onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline ml-2">FASSAKH ✕</button>
+</div>
                                     </div>
                                 </div>
                             `).join('')}
@@ -152,8 +149,17 @@ app.get('/admin', async (req, res) => {
                     </div>
                 </div>
             </div>
+            <script>
+            async function deleteOrder(id) {
+                if(confirm('Bech tfassakh el commande hadhi?')) {
+                    const res = await fetch('/api/orders/' + id, { method: 'DELETE' });
+                    if(res.ok) { alert('✅ OK'); location.reload(); }
+                }
+            }
+        </script>
         </body>
         </html>
+        
         `;
         res.send(html);
         return;
