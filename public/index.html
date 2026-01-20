@@ -6,23 +6,6 @@
     <title>VAL10 | Underground Luxury</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { 
-                        'gothic': ['"Pirata One"', 'cursive'], 
-                        'body': ['"Syne"', 'sans-serif'] 
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body { 
             background-color: #050505; 
@@ -53,7 +36,6 @@
         .product-card:hover img {
             transform: scale(1.1);
         }
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #050505; }
         ::-webkit-scrollbar-thumb { background: #333; }
@@ -61,7 +43,6 @@
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
-
     <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
             <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">
@@ -80,7 +61,7 @@
         <div class="absolute inset-0 z-0">
             <div class="absolute inset-0 bg-black/60 z-10"></div>
             <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop" 
-                 class="w-full h-full object-cover grayscale scale-110 animate-pulse-slow"
+                 class="w-full h-full object-cover grayscale scale-110"
                  alt="VAL10 Hero">
         </div>
         
@@ -115,7 +96,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
             <div class="col-span-full flex flex-col items-center py-20">
                 <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-                <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Syncing Archive...</p>
+                <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
             </div>
         </div>
     </main>
@@ -136,8 +117,15 @@
         async function fetchProducts() {
             const grid = document.getElementById('product-grid');
             try {
+                console.log('🔄 Fetching products...');
                 const response = await fetch('/api/products');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const products = await response.json();
+                console.log(`✅ Loaded ${products.length} products`);
                 
                 grid.innerHTML = '';
                 
@@ -146,22 +134,22 @@
                     return;
                 }
 
-                products.reverse().forEach(product => {
-                    // Logic meryoula lel-tsawer
-                    let imgUrl = "";
+                products.forEach(product => {
+                    let imgUrl = "https://via.placeholder.com/600x800/111/333?text=VAL10";
                     if (product.images && product.images.length > 0) {
                         imgUrl = product.images[0];
-                    } else {
-                        imgUrl = product.image || 'https://via.placeholder.com/600x800/111/333?text=VAL10';
                     }
                     
                     const card = document.createElement('div');
                     card.className = "group cursor-pointer fade-in product-card";
-                    card.onclick = () => { window.location.href = `product.html?id=${product._id}`; };
+                    card.onclick = () => { 
+                        console.log(`Opening product: ${product._id}`);
+                        window.location.href = `/product?id=${product._id}`; 
+                    };
                     
                     card.innerHTML = `
                         <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5">
-                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0" loading="lazy">
+                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" loading="lazy" alt="${product.name}">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                                 <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                                     <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
@@ -170,17 +158,26 @@
                         </div>
                         <div class="px-2">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100">${product.name}</h3>
+                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${product.name}</h3>
                                 <span class="font-mono text-gray-400">${product.price} DT</span>
                             </div>
                             <p class="text-[9px] tracking-[0.2em] text-gray-600 uppercase">Limited Edition Drop</p>
+                            ${product.sizes && product.sizes.length > 0 ? 
+                                `<p class="text-[8px] text-yellow-600 mt-2">Sizes: ${product.sizes.join(', ')}</p>` : ''}
                         </div>
                     `;
                     grid.appendChild(card);
                 });
             } catch (error) {
-                console.error("Error:", error);
-                grid.innerHTML = '<p class="text-red-900 text-center w-full col-span-full py-20 text-[10px] uppercase tracking-widest">Archive Connection Error</p>';
+                console.error("❌ Error loading products:", error);
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-20">
+                        <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
+                        <p class="text-gray-600 text-[9px]">${error.message}</p>
+                        <button onclick="fetchProducts()" class="mt-4 text-[10px] text-gray-500 hover:text-white uppercase tracking-widest">
+                            Retry
+                        </button>
+                    </div>`;
             }
         }
 

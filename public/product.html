@@ -26,7 +26,6 @@
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
-
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
             <h1 class="text-3xl gothic-text cursor-pointer uppercase hover:opacity-70 transition" onclick="window.location.href='/'">VAL10</h1>
@@ -36,11 +35,11 @@
 
     <main class="pt-32 pb-20 max-w-7xl mx-auto px-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-            
             <div class="space-y-4 fade-in">
                 <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden">
                     <div class="swiper-wrapper" id="image-wrapper">
-                        </div>
+                        <!-- Images will be loaded here -->
+                    </div>
                     <div class="swiper-pagination"></div>
                 </div>
                 <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic">Swipe to view details</p>
@@ -66,7 +65,8 @@
                         <button class="text-[9px] text-gray-600 underline uppercase tracking-widest">Size Guide</button>
                     </div>
                     <div id="size-container" class="flex flex-wrap gap-3">
-                        </div>
+                        <!-- Sizes will be loaded here -->
+                    </div>
                 </div>
 
                 <button onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
@@ -108,74 +108,161 @@
 
         async function loadProduct() {
             try {
-                const res = await fetch(`/api/products/${productId}`);
-                currentProduct = await res.json();
+                console.log(`📦 Loading product: ${productId}`);
                 
+                if (!productId) {
+                    throw new Error('No product ID provided');
+                }
+
+                const res = await fetch(`/api/products/${productId}`);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                
+                currentProduct = await res.json();
+                console.log('✅ Product loaded:', currentProduct);
+                
+                // Update page title
                 document.title = `VAL10 | ${currentProduct.name}`;
+                
+                // Update product info
                 document.getElementById('p-name').innerText = currentProduct.name;
                 document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
                 document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED FOR THIS PIECE.";
-
+                
                 // Render Images
                 const wrapper = document.getElementById('image-wrapper');
-                const imgs = currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images : [currentProduct.image];
+                let imgs = [];
+                
+                if (currentProduct.images && currentProduct.images.length > 0) {
+                    imgs = currentProduct.images;
+                } else {
+                    imgs = ['https://via.placeholder.com/800/111/333?text=VAL10'];
+                }
+                
                 wrapper.innerHTML = imgs.map(img => `
-                    <div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale"></div>
+                    <div class="swiper-slide">
+                        <img src="${img}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500" alt="${currentProduct.name}">
+                    </div>
                 `).join('');
-
-                new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true } });
-
-                // Render Sizes (EL-TASLI7)
+                
+                // Initialize Swiper
+                new Swiper(".mySwiper", { 
+                    pagination: { 
+                        el: ".swiper-pagination", 
+                        clickable: true 
+                    },
+                    loop: imgs.length > 1,
+                    autoplay: imgs.length > 1 ? {
+                        delay: 3000,
+                        disableOnInteraction: false,
+                    } : false
+                });
+                
+                // Render Sizes
                 const sizeContainer = document.getElementById('size-container');
                 if (currentProduct.sizes && currentProduct.sizes.length > 0) {
                     sizeContainer.innerHTML = currentProduct.sizes.map(s => `
                         <button onclick="selectSize(this, '${s}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s}</button>
                     `).join('');
+                    
+                    // Auto-select first size
+                    if (currentProduct.sizes.length > 0) {
+                        setTimeout(() => {
+                            const firstBtn = sizeContainer.querySelector('.size-btn');
+                            if (firstBtn) {
+                                selectSize(firstBtn, currentProduct.sizes[0]);
+                            }
+                        }, 100);
+                    }
                 } else {
                     sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
                     selectedSize = 'One Size';
                 }
-            } catch (e) { console.error(e); }
+            } catch (error) {
+                console.error('❌ Error loading product:', error);
+                document.getElementById('p-name').innerText = 'Product Not Found';
+                document.getElementById('p-desc').innerText = 'This product may have been removed or does not exist.';
+            }
         }
-
+        
         function selectSize(btn, size) {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedSize = size;
+            console.log(`✅ Selected size: ${size}`);
         }
-
+        
         function openModal() {
-            if (!selectedSize && currentProduct.sizes?.length > 0) return alert("SELECT DIMENSIONS FIRST.");
+            if (!selectedSize && currentProduct.sizes?.length > 0) {
+                alert("SELECT DIMENSIONS FIRST.");
+                return;
+            }
+            
+            console.log(`Opening order modal for: ${currentProduct.name}, Size: ${selectedSize}`);
             document.getElementById('modal').classList.remove('hidden');
         }
-
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-
+        
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+        
         async function submitOrder() {
-            const name = document.getElementById('cust-name').value;
-            const phone = document.getElementById('cust-phone').value;
-            const addr = document.getElementById('cust-addr').value;
-
-            if (!name || !phone || !addr) return alert("COMPLETE ALL FIELDS.");
-
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const addr = document.getElementById('cust-addr').value.trim();
+            
+            if (!name || !phone || !addr) {
+                alert("COMPLETE ALL FIELDS.");
+                return;
+            }
+            
+            if (!currentProduct) {
+                alert("PRODUCT NOT LOADED. TRY AGAIN.");
+                return;
+            }
+            
             try {
+                console.log('📤 Submitting order...');
+                const orderData = {
+                    customerName: name,
+                    customerPhone: phone,
+                    customerAddress: addr,
+                    productName: currentProduct.name,
+                    size: selectedSize,
+                    totalPrice: currentProduct.price
+                };
+                
+                console.log('Order data:', orderData);
+                
                 const res = await fetch('/api/orders', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        customerName: name,
-                        customerPhone: phone,
-                        customerAddress: addr,
-                        productName: currentProduct.name,
-                        size: selectedSize,
-                        totalPrice: currentProduct.price
-                    })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
                 });
-                if (res.ok) { alert("ARCHIVE SECURED. WE WILL CONTACT YOU."); window.location.href = "/"; }
-            } catch (e) { alert("SYSTEM ERROR."); }
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Server error: ${res.status} - ${errorText}`);
+                }
+                
+                const result = await res.json();
+                console.log('✅ Order submitted:', result);
+                
+                alert("ARCHIVE SECURED. WE WILL CONTACT YOU SOON.");
+                window.location.href = "/";
+            } catch (error) {
+                console.error('❌ Order error:', error);
+                alert(`SYSTEM ERROR: ${error.message}`);
+            }
         }
-
-        loadProduct();
+        
+        // Load product when page loads
+        window.onload = loadProduct;
     </script>
 </body>
 </html>
