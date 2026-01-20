@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 1. EL-FIX EL-ASLI: Bech ya9ra el-tsawer wel-fichiét mel-dossier public
+// 1. SERVIR LES FICHIERS DEPUIS "PUBLIC"
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- DATABASE (MONGODB) ---
@@ -20,7 +20,7 @@ mongoose.connect(MONGOURI)
     .then(() => console.log('✅ MongoDB Connecté'))
     .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// --- SCHEMAS (L-DATABASE) ---
+// --- SCHEMAS ---
 const ProductSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: String, required: true },
@@ -42,86 +42,71 @@ const OrderSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', ProductSchema);
 const Order = mongoose.model('Order', OrderSchema);
 
-// --- ROUTES PAGES (Customer & Admin) ---
+// --- ROUTES POUR LES PAGES (FIX "NOT FOUND") ---
 
-// El-Index (Klayen)
+// Vitrine
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// El-Product (Swipe page)
+// Fix "View Details" -> Product Page
 app.get('/product.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'product.html'));
 });
 
-// El-Admin (Direct access)
+// Admin Panel Secure
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || "val10boss";
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    const auth = { login: 'admin', password: ADMIN_PASSWORD };
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+    if (login && password && login === auth.login && password === auth.password) {
+        return res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    }
+    res.set('WWW-Authenticate', 'Basic realm="401"');
+    res.status(401).send('Athentication required.');
 });
 
-// --- API ROUTES (EL-MOKH MTE3 EL-SITE) ---
+// --- API ROUTES ---
 
 // Jib el-sela el-kol
 app.get('/api/products', async (req, res) => {
-    try {
-        const products = await Product.find().sort({ date: -1 });
-        res.json(products);
-    } catch (err) {
-        res.status(500).json({ error: "Erreur fetch" });
-    }
+    const products = await Product.find().sort({ date: -1 });
+    res.json(products);
 });
 
-// Jib meryoul wahed (Lel-Swipe)
+// Jib meryoul wahed b-el-ID (Lel-Swipe Page)
 app.get('/api/products/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
+        if(!product) return res.status(404).json({message: "Not Found"});
         res.json(product);
     } catch (err) {
-        res.status(404).json({ error: "Meryoul mouch mawjoud" });
+        res.status(400).json({message: "Invalid ID"});
     }
 });
 
-// Zid meryoul jdid (Mel-Admin)
+// Ajouter produit
 app.post('/api/products', async (req, res) => {
-    try {
-        const newProduct = new Product(req.body);
-        await newProduct.save();
-        res.status(201).json(newProduct);
-    } catch (err) {
-        res.status(500).json({ error: "Ghalta f-el-zid" });
-    }
+    const newProduct = new Product(req.body);
+    await newProduct.save();
+    res.json(newProduct);
 });
 
-// Ab3ath commande jdid
+// Passer commande
 app.post('/api/order', async (req, res) => {
-    try {
-        const newOrder = new Order(req.body);
-        await newOrder.save();
-        res.json({ message: "Order Success" });
-    } catch (e) {
-        res.status(500).json({ error: "Ghalta f-el-commande" });
-    }
+    const newOrder = new Order(req.body);
+    await newOrder.save();
+    res.json({ message: "Success" });
 });
 
-// Fassakh sela
+// Supprimer produit
 app.delete('/api/products/:id', async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Supprimé" });
+    res.json({ message: "Deleted" });
 });
 
-// Fassakh commande
-app.delete('/api/orders/:id', async (req, res) => {
-    await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: "Order Supprimé" });
-});
-
-// --- START SERVER ---
+// --- START ---
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`
-    🚀 VAL10 SERVER IS LIVE
-    -----------------------
-    Index:  http://localhost:${PORT}/
-    Admin:  http://localhost:${PORT}/admin
-    `);
-});
+app.listen(PORT, () => console.log(`🚀 VAL10 SERVER LIVE ON PORT ${PORT}`));

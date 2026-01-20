@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAL10 | Product Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; }
+        .gothic-text { font-family: 'Pirata One', cursive; letter-spacing: 0.1em; }
+        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <nav class="p-6 border-b border-white/10 flex justify-between items-center">
+        <h1 class="text-3xl gothic-text cursor-pointer" onclick="window.location.href='/'">VAL10</h1>
+        <a href="/" class="text-[10px] tracking-[0.3em] uppercase opacity-50 hover:opacity-100">← Return</a>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div class="aspect-[3/4] bg-zinc-900 border border-white/10 overflow-hidden">
+            <img id="p-image" src="" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-700">
+        </div>
+
+        <div class="flex flex-col">
+            <h2 id="p-name" class="text-5xl font-extrabold uppercase tracking-tighter mb-2 italic">Loading...</h2>
+            <p id="p-price" class="text-2xl font-mono text-gray-400 mb-8"></p>
+            
+            <div class="glass p-6 mb-8">
+                <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Description</p>
+                <p id="p-desc" class="text-sm text-gray-300 leading-relaxed"></p>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Select Size</p>
+                <div id="size-container" class="flex gap-3 mb-8"></div>
+
+                <div class="space-y-4 pt-4">
+                    <input type="text" id="fullName" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/20 py-3 outline-none focus:border-white transition">
+                    <input type="text" id="phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/20 py-3 outline-none focus:border-white transition">
+                    
+                    <button onclick="sendOrder()" class="w-full bg-white text-black py-5 font-bold uppercase tracking-[0.2em] hover:bg-gray-200 transition duration-300 mt-6">
+                        Confirm Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+        let selectedSize = '';
+
+        async function loadProduct() {
+            try {
+                const res = await fetch(`/api/products/${productId}`);
+                const p = await res.json();
+                
+                document.getElementById('p-image').src = p.image;
+                document.getElementById('p-name').innerText = p.name;
+                document.getElementById('p-price').innerText = p.price + ' DT';
+                document.getElementById('p-desc').innerText = p.description || 'No description provided.';
+
+                const sizeBox = document.getElementById('size-container');
+                if(p.sizes) {
+                    p.sizes.forEach(s => {
+                        const btn = document.createElement('button');
+                        btn.innerText = s;
+                        btn.className = "w-12 h-12 border border-white/20 flex items-center justify-center text-xs font-bold hover:border-white transition";
+                        btn.onclick = () => {
+                            document.querySelectorAll('#size-container button').forEach(b => b.classList.remove('bg-white', 'text-black'));
+                            btn.classList.add('bg-white', 'text-black');
+                            selectedSize = s;
+                        };
+                        sizeBox.appendChild(btn);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading product");
+            }
+        }
+
+        async function sendOrder() {
+            const fullName = document.getElementById('fullName').value;
+            const phone = document.getElementById('phone').value;
+            const pName = document.getElementById('p-name').innerText;
+
+            if(!fullName || !phone || !selectedSize) {
+                alert('Please fill all fields and select a size.');
+                return;
+            }
+
+            const res = await fetch('/api/order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ fullName, phone, productName: pName, size: selectedSize })
+            });
+
+            if(res.ok) alert('✅ Order Sent Successfully!');
+        }
+
+        loadProduct();
+    </script>
+</body>
+</html>

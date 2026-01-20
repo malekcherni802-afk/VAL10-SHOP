@@ -13,89 +13,183 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { 'gothic': ['"Pirata One"', 'cursive'], 'body': ['"Syne"', 'sans-serif'] }
+                    fontFamily: { 
+                        'gothic': ['"Pirata One"', 'cursive'], 
+                        'body': ['"Syne"', 'sans-serif'] 
+                    }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; }
-        .gothic-text { font-family: 'Pirata One', cursive; }
-        .fade-in { animation: fadeIn 1s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .product-card:hover img { transform: scale(1.05); }
+        body { 
+            background-color: #050505; 
+            color: #ffffff; 
+            font-family: 'Syne', sans-serif; 
+            overflow-x: hidden;
+        }
+        .gothic-text { 
+            font-family: 'Pirata One', cursive; 
+            letter-spacing: 0.1em;
+        }
+        .fade-in { 
+            animation: fadeIn 1s ease-in-out; 
+        }
+        @keyframes fadeIn { 
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            } 
+        }
+        .product-card:hover img { 
+            transform: scale(1.05); 
+            transition: transform 0.5s ease;
+        }
+        .product-card img {
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        .selection\\:bg-white::selection {
+            background-color: white;
+        }
+        .selection\\:text-black::selection {
+            color: black;
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
+    <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-            <h1 class="text-5xl gothic-text tracking-widest cursor-pointer" onclick="window.location.href='index.html'">VAL10</h1>
-            <button class="text-sm font-bold tracking-widest border border-white px-6 py-2 hover:bg-white hover:text-black transition uppercase" onclick="toggleAdmin()">ADMIN</button>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex justify-between items-center">
+            <h1 class="text-3xl sm:text-5xl gothic-text tracking-widest cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='index.html'">VAL10</h1>
+            <button class="text-xs sm:text-sm font-bold tracking-widest border border-white px-4 sm:px-6 py-2 hover:bg-white hover:text-black transition duration-300 uppercase" onclick="toggleAdmin()">ADMIN</button>
         </div>
     </nav>
 
-    <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
+    <!-- Hero Section -->
+    <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden pt-16">
         <div class="absolute inset-0 z-0 opacity-40">
-            <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover grayscale">
+            <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop" 
+                 class="w-full h-full object-cover grayscale"
+                 alt="VAL10 Hero Background">
         </div>
-        <div class="z-10 fade-in px-4">
-            <h2 class="text-6xl md:text-9xl font-extrabold uppercase tracking-tighter mb-4 leading-none">Define <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white">Your Ego</span></h2>
-            <a href="#shop" class="bg-white text-black px-10 py-4 font-bold text-lg hover:scale-105 transition duration-300 mt-10 inline-block tracking-widest">EXPLORE DROP</a>
+        <div class="z-10 fade-in px-4 max-w-4xl mx-auto">
+            <h2 class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-extrabold uppercase tracking-tighter mb-4 sm:mb-6 leading-none">
+                Define <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white">Your Ego</span>
+            </h2>
+            <a href="#shop" 
+               class="bg-white text-black px-8 sm:px-10 py-3 sm:py-4 font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition duration-300 mt-8 sm:mt-10 inline-block tracking-widest">
+                EXPLORE DROP
+            </a>
         </div>
     </header>
 
-    <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
-        <div class="flex justify-between items-end mb-16">
-            <h3 class="text-4xl gothic-text text-gray-200 uppercase">Latest Collection</h3>
+    <!-- Shop Section -->
+    <main id="shop" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
+        <div class="flex justify-between items-end mb-12 sm:mb-16">
+            <h3 class="text-2xl sm:text-4xl gothic-text text-gray-200 uppercase">Latest Collection</h3>
+            <span class="text-xs text-gray-500 hidden sm:block">Click to view details</span>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="product-grid">
-            <p class="text-gray-500 text-center w-full col-span-full">Loading Collection...</p>
+        <!-- Products Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10" id="product-grid">
+            <p class="text-gray-500 text-center w-full col-span-full py-10">Loading Collection...</p>
         </div>
     </main>
 
-    <section id="adminSection" class="max-w-7xl mx-auto px-6 py-32 hidden border-t border-white/10">
-        <h3 class="text-4xl gothic-text text-gray-200 mb-8">ADMIN PANEL</h3>
-        <form id="productForm" class="space-y-6 bg-[#0a0a0a] border border-white/20 p-8 mb-20">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Admin Section -->
+    <section id="adminSection" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-32 hidden border-t border-white/10">
+        <h3 class="text-2xl sm:text-4xl gothic-text text-gray-200 mb-6 sm:mb-8">ADMIN PANEL</h3>
+        
+        <!-- Add Product Form -->
+        <form id="productForm" class="space-y-6 bg-[#0a0a0a] border border-white/20 p-6 sm:p-8 mb-12 sm:mb-20">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Product Name</label>
-                    <input type="text" id="productNameInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white">
+                    <input type="text" 
+                           id="productNameInput" 
+                           required 
+                           class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white placeholder-gray-600"
+                           placeholder="Enter product name">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Price (DT)</label>
-                    <input type="number" id="priceInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white">
+                    <input type="number" 
+                           id="priceInput" 
+                           required 
+                           class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white placeholder-gray-600"
+                           placeholder="0.00"
+                           min="0"
+                           step="0.01">
                 </div>
             </div>
+            
             <div>
                 <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Description</label>
-                <textarea id="descriptionInput" required class="w-full bg-transparent border-b border-gray-700 py-2 outline-none focus:border-white text-white resize-none h-24"></textarea>
+                <textarea id="descriptionInput" 
+                          required 
+                          class="w-full bg-transparent border border-gray-700 rounded-sm p-3 outline-none focus:border-white text-white placeholder-gray-600 resize-none h-24"
+                          placeholder="Enter product description"></textarea>
             </div>
+            
             <div>
                 <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Available Sizes</label>
-                <div class="flex gap-6">
-                    <label class="flex items-center gap-2"><input type="checkbox" value="S" class="sizeCheckbox"> S</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" value="M" class="sizeCheckbox"> M</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" value="L" class="sizeCheckbox"> L</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" value="XL" class="sizeCheckbox"> XL</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" value="XXL" class="sizeCheckbox"> XXL</label>
+                <div class="flex flex-wrap gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value="S" class="sizeCheckbox accent-white"> 
+                        <span>S</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value="M" class="sizeCheckbox accent-white"> 
+                        <span>M</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value="L" class="sizeCheckbox accent-white"> 
+                        <span>L</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value="XL" class="sizeCheckbox accent-white"> 
+                        <span>XL</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" value="XXL" class="sizeCheckbox accent-white"> 
+                        <span>XXL</span>
+                    </label>
                 </div>
             </div>
+            
             <div>
-                <button type="button" id="uploadBtn" class="bg-zinc-800 text-white px-6 py-3 font-bold text-xs uppercase hover:bg-zinc-700 transition">Upload Image</button>
+                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Product Image</label>
+                <button type="button" 
+                        id="uploadBtn" 
+                        class="bg-zinc-800 text-white px-6 py-3 font-bold text-xs uppercase hover:bg-zinc-700 transition duration-300">
+                    Upload Image
+                </button>
                 <input type="hidden" id="imageUrlInput">
                 <span id="uploadStatus" class="ml-4 text-xs text-gray-500 italic">No image selected</span>
             </div>
-            <button type="submit" class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200 transition">Habet el-Produit</button>
+            
+            <button type="submit" 
+                    class="w-full bg-white text-black py-4 font-bold uppercase tracking-widest hover:bg-gray-200 active:bg-gray-300 transition duration-300">
+                Add Product
+            </button>
         </form>
 
-        <h3 class="text-2xl gothic-text mb-6">Manage Inventory</h3>
-        <div id="adminProducts" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+        <!-- Manage Inventory -->
+        <h3 class="text-xl sm:text-2xl gothic-text mb-6">Manage Inventory</h3>
+        <div id="adminProducts" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Products will be loaded here -->
+        </div>
     </section>
 
-    <footer class="border-t border-white/10 bg-black py-20 text-center">
-        <h2 class="text-5xl gothic-text mb-6 tracking-widest">VAL10</h2>
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-black py-12 sm:py-20 text-center">
+        <h2 class="text-4xl sm:text-5xl gothic-text mb-4 sm:mb-6 tracking-widest">VAL10</h2>
         <p class="text-gray-600 text-[10px] tracking-[0.5em] uppercase">© 2026 Underground Luxury Studio.</p>
     </footer>
 
@@ -105,107 +199,252 @@
         const adminProducts = document.getElementById('adminProducts');
         let products = [];
 
+        // Fetch products from API
         async function fetchProducts() {
             try {
+                grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-10">Loading...</p>';
                 const res = await fetch(`${API_URL}/products`);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                
                 products = await res.json();
                 renderProducts();
                 renderAdminProducts();
             } catch (err) {
-                grid.innerHTML = "<p class='text-red-500 text-center w-full'>Connection Error (Backend Offline).</p>";
+                console.error('Fetch error:', err);
+                grid.innerHTML = '<p class="text-red-500 text-center w-full col-span-full py-10">Error loading products. Check backend connection.</p>';
             }
         }
 
+        // Render products in shop grid
         function renderProducts() {
             grid.innerHTML = '';
-            if(products.length === 0) {
-                grid.innerHTML = "<p class='text-gray-500 text-center w-full'>COLLECTION EMPTY.</p>";
+            
+            if (!products || products.length === 0) {
+                grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-10">No products available.</p>';
                 return;
             }
+            
             products.forEach(product => {
                 const card = document.createElement('div');
                 card.className = "group cursor-pointer fade-in product-card";
-                // L-faza hna: window.location.href bech n-hezouh lel page jdida
-                card.onclick = () => window.location.href = `product.html?id=${product._id}`;
+                
+                // Fixed: Use correct URL for product detail page
+                card.onclick = () => {
+                    window.location.href = `product.html?id=${product._id}`;
+                };
+                
                 card.innerHTML = `
-                    <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-6 border border-white/5">
-                        <img src="${product.image}" class="w-full h-full object-cover transition-all duration-1000 group-hover:opacity-80">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span class="bg-white text-black px-6 py-2 font-bold text-xs tracking-widest">VIEW DETAILS</span>
+                    <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-4 sm:mb-6 border border-white/5">
+                        <img src="${product.image || 'https://via.placeholder.com/400x500?text=No+Image'}" 
+                             class="w-full h-full object-cover"
+                             alt="${product.name}"
+                             loading="lazy">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60">
+                            <span class="bg-white text-black px-4 sm:px-6 py-2 font-bold text-xs tracking-widest">VIEW DETAILS</span>
                         </div>
                     </div>
                     <div class="flex justify-between items-center px-1">
-                        <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200">${product.name}</h3>
-                        <span class="text-white font-mono text-sm">${product.price} DT</span>
-                    </div>`;
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200 truncate">${product.name}</h3>
+                        <span class="text-white font-mono text-sm whitespace-nowrap">${parseFloat(product.price).toFixed(2)} DT</span>
+                    </div>
+                    ${product.sizes && product.sizes.length > 0 ? 
+                        `<p class="text-xs text-gray-500 mt-2 px-1">Sizes: ${product.sizes.join(', ')}</p>` : ''}
+                `;
                 grid.appendChild(card);
             });
         }
 
+        // Render products in admin panel
         function renderAdminProducts() {
             adminProducts.innerHTML = '';
+            
+            if (!products || products.length === 0) {
+                adminProducts.innerHTML = '<p class="text-gray-500 col-span-full">No products in inventory.</p>';
+                return;
+            }
+            
             products.forEach(product => {
                 const card = document.createElement('div');
-                card.className = "bg-[#0a0a0a] border border-white/10 p-4 text-xs";
+                card.className = "bg-[#0a0a0a] border border-white/10 p-3 sm:p-4 text-xs";
+                
                 card.innerHTML = `
-                    <img src="${product.image}" class="w-full h-24 object-cover mb-2 grayscale">
-                    <p class="font-bold uppercase">${product.name}</p>
-                    <button onclick="deleteProduct('${product._id}')" class="mt-2 text-red-500 hover:underline">DELETE</button>
+                    <img src="${product.image || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                         class="w-full h-20 sm:h-24 object-cover mb-2 grayscale hover:grayscale-0 transition"
+                         alt="${product.name}">
+                    <p class="font-bold uppercase truncate mb-1">${product.name}</p>
+                    <p class="text-gray-400 mb-2">${parseFloat(product.price).toFixed(2)} DT</p>
+                    <button onclick="deleteProduct('${product._id}')" 
+                            class="mt-2 text-red-500 hover:text-red-400 hover:underline text-xs">
+                        DELETE
+                    </button>
                 `;
                 adminProducts.appendChild(card);
             });
         }
 
+        // Delete product
         async function deleteProduct(id) {
-            if (confirm("Bech tfassakh el product hadha?")) {
-                await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-                fetchProducts();
+            if (!confirm("Are you sure you want to delete this product?")) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/products/${id}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if (response.ok) {
+                    alert("Product deleted successfully!");
+                    await fetchProducts();
+                } else {
+                    alert("Error deleting product!");
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert("Error deleting product!");
             }
         }
 
+        // Toggle admin panel
         function toggleAdmin() {
-            document.getElementById('adminSection').classList.toggle('hidden');
-            window.scrollTo({ top: document.getElementById('adminSection').offsetTop, behavior: 'smooth' });
+            const adminSection = document.getElementById('adminSection');
+            adminSection.classList.toggle('hidden');
+            
+            if (!adminSection.classList.contains('hidden')) {
+                window.scrollTo({ 
+                    top: adminSection.offsetTop - 20, 
+                    behavior: 'smooth' 
+                });
+            }
         }
 
-        // Cloudinary setup (Same as you had)
+        // Cloudinary upload setup
         document.getElementById('uploadBtn').addEventListener('click', () => {
+            // IMPORTANT: Replace these with your actual Cloudinary credentials
+            const cloudName = 'your-cloud-name'; // Your Cloudinary cloud name
+            const uploadPreset = 'your-preset';  // Your upload preset
+            
+            if (cloudName === 'your-cloud-name' || uploadPreset === 'your-preset') {
+                alert("Please configure Cloudinary credentials in the script!");
+                return;
+            }
+            
             const widget = cloudinary.createUploadWidget({
-                cloudName: 'your-cloud-name', // REPLACE THIS
-                uploadPreset: 'your-preset'   // REPLACE THIS
+                cloudName: cloudName,
+                uploadPreset: uploadPreset,
+                sources: ['local', 'url', 'camera'],
+                multiple: false,
+                maxFiles: 1,
+                styles: {
+                    palette: {
+                        window: "#050505",
+                        sourceBg: "#0a0a0a",
+                        windowBorder: "#ffffff",
+                        tabIcon: "#ffffff",
+                        inactiveTabIcon: "#8E8F90",
+                        menuIcons: "#ffffff",
+                        link: "#ffffff",
+                        action: "#ffffff",
+                        inProgress: "#ffffff",
+                        complete: "#33ff00",
+                        error: "#EA2727",
+                        textDark: "#000000",
+                        textLight: "#FFFFFF"
+                    }
+                }
             }, (error, result) => {
                 if (!error && result && result.event === "success") {
                     document.getElementById('imageUrlInput').value = result.info.secure_url;
-                    document.getElementById('uploadStatus').innerText = "✅ Image Ready";
+                    document.getElementById('uploadStatus').innerText = "✅ Image uploaded successfully!";
+                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-green-500 italic";
+                } else if (error) {
+                    document.getElementById('uploadStatus').innerText = "❌ Upload failed!";
+                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-red-500 italic";
                 }
             });
+            
             widget.open();
         });
 
+        // Form submission
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const sizes = Array.from(document.querySelectorAll('.sizeCheckbox:checked')).map(cb => cb.value);
+            
+            // Get form data
+            const sizes = Array.from(document.querySelectorAll('.sizeCheckbox:checked'))
+                              .map(cb => cb.value);
+            
             const productData = {
-                name: document.getElementById('productNameInput').value,
+                name: document.getElementById('productNameInput').value.trim(),
                 price: parseFloat(document.getElementById('priceInput').value),
-                description: document.getElementById('descriptionInput').value,
+                description: document.getElementById('descriptionInput').value.trim(),
                 sizes: sizes,
                 image: document.getElementById('imageUrlInput').value
             };
-            const res = await fetch(`${API_URL}/products`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(productData)
-            });
-            if (res.ok) {
-                alert("Produit Added!");
-                fetchProducts();
-                e.target.reset();
-                document.getElementById('uploadStatus').innerText = "No image selected";
+            
+            // Validation
+            if (!productData.image) {
+                alert("Please upload an image first!");
+                return;
+            }
+            
+            if (sizes.length === 0) {
+                alert("Please select at least one size!");
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/products`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(productData)
+                });
+                
+                if (response.ok) {
+                    alert("Product added successfully!");
+                    
+                    // Reset form
+                    e.target.reset();
+                    document.getElementById('uploadStatus').innerText = "No image selected";
+                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-gray-500 italic";
+                    
+                    // Refresh products
+                    await fetchProducts();
+                } else {
+                    alert("Error adding product!");
+                }
+            } catch (error) {
+                console.error('Submit error:', error);
+                alert("Error adding product!");
             }
         });
 
-        fetchProducts();
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
