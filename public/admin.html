@@ -2,156 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAL10 - Admin Panel</title>
+    <title>VAL10 | CONTROL PANEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; }
+        body { background: #000; color: #fff; font-family: sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        input, textarea { background: #0a0a0a !important; border: 1px solid #222 !important; color: #fff !important; outline: none; }
-        input:focus { border-color: #eab308 !important; }
     </style>
 </head>
-<body class="p-4 md:p-10">
-
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-black italic tracking-tighter text-yellow-500">VAL10 ADMIN</h1>
-            <a href="/" class="text-xs uppercase tracking-widest text-gray-500 hover:text-white">View Site →</a>
+<body class="p-4 md:p-10" onload="refreshData()">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
+            <h1 class="text-3xl font-black italic text-yellow-500 tracking-tighter">VAL10 ADMIN</h1>
+            <button onclick="refreshData()" class="text-[10px] bg-white text-black px-4 py-2 font-bold uppercase">Refresh Data</button>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-8">
-            <div class="glass p-8 rounded-3xl">
-                <h2 class="text-xl font-bold mb-6 uppercase">Habet Meryoul Jdid</h2>
-                
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="glass p-6 rounded-2xl h-fit">
+                <h2 class="text-sm font-bold mb-6 text-gray-400 uppercase tracking-widest">Add New Drop</h2>
                 <div class="space-y-4">
-                    <div>
-                        <label class="text-[10px] uppercase text-gray-500 ml-1">Product Name</label>
-                        <input type="text" id="p-name" class="w-full p-3 rounded-xl mt-1" placeholder="e.g. Oversized Black Hoodie">
+                    <input type="text" id="p-name" placeholder="Product Name" class="w-full bg-black border border-gray-800 p-3 rounded-xl text-sm">
+                    <input type="number" id="p-price" placeholder="Price (DT)" class="w-full bg-black border border-gray-800 p-3 rounded-xl text-sm">
+                    <textarea id="p-desc" placeholder="Description" class="w-full bg-black border border-gray-800 p-3 rounded-xl text-sm h-24"></textarea>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="document.getElementById('f1').click()" class="bg-gray-900 p-3 rounded-xl text-[9px] border border-gray-800 uppercase">+ Front Image</button>
+                        <input type="file" id="f1" class="hidden">
+                        <button onclick="document.getElementById('f2').click()" class="bg-gray-900 p-3 rounded-xl text-[9px] border border-gray-800 uppercase">+ Back Image</button>
+                        <input type="file" id="f2" class="hidden">
                     </div>
 
-                    <div>
-                        <label class="text-[10px] uppercase text-gray-500 ml-1">Price (DT)</label>
-                        <input type="number" id="p-price" class="w-full p-3 rounded-xl mt-1" placeholder="90">
+                    <div class="flex gap-2 text-[10px] py-2 justify-between px-2 border border-gray-900 rounded-xl">
+                        <label class="flex items-center gap-1"><input type="checkbox" value="S" class="size-cb"> S</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" value="M" class="size-cb"> M</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" value="L" class="size-cb"> L</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" value="XL" class="size-cb"> XL</label>
                     </div>
 
-                    <div>
-                        <label class="text-[10px] uppercase text-gray-500 ml-1">Description</label>
-                        <textarea id="p-desc" class="w-full p-3 rounded-xl mt-1 h-24" placeholder="Fabric details..."></textarea>
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] uppercase text-gray-500 ml-1">Available Sizes</label>
-                        <div class="flex gap-3 mt-2 flex-wrap">
-                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
-                                <input type="checkbox" value="S" class="size-cb"> <span>S</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
-                                <input type="checkbox" value="M" class="size-cb"> <span>M</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
-                                <input type="checkbox" value="L" class="size-cb"> <span>L</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
-                                <input type="checkbox" value="XL" class="size-cb"> <span>XL</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-[#111] px-3 py-2 rounded-lg cursor-pointer">
-                                <input type="checkbox" value="XXL" class="size-cb"> <span>XXL</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="pt-4">
-                        <input type="file" id="p-file" class="hidden" onchange="previewImage(event)">
-                        <button onclick="document.getElementById('p-file').click()" class="w-full border border-dashed border-gray-700 p-4 rounded-xl text-sm text-gray-400 hover:bg-white/5 transition">
-                            SELECT IMAGE
-                        </button>
-                        <img id="img-preview" class="mt-4 w-full h-48 object-cover rounded-xl hidden border border-gray-800">
-                    </div>
-
-                    <button onclick="habetProduct()" id="btn-submit" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl mt-6 uppercase tracking-widest hover:bg-yellow-400 transition">
-                        HABET EL-PRODUIT
-                    </button>
+                    <button onclick="habet()" id="btn" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl uppercase text-sm tracking-widest">Confirm Drop</button>
                 </div>
             </div>
 
-            <div class="glass p-6 rounded-3xl h-fit">
-                <h3 class="text-gray-500 text-[10px] uppercase tracking-widest mb-4">Live Control</h3>
-                <p class="text-sm text-gray-400 italic">Ready to upload new drops to the collection.</p>
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="text-sm font-bold mb-6 text-gray-400 uppercase tracking-widest">Inventory</h2>
+                <div id="inventory-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                    </div>
+            </div>
+
+            <div class="glass p-6 rounded-2xl border-yellow-500/30">
+                <h2 class="text-sm font-bold mb-6 text-yellow-500 uppercase tracking-widest">Live Orders</h2>
+                <div id="orders-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- ⚠️ CONFIGURATION CLOUDINARY M-RIGLA ---
-        const CLOUD_NAME = "dcdgsml-yy"; //
-        const UPLOAD_PRESET = "vai10_preset"; //
+        const CLOUD = "dcdgsml-yy"; 
+        const PRESET = "vai10_preset"; 
 
-        function previewImage(event) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = document.getElementById('img-preview');
-                img.src = reader.result;
-                img.classList.remove('hidden');
-            }
-            reader.readAsDataURL(event.target.files[0]);
+        function refreshData() {
+            loadInventory();
+            loadOrders();
         }
 
-        async function habetProduct() {
-            const btn = document.getElementById('btn-submit');
-            const fileInput = document.getElementById('p-file');
-            
-            if(fileInput.files.length === 0) return alert("Ekhtar taswira 9bal!");
-            
-            btn.innerText = "UPLOADING TO CLOUD...";
-            btn.disabled = true;
+        async function loadInventory() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = '';
+            products.reverse().forEach(p => {
+                const img = (p.images && p.images.length > 0) ? p.images[0] : p.image;
+                list.innerHTML += `
+                    <div class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                        <img src="${img}" class="w-12 h-12 object-cover rounded-lg grayscale">
+                        <div class="flex-1">
+                            <h4 class="text-[11px] font-bold uppercase truncate w-32">${p.name}</h4>
+                            <p class="text-yellow-500 text-[10px]">${p.price} DT</p>
+                        </div>
+                        <button onclick="deleteP('${p._id}')" class="text-red-500 text-[9px] font-bold border border-red-500/20 px-2 py-1 rounded">DEL</button>
+                    </div>`;
+            });
+        }
 
+        async function loadOrders() {
+            const res = await fetch('/api/orders');
+            const orders = await res.json();
+            const list = document.getElementById('orders-list');
+            list.innerHTML = '';
+            if(orders.length === 0) list.innerHTML = '<p class="text-gray-600 text-[10px] uppercase">No orders yet.</p>';
+            orders.reverse().forEach(o => {
+                list.innerHTML += `
+                    <div class="bg-yellow-500/5 p-4 rounded-xl border border-yellow-500/20">
+                        <div class="flex justify-between font-bold text-[11px] mb-2 uppercase">
+                            <span class="text-white">${o.customerName}</span>
+                            <span class="text-yellow-500">${o.totalPrice} DT</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 space-y-1">
+                            <p>📞 Phone: ${o.customerPhone}</p>
+                            <p>👕 Item: ${o.productName} (${o.size})</p>
+                            <p>📍 Info: ${o.customerAddress || 'N/A'}</p>
+                        </div>
+                        <button onclick="deleteOrder('${o._id}')" class="mt-3 w-full border border-gray-700 py-2 text-[9px] font-bold hover:bg-white hover:text-black transition">MARK AS DONE</button>
+                    </div>`;
+            });
+        }
+
+        async function up(file) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("upload_preset", PRESET);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method:"POST", body:fd });
+            const data = await res.json();
+            return data.secure_url;
+        }
+
+        async function habet() {
+            const b = document.getElementById('btn'); 
+            b.innerText = "UPLOADING..."; b.disabled = true;
             try {
-                // 1. Upload to Cloudinary (Unsigned)
-                const formData = new FormData();
-                formData.append("file", fileInput.files[0]);
-                formData.append("upload_preset", UPLOAD_PRESET);
+                const f1 = document.getElementById('f1').files[0];
+                const f2 = document.getElementById('f2').files[0];
+                if(!f1) return alert("Please select image 1");
 
-                const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-                    method: "POST",
-                    body: formData
-                });
-                
-                const cloudData = await cloudRes.json();
-                const imageUrl = cloudData.secure_url;
+                const img1 = await up(f1);
+                let imgs = [img1];
+                if(f2) { const img2 = await up(f2); imgs.push(img2); }
 
-                // 2. Lemm el-Sizes m-cochiine
-                const selectedSizes = [];
-                document.querySelectorAll('.size-cb:checked').forEach(cb => selectedSizes.push(cb.value));
+                const sizes = []; 
+                document.querySelectorAll('.size-cb:checked').forEach(c => sizes.push(c.value));
 
-                // 3. Ab3ath lel Backend
-                const productData = {
-                    name: document.getElementById('p-name').value,
-                    price: document.getElementById('p-price').value,
-                    description: document.getElementById('p-desc').value,
-                    image: imageUrl,
-                    sizes: selectedSizes
-                };
-
-                const res = await fetch('/api/products', {
+                await fetch('/api/products', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(productData)
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: document.getElementById('p-name').value,
+                        price: document.getElementById('p-price').value,
+                        description: document.getElementById('p-desc').value,
+                        images: imgs,
+                        sizes: sizes
+                    })
                 });
-
-                if(res.ok) {
-                    alert("✅ Produit t-7at s7i7 f-el-site!");
-                    location.reload();
-                }
-
-            } catch (err) {
-                console.error(err);
-                alert("Erreur! Thabbet f-el-Cloud Name wala el-Preset.");
-            } finally {
-                btn.innerText = "HABET EL-PRODUIT";
-                btn.disabled = false;
-            }
+                alert("Success!");
+                refreshData();
+            } catch(e) { alert("Error uploading!"); }
+            finally { b.innerText = "Confirm Drop"; b.disabled = false; }
         }
+
+        async function deleteP(id) { if(confirm("Delete product?")) { await fetch(`/api/products/${id}`, { method: 'DELETE' }); loadInventory(); } }
+        async function deleteOrder(id) { if(confirm("Order finished?")) { await fetch(`/api/orders/${id}`, { method: 'DELETE' }); loadOrders(); } }
     </script>
 </body>
 </html>
