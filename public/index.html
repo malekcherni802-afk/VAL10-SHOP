@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -36,14 +35,8 @@
             animation: fadeIn 1s ease-in-out; 
         }
         @keyframes fadeIn { 
-            from { 
-                opacity: 0; 
-                transform: translateY(20px); 
-            } 
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            } 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
         }
         .product-card:hover img { 
             transform: scale(1.05); 
@@ -52,25 +45,21 @@
         .product-card img {
             transition: transform 0.5s ease, opacity 0.5s ease;
         }
-        .selection\\:bg-white::selection {
-            background-color: white;
-        }
-        .selection\\:text-black::selection {
-            color: black;
-        }
+        .selection\:bg-white::selection { background-color: white; }
+        .selection\:text-black::selection { color: black; }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
-    <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex justify-between items-center">
-            <h1 class="text-3xl sm:text-5xl gothic-text tracking-widest cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='index.html'">VAL10</h1>
-            <button class="text-xs sm:text-sm font-bold tracking-widest border border-white px-4 sm:px-6 py-2 hover:bg-white hover:text-black transition duration-300 uppercase" onclick="toggleAdmin()">ADMIN</button>
+            <h1 class="text-3xl sm:text-5xl gothic-text tracking-widest cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/'">VAL10</h1>
+            <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white px-4 sm:px-6 py-2 hover:bg-white hover:text-black transition duration-300 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
+                COLLECTION 2026
+            </button>
         </div>
     </nav>
 
-    <!-- Hero Section -->
     <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden pt-16">
         <div class="absolute inset-0 z-0 opacity-40">
             <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop" 
@@ -89,247 +78,65 @@
         </div>
     </header>
 
-    <!-- Shop Section -->
     <main id="shop" class="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
         <div class="flex justify-between items-end mb-12 sm:mb-16">
             <h3 class="text-2xl sm:text-4xl gothic-text text-gray-200 uppercase">Latest Collection</h3>
-            <span class="text-xs text-gray-500 hidden sm:block">Click to view details</span>
+            <span class="text-xs text-gray-500 hidden sm:block italic">Scroll to discover</span>
         </div>
         
-        <!-- Products Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10" id="product-grid">
-            <p class="text-gray-500 text-center w-full col-span-full py-10">Loading Collection...</p>
+            <p class="text-gray-500 text-center w-full col-span-full py-10 uppercase text-[10px] tracking-[0.3em]">Syncing Archive...</p>
         </div>
     </main>
 
+    <footer class="border-t border-white/5 py-10 text-center">
+        <p class="text-[10px] text-gray-600 tracking-[0.5em] uppercase">© VAL10 STUDIO ALL RIGHTS RESERVED</p>
+    </footer>
 
-        // Render products in shop grid
-        function renderProducts() {
-            grid.innerHTML = '';
-            
-            if (!products || products.length === 0) {
-                grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-10">No products available.</p>';
-                return;
-            }
-            
-            products.forEach(product => {
-                const card = document.createElement('div');
-                card.className = "group cursor-pointer fade-in product-card";
+    <script>
+        const grid = document.getElementById('product-grid');
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
                 
-                // Fixed: Use correct URL for product detail page
-                card.onclick = () => {
-                    window.location.href = `product.html?id=${product._id}`;
-                };
+                grid.innerHTML = '';
                 
-                card.innerHTML = `
-                    <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-4 sm:mb-6 border border-white/5">
-                        <img src="${product.image || 'https://via.placeholder.com/400x500?text=No+Image'}" 
-                             class="w-full h-full object-cover"
-                             alt="${product.name}"
-                             loading="lazy">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60">
-                            <span class="bg-white text-black px-4 sm:px-6 py-2 font-bold text-xs tracking-widest">VIEW DETAILS</span>
+                if (!products || products.length === 0) {
+                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-10 uppercase tracking-widest text-[10px]">No Drops Found</p>';
+                    return;
+                }
+
+                products.reverse().forEach(product => {
+                    const imgUrl = (product.images && product.images.length > 0) ? product.images[0] : (product.image || 'https://via.placeholder.com/400x500?text=VAL10');
+                    
+                    const card = document.createElement('div');
+                    card.className = "group cursor-pointer fade-in product-card";
+                    card.onclick = () => { window.location.href = `product.html?id=${product._id}`; };
+                    
+                    card.innerHTML = `
+                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-4 sm:mb-6 border border-white/5">
+                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-700" loading="lazy">
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60">
+                                <span class="bg-white text-black px-4 sm:px-6 py-2 font-bold text-[10px] tracking-widest uppercase">VIEW DETAILS</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex justify-between items-center px-1">
-                        <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200 truncate">${product.name}</h3>
-                        <span class="text-white font-mono text-sm whitespace-nowrap">${parseFloat(product.price).toFixed(2)} DT</span>
-                    </div>
-                    ${product.sizes && product.sizes.length > 0 ? 
-                        `<p class="text-xs text-gray-500 mt-2 px-1">Sizes: ${product.sizes.join(', ')}</p>` : ''}
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // Render products in admin panel
-        function renderAdminProducts() {
-            adminProducts.innerHTML = '';
-            
-            if (!products || products.length === 0) {
-                adminProducts.innerHTML = '<p class="text-gray-500 col-span-full">No products in inventory.</p>';
-                return;
-            }
-            
-            products.forEach(product => {
-                const card = document.createElement('div');
-                card.className = "bg-[#0a0a0a] border border-white/10 p-3 sm:p-4 text-xs";
-                
-                card.innerHTML = `
-                    <img src="${product.image || 'https://via.placeholder.com/300x200?text=No+Image'}" 
-                         class="w-full h-20 sm:h-24 object-cover mb-2 grayscale hover:grayscale-0 transition"
-                         alt="${product.name}">
-                    <p class="font-bold uppercase truncate mb-1">${product.name}</p>
-                    <p class="text-gray-400 mb-2">${parseFloat(product.price).toFixed(2)} DT</p>
-                    <button onclick="deleteProduct('${product._id}')" 
-                            class="mt-2 text-red-500 hover:text-red-400 hover:underline text-xs">
-                        DELETE
-                    </button>
-                `;
-                adminProducts.appendChild(card);
-            });
-        }
-
-        // Delete product
-        async function deleteProduct(id) {
-            if (!confirm("Are you sure you want to delete this product?")) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/products/${id}`, { 
-                    method: 'DELETE' 
+                        <div class="flex justify-between items-center px-1">
+                            <h3 class="text-sm font-bold uppercase tracking-widest text-gray-200 truncate pr-2">${product.name}</h3>
+                            <span class="text-white font-mono text-sm whitespace-nowrap">${product.price} DT</span>
+                        </div>
+                        ${product.sizes && product.sizes.length > 0 ? 
+                            `<p class="text-[10px] text-gray-500 mt-2 px-1 tracking-wider uppercase">Sizes: ${product.sizes.join(', ')}</p>` : ''}
+                    `;
+                    grid.appendChild(card);
                 });
-                
-                if (response.ok) {
-                    alert("Product deleted successfully!");
-                    await fetchProducts();
-                } else {
-                    alert("Error deleting product!");
-                }
             } catch (error) {
-                console.error('Delete error:', error);
-                alert("Error deleting product!");
+                grid.innerHTML = '<p class="text-red-900 text-center w-full col-span-full py-10 text-[10px] uppercase tracking-widest">Server Error</p>';
             }
         }
 
-        // Toggle admin panel
-        function toggleAdmin() {
-            const adminSection = document.getElementById('adminSection');
-            adminSection.classList.toggle('hidden');
-            
-            if (!adminSection.classList.contains('hidden')) {
-                window.scrollTo({ 
-                    top: adminSection.offsetTop - 20, 
-                    behavior: 'smooth' 
-                });
-            }
-        }
-
-        // Cloudinary upload setup
-        document.getElementById('uploadBtn').addEventListener('click', () => {
-            // IMPORTANT: Replace these with your actual Cloudinary credentials
-            const cloudName = 'your-cloud-name'; // Your Cloudinary cloud name
-            const uploadPreset = 'your-preset';  // Your upload preset
-            
-            if (cloudName === 'your-cloud-name' || uploadPreset === 'your-preset') {
-                alert("Please configure Cloudinary credentials in the script!");
-                return;
-            }
-            
-            const widget = cloudinary.createUploadWidget({
-                cloudName: cloudName,
-                uploadPreset: uploadPreset,
-                sources: ['local', 'url', 'camera'],
-                multiple: false,
-                maxFiles: 1,
-                styles: {
-                    palette: {
-                        window: "#050505",
-                        sourceBg: "#0a0a0a",
-                        windowBorder: "#ffffff",
-                        tabIcon: "#ffffff",
-                        inactiveTabIcon: "#8E8F90",
-                        menuIcons: "#ffffff",
-                        link: "#ffffff",
-                        action: "#ffffff",
-                        inProgress: "#ffffff",
-                        complete: "#33ff00",
-                        error: "#EA2727",
-                        textDark: "#000000",
-                        textLight: "#FFFFFF"
-                    }
-                }
-            }, (error, result) => {
-                if (!error && result && result.event === "success") {
-                    document.getElementById('imageUrlInput').value = result.info.secure_url;
-                    document.getElementById('uploadStatus').innerText = "✅ Image uploaded successfully!";
-                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-green-500 italic";
-                } else if (error) {
-                    document.getElementById('uploadStatus').innerText = "❌ Upload failed!";
-                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-red-500 italic";
-                }
-            });
-            
-            widget.open();
-        });
-
-        // Form submission
-        document.getElementById('productForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Get form data
-            const sizes = Array.from(document.querySelectorAll('.sizeCheckbox:checked'))
-                              .map(cb => cb.value);
-            
-            const productData = {
-                name: document.getElementById('productNameInput').value.trim(),
-                price: parseFloat(document.getElementById('priceInput').value),
-                description: document.getElementById('descriptionInput').value.trim(),
-                sizes: sizes,
-                image: document.getElementById('imageUrlInput').value
-            };
-            
-            // Validation
-            if (!productData.image) {
-                alert("Please upload an image first!");
-                return;
-            }
-            
-            if (sizes.length === 0) {
-                alert("Please select at least one size!");
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/products`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify(productData)
-                });
-                
-                if (response.ok) {
-                    alert("Product added successfully!");
-                    
-                    // Reset form
-                    e.target.reset();
-                    document.getElementById('uploadStatus').innerText = "No image selected";
-                    document.getElementById('uploadStatus').className = "ml-4 text-xs text-gray-500 italic";
-                    
-                    // Refresh products
-                    await fetchProducts();
-                } else {
-                    alert("Error adding product!");
-                }
-            } catch (error) {
-                console.error('Submit error:', error);
-                alert("Error adding product!");
-            }
-        });
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchProducts();
-            
-            // Smooth scroll for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const targetId = this.getAttribute('href');
-                    if (targetId === '#') return;
-                    
-                    const targetElement = document.querySelector(targetId);
-                    if (targetElement) {
-                        window.scrollTo({
-                            top: targetElement.offsetTop - 80,
-                            behavior: 'smooth'
-                        });
-                    }
-                });
-            });
-        });
+        window.onload = fetchProducts;
     </script>
 </body>
 </html>
