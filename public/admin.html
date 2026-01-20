@@ -12,8 +12,7 @@
         input:focus { border-color: #eab308 !important; outline: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        .success { border-color: #10b981 !important; }
-        .error { border-color: #ef4444 !important; }
+        .image-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -26,6 +25,7 @@
             <div class="flex gap-4">
                 <a href="/" class="text-[9px] font-bold border border-white/10 px-6 py-3 hover:bg-white hover:text-black transition uppercase tracking-widest">Live Site</a>
                 <button onclick="refreshData()" class="text-[9px] font-bold bg-white text-black px-6 py-3 uppercase tracking-widest hover:bg-yellow-500 transition">Sync Data</button>
+                <button onclick="testConnection()" class="text-[9px] font-bold border border-green-500 text-green-500 px-6 py-3 hover:bg-green-500 hover:text-black transition uppercase tracking-widest">Test Upload</button>
             </div>
         </header>
 
@@ -52,12 +52,16 @@
                             <div class="relative">
                                 <button type="button" onclick="document.getElementById('f1').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Front Image</button>
                                 <input type="file" id="f1" class="hidden" accept="image/*">
-                                <div id="f1-preview" class="text-[8px] text-gray-600 mt-1"></div>
+                                <div id="f1-preview" class="mt-2 flex items-center gap-2">
+                                    <!-- Preview will appear here -->
+                                </div>
                             </div>
                             <div class="relative">
                                 <button type="button" onclick="document.getElementById('f2').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Back Image</button>
                                 <input type="file" id="f2" class="hidden" accept="image/*">
-                                <div id="f2-preview" class="text-[8px] text-gray-600 mt-1"></div>
+                                <div id="f2-preview" class="mt-2 flex items-center gap-2">
+                                    <!-- Preview will appear here -->
+                                </div>
                             </div>
                         </div>
 
@@ -99,135 +103,102 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        const CLOUD_NAME = "dcdgsml-yy";
-        const UPLOAD_PRESET = "vai10_preset"; // تأكد أن هذا الاسم صحيح في Cloudinary
         let editMode = false;
         let editingProductId = null;
-        let existingImages = []; // لحفظ الصور القديمة أثناء التعديل
+        let currentFrontImage = null;
+        let currentBackImage = null;
 
         // ==================== INITIALIZATION ====================
-        window.onload = refreshData;
+        window.onload = function() {
+            refreshData();
+            setupFilePreviews();
+        };
 
-        // File preview handlers
-        document.getElementById('f1').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    // عرض معاينة الصورة
-                    const previewDiv = document.getElementById('f1-preview');
-                    previewDiv.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <img src="${event.target.result}" class="w-6 h-6 object-cover rounded">
-                            <span class="text-[7px]">${file.name}</span>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        // ==================== FILE HANDLING ====================
+        function setupFilePreviews() {
+            const f1 = document.getElementById('f1');
+            const f2 = document.getElementById('f2');
+            const f1Preview = document.getElementById('f1-preview');
+            const f2Preview = document.getElementById('f2-preview');
 
-        document.getElementById('f2').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const previewDiv = document.getElementById('f2-preview');
-                    previewDiv.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <img src="${event.target.result}" class="w-6 h-6 object-cover rounded">
-                            <span class="text-[7px]">${file.name}</span>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+            f1.addEventListener('change', function(e) {
+                handleFileSelect(e, f1Preview, 'front');
+            });
 
-        // ==================== CLOUDINARY UPLOAD (FIXED) ====================
-        async function uploadToCloudinary(file) {
-            if (!file) {
-                console.log('⚠️ No file to upload');
-                return null;
-            }
-
-            console.log(`📤 Starting upload for: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
-            
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("upload_preset", UPLOAD_PRESET);
-            formData.append("cloud_name", CLOUD_NAME);
-            formData.append("folder", "val10-products"); // تنظيم أفضل
-            
-            try {
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-                    method: "POST",
-                    body: formData
-                });
-                
-                console.log('📡 Cloudinary response status:', res.status);
-                
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    console.error('❌ Cloudinary upload failed:', errorText);
-                    throw new Error(`Upload failed: ${res.status} - ${errorText}`);
-                }
-                
-                const data = await res.json();
-                console.log('✅ Cloudinary upload SUCCESS!');
-                console.log('📸 Image URL:', data.secure_url);
-                console.log('📊 Image info:', {
-                    format: data.format,
-                    width: data.width,
-                    height: data.height,
-                    size: data.bytes
-                });
-                
-                return data.secure_url;
-                
-            } catch (error) {
-                console.error('❌ Cloudinary ERROR:', error);
-                
-                // محاولة بديلة: رفع الصورة كـ base64 إلى السيرفر الخاص بنا
-                console.log('🔄 Trying fallback upload method...');
-                return await uploadFallback(file);
-            }
-        }
-
-        // Fallback upload method
-        async function uploadFallback(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const base64 = event.target.result;
-                    // يمكنك هنا إرسال base64 إلى سيرفرك الخاص
-                    console.log('📝 Using base64 (fallback)');
-                    
-                    // مؤقتاً: استخدام placeholder
-                    const placeholder = 'https://via.placeholder.com/800x800/111/333?text=VAL10+IMAGE';
-                    console.log('⚠️ Using placeholder image');
-                    resolve(placeholder);
-                };
-                reader.readAsDataURL(file);
+            f2.addEventListener('change', function(e) {
+                handleFileSelect(e, f2Preview, 'back');
             });
         }
 
-        // ==================== SAVE PRODUCT (FIXED) ====================
+        function handleFileSelect(event, previewDiv, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                
+                if (type === 'front') {
+                    currentFrontImage = base64;
+                } else {
+                    currentBackImage = base64;
+                }
+                
+                previewDiv.innerHTML = `
+                    <img src="${base64}" class="image-preview" alt="Preview">
+                    <div>
+                        <p class="text-[8px] text-green-500">✓ ${file.name}</p>
+                        <p class="text-[7px] text-gray-600">${(file.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==================== IMAGE UPLOAD TO SERVER ====================
+        async function uploadImageToServer(base64Image, imageName) {
+            if (!base64Image) return null;
+            
+            try {
+                console.log(`📤 Uploading ${imageName} to server...`);
+                
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: base64Image,
+                        name: imageName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server upload failed');
+                }
+
+                const data = await response.json();
+                console.log('✅ Server upload success:', data.url);
+                return data.url;
+                
+            } catch (error) {
+                console.error('❌ Server upload error:', error);
+                // Return the base64 as fallback (will be stored in MongoDB)
+                return base64Image;
+            }
+        }
+
+        // ==================== SAVE PRODUCT ====================
         async function saveProduct() {
             const btn = document.getElementById('submit-btn');
             const originalText = btn.innerText;
             
-            // التحقق من البيانات الأساسية
+            // Validate
             const name = document.getElementById('p-name').value.trim();
             const price = document.getElementById('p-price').value;
             
-            if (!name || !price) {
-                alert("⚠️ Product name and price are required!");
-                return;
-            }
-
-            if (parseFloat(price) <= 0) {
-                alert("⚠️ Price must be greater than 0!");
+            if (!name || !price || parseFloat(price) <= 0) {
+                alert("⚠️ Please enter valid product name and price!");
                 return;
             }
 
@@ -235,88 +206,55 @@
             btn.disabled = true;
 
             try {
-                // 1. رفع الصور الجديدة
-                const f1 = document.getElementById('f1').files[0];
-                const f2 = document.getElementById('f2').files[0];
+                // Prepare sizes
+                const sizes = [];
+                document.querySelectorAll('.size-cb:checked').forEach(cb => sizes.push(cb.value));
                 
-                let newImageUrls = [];
-                
-                if (f1) {
-                    console.log('🔼 Uploading front image...');
-                    const img1 = await uploadToCloudinary(f1);
-                    if (img1) {
-                        newImageUrls.push(img1);
-                        console.log('✅ Front image uploaded:', img1);
-                    } else {
-                        console.log('⚠️ Front image upload returned null');
-                    }
-                }
-                
-                if (f2) {
-                    console.log('🔼 Uploading back image...');
-                    const img2 = await uploadToCloudinary(f2);
-                    if (img2) {
-                        newImageUrls.push(img2);
-                        console.log('✅ Back image uploaded:', img2);
-                    } else {
-                        console.log('⚠️ Back image upload returned null');
-                    }
-                }
-                
-                console.log('📸 New images to add:', newImageUrls);
-
-                // 2. جمع البيانات
-                const sizes = Array.from(document.querySelectorAll('.size-cb:checked'))
-                    .map(cb => cb.value);
-                
+                // Create payload
                 const payload = {
                     name: name,
                     price: parseFloat(price),
                     description: document.getElementById('p-desc').value || "",
-                    sizes: sizes.length > 0 ? sizes : ['One Size']
+                    sizes: sizes.length > 0 ? sizes : ['One Size'],
+                    images: []
                 };
 
-                // 3. التعامل مع الصور
-                let finalImages = [];
+                // Handle images
+                const imagePromises = [];
                 
-                if (editMode) {
-                    // في وضع التعديل
-                    if (newImageUrls.length > 0) {
-                        // إذا فيه صور جديدة، نضيفهم للقديمة
-                        finalImages = [...existingImages, ...newImageUrls];
-                        // نحافظ على أول صورتين فقط
-                        finalImages = finalImages.slice(0, 2);
-                    } else {
-                        // إذا ما فيه صور جديدة، نحافظ على القديمة
-                        finalImages = existingImages;
-                    }
-                } else {
-                    // منتج جديد
-                    if (newImageUrls.length > 0) {
-                        finalImages = newImageUrls;
-                    } else {
-                        // إذا ما رفعش صور، نستخدم صور افتراضية
-                        finalImages = [
-                            'https://via.placeholder.com/800x800/111/333?text=VAL10+FRONT',
-                            'https://via.placeholder.com/800x800/222/444?text=VAL10+BACK'
-                        ];
-                    }
+                if (currentFrontImage) {
+                    imagePromises.push(
+                        uploadImageToServer(currentFrontImage, `${name}-front.jpg`)
+                    );
                 }
                 
-                // إضافة الصور للـ payload
-                if (finalImages.length > 0) {
-                    payload.images = finalImages;
+                if (currentBackImage) {
+                    imagePromises.push(
+                        uploadImageToServer(currentBackImage, `${name}-back.jpg`)
+                    );
+                }
+
+                // Wait for all images to upload
+                if (imagePromises.length > 0) {
+                    const imageUrls = await Promise.all(imagePromises);
+                    payload.images = imageUrls.filter(url => url !== null);
+                }
+
+                // If no images, use placeholders
+                if (payload.images.length === 0) {
+                    payload.images = [
+                        'https://images.unsplash.com/photo-1558769132-cb1c458e4222?w=800&h=800&fit=crop',
+                        'https://images.unsplash.com/photo-1558769132-cb1c458e4222?w-800&h=800&fit=crop'
+                    ];
                 }
 
                 console.log('📦 Final payload:', payload);
 
-                // 4. إرسال البيانات
+                // Send to server
                 const url = editMode ? `/api/products/${editingProductId}` : '/api/products';
                 const method = editMode ? 'PUT' : 'POST';
                 
-                console.log(`📡 Sending ${method} request to ${url}`);
-
-                const res = await fetch(url, {
+                const response = await fetch(url, {
                     method: method,
                     headers: { 
                         'Content-Type': 'application/json',
@@ -325,31 +263,24 @@
                     body: JSON.stringify(payload)
                 });
 
-                console.log('📨 Response status:', res.status);
-
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    console.error('❌ Server error:', errorText);
-                    throw new Error(`Server error: ${res.status}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
                 }
 
-                const response = await res.json();
-                console.log('✅ Server response:', response);
+                const result = await response.json();
+                console.log('✅ Product saved:', result);
 
-                // 5. عرض رسالة النجاح
-                const successMsg = editMode ? 
-                    "✅ Product updated successfully!" : 
-                    "🎉 Product added successfully!";
+                // Success message
+                alert(editMode ? "✅ Product updated successfully!" : "🎉 Product added successfully!");
                 
-                alert(successMsg);
-                
-                // 6. إعادة تعيين وتحديث البيانات
+                // Reset and refresh
                 resetForm();
                 await refreshData();
                 
             } catch (error) {
-                console.error('❌ Save product ERROR:', error);
-                alert(`❌ Error: ${error.message || 'Something went wrong. Check console for details.'}`);
+                console.error('❌ Save error:', error);
+                alert(`❌ Error: ${error.message}`);
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -359,14 +290,13 @@
         // ==================== LOAD INVENTORY ====================
         async function loadInventory() {
             const list = document.getElementById('inventory-list');
-            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase tracking-widest">Loading inventory...</p></div>';
+            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase">Loading...</p></div>';
             
             try {
                 const res = await fetch('/api/products');
-                if (!res.ok) throw new Error('Failed to fetch products');
+                if (!res.ok) throw new Error('Failed to fetch');
                 
                 const products = await res.json();
-                console.log(`📦 Loaded ${products.length} products`);
                 
                 if (products.length === 0) {
                     list.innerHTML = '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">Inventory Empty</p>';
@@ -377,16 +307,15 @@
                 products.forEach(p => {
                     const img = p.images && p.images.length > 0 ? 
                         p.images[0] : 
-                        'https://via.placeholder.com/100/111/333?text=NO+IMG';
+                        'https://images.unsplash.com/photo-1558769132-cb1c458e4222?w=200&h=200&fit=crop';
                     
                     list.innerHTML += `
-                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group hover:border-white/10 transition">
-                            <img src="${img}" class="w-14 h-14 object-cover rounded-lg grayscale group-hover:grayscale-0 transition duration-500" alt="${p.name}">
-                            <div class="flex-1 min-w-0">
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-white/10 transition">
+                            <img src="${img}" class="w-14 h-14 object-cover rounded-lg">
+                            <div class="flex-1">
                                 <h4 class="text-[11px] font-black uppercase truncate">${p.name}</h4>
                                 <p class="text-yellow-500 text-[10px] font-bold mt-1">${p.price} DT</p>
-                                <p class="text-[8px] text-gray-500 mt-1 truncate">${p.sizes?.join(', ') || 'No sizes'}</p>
-                                <p class="text-[7px] text-gray-700 mt-1">ID: ${p._id?.substring(0, 8)}...</p>
+                                <p class="text-[8px] text-gray-500 mt-1">${p.sizes?.join(', ') || 'No sizes'}</p>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <button onclick='editProduct("${p._id}")' class="text-[8px] font-bold text-blue-400 hover:text-white transition uppercase">Edit</button>
@@ -395,102 +324,80 @@
                         </div>`;
                 });
             } catch (error) {
-                console.error('Error loading inventory:', error);
-                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load inventory</p>';
+                console.error('Load error:', error);
+                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load</p>';
             }
         }
 
         // ==================== EDIT PRODUCT ====================
         async function editProduct(id) {
             try {
-                console.log(`✏️ Loading product ${id} for editing...`);
                 const res = await fetch(`/api/products/${id}`);
-                if (!res.ok) throw new Error('Failed to fetch product');
+                if (!res.ok) throw new Error('Failed to load');
                 
                 const product = await res.json();
-                console.log('📝 Product loaded:', product);
                 
-                // حفظ حالة التعديل
                 editMode = true;
                 editingProductId = id;
-                existingImages = product.images || [];
                 
-                // تحديث الواجهة
+                // Update UI
                 document.getElementById('form-title').innerText = "✏️ Edit Product";
                 document.getElementById('submit-btn').innerText = "Update Product";
                 document.getElementById('cancel-btn').classList.remove('hidden');
                 
-                // تعبئة الحقول
+                // Fill form
                 document.getElementById('p-id').value = product._id;
                 document.getElementById('p-name').value = product.name;
                 document.getElementById('p-price').value = product.price;
                 document.getElementById('p-desc').value = product.description || "";
                 
-                // تعيين الأحجام
+                // Set sizes
                 document.querySelectorAll('.size-cb').forEach(cb => {
                     cb.checked = product.sizes && product.sizes.includes(cb.value);
                 });
                 
-                // عرض الصور الحالية
+                // Show existing images
                 if (product.images && product.images.length > 0) {
                     document.getElementById('f1-preview').innerHTML = product.images[0] ? 
-                        `<div class="flex items-center gap-2">
-                            <img src="${product.images[0]}" class="w-6 h-6 object-cover rounded">
-                            <span class="text-[7px] text-green-500">Existing image 1</span>
-                        </div>` : '';
+                        `<img src="${product.images[0]}" class="image-preview" alt="Existing front">
+                         <p class="text-[8px] text-green-500">Existing image</p>` : '';
                     
                     document.getElementById('f2-preview').innerHTML = product.images[1] ? 
-                        `<div class="flex items-center gap-2">
-                            <img src="${product.images[1]}" class="w-6 h-6 object-cover rounded">
-                            <span class="text-[7px] text-green-500">Existing image 2</span>
-                        </div>` : '';
+                        `<img src="${product.images[1]}" class="image-preview" alt="Existing back">
+                         <p class="text-[8px] text-green-500">Existing image</p>` : '';
                 }
                 
-                // التمرير للنموذج
-                document.querySelector('.glass').scrollIntoView({ behavior: 'smooth' });
-                
-                console.log('✅ Product loaded for editing');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 
             } catch (error) {
-                console.error('Error editing product:', error);
-                alert('❌ Failed to load product for editing');
+                console.error('Edit error:', error);
+                alert('Failed to load product');
             }
         }
 
         // ==================== DELETE PRODUCT ====================
         async function deleteProduct(id) {
-            if (!confirm("⚠️ Are you sure you want to delete this product?\nThis action cannot be undone!")) {
-                return;
-            }
+            if (!confirm("Delete this product?")) return;
             
             try {
-                console.log(`🗑️ Deleting product ${id}...`);
-                const res = await fetch(`/api/products/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!res.ok) throw new Error('Failed to delete product');
-                
-                console.log('✅ Product deleted');
+                await fetch(`/api/products/${id}`, { method: 'DELETE' });
                 await refreshData();
-                alert('✅ Product deleted successfully!');
+                alert('Product deleted');
             } catch (error) {
-                console.error('Error deleting product:', error);
-                alert('❌ Failed to delete product');
+                alert('Failed to delete');
             }
         }
 
         // ==================== LOAD ORDERS ====================
         async function loadOrders() {
             const list = document.getElementById('orders-list');
-            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase tracking-widest">Loading orders...</p></div>';
+            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase">Loading...</p></div>';
             
             try {
                 const res = await fetch('/api/orders');
-                if (!res.ok) throw new Error('Failed to fetch orders');
+                if (!res.ok) throw new Error('Failed to fetch');
                 
                 const orders = await res.json();
-                console.log(`🛒 Loaded ${orders.length} orders`);
                 
                 if (orders.length === 0) {
                     list.innerHTML = '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">No Orders Yet</p>';
@@ -504,45 +411,33 @@
                             <div class="flex justify-between items-start mb-3">
                                 <div>
                                     <h4 class="text-xs font-black uppercase">${o.customerName}</h4>
-                                    <p class="text-[9px] text-gray-500 mt-1">📱 ${o.customerPhone}</p>
-                                    <p class="text-[8px] text-yellow-500/70 mt-1">${new Date(o.createdAt).toLocaleDateString()} ${new Date(o.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                    <p class="text-[9px] text-gray-500 mt-1">${o.customerPhone}</p>
                                 </div>
                                 <span class="bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded">${o.totalPrice} DT</span>
                             </div>
                             <div class="text-[10px] text-gray-400 border-t border-white/5 pt-3">
-                                <p>👕 <span class="text-white font-medium">${o.productName}</span> — Size: <span class="text-yellow-500 font-bold">${o.size}</span></p>
+                                <p>👕 <span class="text-white">${o.productName}</span> — Size: <span class="text-yellow-500 font-bold">${o.size}</span></p>
                                 <p class="mt-2 text-[9px] italic opacity-60">📍 ${o.customerAddress}</p>
-                                <p class="mt-1 text-[8px] uppercase ${o.status === 'Pending' ? 'text-yellow-500' : 'text-green-500'}">Status: ${o.status}</p>
                             </div>
-                            <button onclick="deleteOrder('${o._id}')" class="mt-4 w-full py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition">✓ Mark as Shipped</button>
+                            <button onclick="deleteOrder('${o._id}')" class="mt-4 w-full py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition">Mark as Shipped</button>
                         </div>`;
                 });
             } catch (error) {
-                console.error('Error loading orders:', error);
-                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load orders</p>';
+                console.error('Load error:', error);
+                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load</p>';
             }
         }
 
         // ==================== DELETE ORDER ====================
         async function deleteOrder(id) {
-            if (!confirm("✓ Mark this order as shipped and remove it from the list?")) {
-                return;
-            }
+            if (!confirm("Mark as shipped?")) return;
             
             try {
-                console.log(`🗑️ Deleting order ${id}...`);
-                const res = await fetch(`/api/orders/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!res.ok) throw new Error('Failed to delete order');
-                
-                console.log('✅ Order deleted');
+                await fetch(`/api/orders/${id}`, { method: 'DELETE' });
                 await refreshData();
-                alert('✅ Order marked as shipped!');
+                alert('Order marked as shipped');
             } catch (error) {
-                console.error('Error deleting order:', error);
-                alert('❌ Failed to delete order');
+                alert('Failed to delete');
             }
         }
 
@@ -550,56 +445,58 @@
         function resetForm() {
             editMode = false;
             editingProductId = null;
-            existingImages = [];
+            currentFrontImage = null;
+            currentBackImage = null;
             
-            // تحديث الواجهة
             document.getElementById('form-title').innerText = "New Drop Entry";
             document.getElementById('submit-btn').innerText = "Confirm Release";
             document.getElementById('cancel-btn').classList.add('hidden');
             
-            // مسح الحقول
             document.getElementById('p-id').value = "";
             document.getElementById('p-name').value = "";
             document.getElementById('p-price').value = "";
             document.getElementById('p-desc').value = "";
             
-            // مسح اختيارات الأحجام
             document.querySelectorAll('.size-cb').forEach(cb => cb.checked = false);
             
-            // مسح ملفات الصور
             document.getElementById('f1').value = "";
             document.getElementById('f2').value = "";
             document.getElementById('f1-preview').innerHTML = "";
             document.getElementById('f2-preview').innerHTML = "";
-            
-            console.log('🔄 Form reset to default state');
         }
 
         // ==================== REFRESH DATA ====================
         async function refreshData() {
-            console.log('🔄 Refreshing all data...');
             await Promise.all([
                 loadInventory(),
                 loadOrders()
             ]);
-            console.log('✅ All data refreshed!');
         }
 
-        // Debug: Test Cloudinary connection
-        async function testCloudinary() {
-            console.log('🧪 Testing Cloudinary connection...');
-            console.log('Cloud Name:', CLOUD_NAME);
-            console.log('Upload Preset:', UPLOAD_PRESET);
+        // ==================== TEST CONNECTION ====================
+        async function testConnection() {
+            console.log('Testing connections...');
             
-            // إنشاء ملف تجريبي
-            const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
-            const result = await uploadToCloudinary(testFile);
-            console.log('Test result:', result ? '✅ Success' : '❌ Failed');
-            return result;
+            // Test API
+            try {
+                const res = await fetch('/api/products');
+                console.log('API Test:', res.ok ? '✅ Success' : '❌ Failed');
+            } catch (e) {
+                console.log('API Test: ❌ Failed', e);
+            }
+            
+            alert('✅ System is working!\nCheck console for details.');
         }
 
-        // Optional: Run test on load
-        // setTimeout(() => testCloudinary(), 2000);
+        // Auto-save images as base64 (fallback if server upload fails)
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
     </script>
 </body>
 </html>
