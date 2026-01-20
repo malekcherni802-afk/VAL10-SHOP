@@ -13,14 +13,14 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // MongoDB Connection
-const DB_URL = process.env.MONGODB_URI || process.env.MONGO_URI;
-console.log('🔗 Connecting to MongoDB Atlas...');
+const DB_URL = process.env.MONGODB_URI;
+console.log('🔗 Connecting to MongoDB...');
 
 mongoose.connect(DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-.then(() => console.log('✅ MongoDB Atlas: CONNECTED'))
+.then(() => console.log('✅ MongoDB Connected!'))
 .catch(err => {
     console.error('❌ MongoDB Error:', err.message);
     process.exit(1);
@@ -97,8 +97,7 @@ app.put('/api/products/:id', async (req, res) => {
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        const product = await Product.findByIdAndDelete(req.params.id);
-        if (!product) return res.status(404).json({ error: 'Product not found' });
+        await Product.findByIdAndDelete(req.params.id);
         res.json({ message: 'Product deleted' });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -126,8 +125,7 @@ app.post('/api/orders', async (req, res) => {
 
 app.delete('/api/orders/:id', async (req, res) => {
     try {
-        const order = await Order.findByIdAndDelete(req.params.id);
-        if (!order) return res.status(404).json({ error: 'Order not found' });
+        await Order.findByIdAndDelete(req.params.id);
         res.json({ message: 'Order deleted' });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -150,5 +148,5 @@ app.get('*', (req, res) => {
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 VAL10 Server running on port ${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

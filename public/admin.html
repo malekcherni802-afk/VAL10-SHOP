@@ -12,8 +12,6 @@
         input:focus { border-color: #eab308 !important; outline: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        .success { border-color: #10b981 !important; }
-        .error { border-color: #ef4444 !important; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -72,7 +70,7 @@
                         </div>
 
                         <button onclick="saveProduct()" id="submit-btn" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] shadow-lg shadow-yellow-500/10 hover:scale-[1.02] active:scale-[0.98] transition">Confirm Release</button>
-                        <button type="button" onclick="resetForm()" class="w-full text-[9px] uppercase font-bold text-gray-500 hover:text-white transition" id="cancel-btn">Cancel</button>
+                        <button type="button" onclick="resetForm()" class="w-full text-[9px] uppercase font-bold text-gray-500 hover:text-white transition">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -81,7 +79,7 @@
                 <div class="glass p-6 rounded-2xl h-full">
                     <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">Stock Inventory</h2>
                     <div id="inventory-list" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-                        <!-- Products will load here -->
+                        <!-- Products load here -->
                     </div>
                 </div>
             </div>
@@ -90,7 +88,7 @@
                 <div class="glass p-6 rounded-2xl h-full border-yellow-500/10">
                     <h2 class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-6">Incoming Orders</h2>
                     <div id="orders-list" class="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-                        <!-- Orders will load here -->
+                        <!-- Orders load here -->
                     </div>
                 </div>
             </div>
@@ -98,51 +96,31 @@
     </div>
 
     <script>
-        // CONFIGURATION
+        // CONFIG
         const CLOUD_NAME = "dcdgsml-yy";
         const UPLOAD_PRESET = "vai10_preset";
-        
         let editMode = false;
         let editingProductId = null;
-        let frontImageUrl = null;
-        let backImageUrl = null;
 
-        // Initialize
+        // Load data on start
         window.onload = refreshData;
 
-        // Refresh all data
+        // Refresh function
         async function refreshData() {
-            console.log('🔄 Refreshing data...');
             await loadInventory();
             await loadOrders();
         }
 
-        // File preview handlers
-        document.getElementById('f1').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                document.getElementById('f1-preview').textContent = `Selected: ${file.name}`;
-            }
-        });
-
-        document.getElementById('f2').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                document.getElementById('f2-preview').textContent = `Selected: ${file.name}`;
-            }
-        });
-
-        // Cloudinary upload function
+        // CLOUDINARY UPLOAD FIXED
         async function uploadToCloudinary(file) {
-            if (!file) return null;
+            if(!file) return null;
             
             const formData = new FormData();
             formData.append("file", file);
             formData.append("upload_preset", UPLOAD_PRESET);
-            formData.append("cloud_name", CLOUD_NAME);
             
             try {
-                console.log(`📤 Uploading ${file.name} to Cloudinary...`);
+                console.log(`📤 Uploading ${file.name}...`);
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
                     method: "POST",
                     body: formData
@@ -153,20 +131,21 @@
                 }
                 
                 const data = await res.json();
-                console.log('✅ Image uploaded:', data.secure_url);
+                console.log('✅ Upload success:', data.secure_url);
                 return data.secure_url;
-            } catch (error) {
-                console.error('❌ Cloudinary upload error:', error);
+                
+            } catch (e) {
+                console.error('❌ Upload error:', e);
                 return null;
             }
         }
 
-        // Save product function
+        // SAVE PRODUCT FUNCTION
         async function saveProduct() {
             const btn = document.getElementById('submit-btn');
             const originalText = btn.innerText;
             
-            // Validate required fields
+            // Validate
             const name = document.getElementById('p-name').value.trim();
             const price = document.getElementById('p-price').value;
             
@@ -175,16 +154,29 @@
                 return;
             }
 
-            btn.innerText = editMode ? "Updating..." : "Uploading...";
+            btn.innerText = "Processing...";
             btn.disabled = true;
 
             try {
-                // Collect form data
-                const sizes = Array.from(document.querySelectorAll('.size-cb:checked'))
-                    .map(cb => cb.value);
-                
+                // Upload images
                 const f1 = document.getElementById('f1').files[0];
                 const f2 = document.getElementById('f2').files[0];
+                
+                let imageUrls = [];
+                
+                if (f1) {
+                    const url = await uploadToCloudinary(f1);
+                    if (url) imageUrls.push(url);
+                }
+                
+                if (f2) {
+                    const url = await uploadToCloudinary(f2);
+                    if (url) imageUrls.push(url);
+                }
+                
+                // Get sizes
+                const sizes = [];
+                document.querySelectorAll('.size-cb:checked').forEach(cb => sizes.push(cb.value));
                 
                 // Prepare payload
                 const payload = {
@@ -193,75 +185,50 @@
                     description: document.getElementById('p-desc').value || "",
                     sizes: sizes
                 };
-
-                // Upload images if new files are selected
-                const images = [];
-                if (f1) {
-                    const imgUrl = await uploadToCloudinary(f1);
-                    if (imgUrl) images.push(imgUrl);
+                
+                // Add images if any
+                if (imageUrls.length > 0) {
+                    payload.images = imageUrls;
                 }
                 
-                if (f2) {
-                    const imgUrl = await uploadToCloudinary(f2);
-                    if (imgUrl) images.push(imgUrl);
-                }
-                
-                // If we have new images, add them to payload
-                if (images.length > 0) {
-                    payload.images = images;
-                }
-
-                // Determine URL and method
+                // Send request
                 const url = editMode ? `/api/products/${editingProductId}` : '/api/products';
                 const method = editMode ? 'PUT' : 'POST';
-
-                console.log(`📡 Sending ${method} request to ${url}`, payload);
-
-                // Send request
+                
+                console.log('Sending:', payload);
+                
                 const res = await fetch(url, {
                     method: method,
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`Server error: ${res.status} - ${errorText}`);
-                }
-
-                const response = await res.json();
-                console.log('✅ Success:', response);
-
-                // Show success message
-                alert(editMode ? "✅ Product updated successfully!" : "✅ Product added successfully!");
                 
-                // Reset form and refresh data
-                resetForm();
-                await refreshData();
+                if (res.ok) {
+                    alert(editMode ? "✅ Product updated!" : "✅ Product added!");
+                    resetForm();
+                    refreshData();
+                } else {
+                    const error = await res.json();
+                    throw new Error(error.error || 'Server error');
+                }
                 
             } catch (error) {
-                console.error('❌ Error:', error);
-                alert(`Error: ${error.message || 'Something went wrong'}`);
+                console.error('Error:', error);
+                alert(`Error: ${error.message}`);
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
         }
 
-        // Load products
+        // LOAD INVENTORY
         async function loadInventory() {
             const list = document.getElementById('inventory-list');
-            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase tracking-widest">Loading...</p></div>';
+            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase">Loading...</p></div>';
             
             try {
                 const res = await fetch('/api/products');
-                if (!res.ok) throw new Error('Failed to fetch products');
-                
                 const products = await res.json();
-                console.log(`📦 Loaded ${products.length} products`);
                 
                 if (products.length === 0) {
                     list.innerHTML = '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">Inventory Empty</p>';
@@ -272,12 +239,11 @@
                 products.forEach(p => {
                     const img = p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/100/111/333?text=VAL10';
                     list.innerHTML += `
-                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group hover:border-white/10 transition">
-                            <img src="${img}" class="w-14 h-14 object-cover rounded-lg grayscale group-hover:grayscale-0 transition duration-500" alt="${p.name}">
-                            <div class="flex-1 min-w-0">
-                                <h4 class="text-[11px] font-black uppercase truncate">${p.name}</h4>
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group">
+                            <img src="${img}" class="w-14 h-14 object-cover rounded-lg grayscale group-hover:grayscale-0 transition duration-500">
+                            <div class="flex-1">
+                                <h4 class="text-[11px] font-black uppercase truncate w-32">${p.name}</h4>
                                 <p class="text-yellow-500 text-[10px] font-bold mt-1">${p.price} DT</p>
-                                <p class="text-[8px] text-gray-500 mt-1 truncate">${p.sizes?.join(', ') || 'No sizes'}</p>
                             </div>
                             <div class="flex flex-col gap-2">
                                 <button onclick='editProduct("${p._id}")' class="text-[8px] font-bold text-blue-400 hover:text-white transition uppercase">Edit</button>
@@ -285,31 +251,23 @@
                             </div>
                         </div>`;
                 });
-            } catch (error) {
-                console.error('Error loading inventory:', error);
-                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load inventory</p>';
+            } catch (e) {
+                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load</p>';
             }
         }
 
-        // Edit product
+        // EDIT PRODUCT
         async function editProduct(id) {
             try {
-                console.log(`✏️ Editing product ${id}...`);
                 const res = await fetch(`/api/products/${id}`);
-                if (!res.ok) throw new Error('Failed to fetch product');
-                
                 const product = await res.json();
                 
-                // Set edit mode
                 editMode = true;
                 editingProductId = id;
                 
-                // Update UI
                 document.getElementById('form-title').innerText = "Edit Product";
                 document.getElementById('submit-btn').innerText = "Update Product";
-                document.getElementById('cancel-btn').classList.remove('hidden');
                 
-                // Fill form
                 document.getElementById('p-id').value = product._id;
                 document.getElementById('p-name').value = product.name;
                 document.getElementById('p-price').value = product.price;
@@ -322,52 +280,37 @@
                 
                 // Show existing images
                 if (product.images && product.images.length > 0) {
-                    document.getElementById('f1-preview').textContent = product.images[0] ? 'Existing image 1' : 'No image';
-                    document.getElementById('f2-preview').textContent = product.images[1] ? 'Existing image 2' : 'No image';
+                    document.getElementById('f1-preview').textContent = product.images[0] ? 'Image 1 loaded' : '';
+                    document.getElementById('f2-preview').textContent = product.images[1] ? 'Image 2 loaded' : '';
                 }
                 
-                // Scroll to form
-                document.querySelector('.glass').scrollIntoView({ behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 
-            } catch (error) {
-                console.error('Error editing product:', error);
-                alert('Failed to load product for editing');
+            } catch (e) {
+                alert('Failed to load product');
             }
         }
 
-        // Delete product
+        // DELETE PRODUCT
         async function deleteProduct(id) {
-            if (!confirm("Are you sure you want to delete this product? This cannot be undone.")) {
-                return;
-            }
+            if (!confirm("Delete this product?")) return;
             
             try {
-                console.log(`🗑️ Deleting product ${id}...`);
-                const res = await fetch(`/api/products/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!res.ok) throw new Error('Failed to delete product');
-                
-                console.log('✅ Product deleted');
-                await refreshData();
-            } catch (error) {
-                console.error('Error deleting product:', error);
-                alert('Failed to delete product');
+                await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                refreshData();
+            } catch (e) {
+                alert('Failed to delete');
             }
         }
 
-        // Load orders
+        // LOAD ORDERS
         async function loadOrders() {
             const list = document.getElementById('orders-list');
-            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase tracking-widest">Loading...</p></div>';
+            list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="text-[10px] text-gray-500 mt-4 uppercase">Loading...</p></div>';
             
             try {
                 const res = await fetch('/api/orders');
-                if (!res.ok) throw new Error('Failed to fetch orders');
-                
                 const orders = await res.json();
-                console.log(`📦 Loaded ${orders.length} orders`);
                 
                 if (orders.length === 0) {
                     list.innerHTML = '<p class="text-zinc-600 text-center py-20 text-[10px] uppercase italic">No Orders Yet</p>';
@@ -382,71 +325,66 @@
                                 <div>
                                     <h4 class="text-xs font-black uppercase">${o.customerName}</h4>
                                     <p class="text-[9px] text-gray-500 mt-1">${o.customerPhone}</p>
-                                    <p class="text-[8px] text-yellow-500/70 mt-1">${new Date(o.createdAt).toLocaleDateString()}</p>
                                 </div>
                                 <span class="bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded">${o.totalPrice} DT</span>
                             </div>
                             <div class="text-[10px] text-gray-400 border-t border-white/5 pt-3">
                                 <p>👕 <span class="text-white">${o.productName}</span> — Size: <span class="text-yellow-500 font-bold">${o.size}</span></p>
                                 <p class="mt-2 text-[9px] italic opacity-60">📍 ${o.customerAddress}</p>
-                                <p class="mt-1 text-[8px] uppercase text-gray-600">Status: ${o.status}</p>
                             </div>
                             <button onclick="deleteOrder('${o._id}')" class="mt-4 w-full py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition">Mark as Shipped</button>
                         </div>`;
                 });
-            } catch (error) {
-                console.error('Error loading orders:', error);
-                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load orders</p>';
+            } catch (e) {
+                list.innerHTML = '<p class="text-red-500 text-center py-10 text-[10px]">Failed to load</p>';
             }
         }
 
-        // Delete order
+        // DELETE ORDER
         async function deleteOrder(id) {
-            if (!confirm("Mark this order as shipped and remove it from the list?")) {
-                return;
-            }
+            if (!confirm("Mark as shipped?")) return;
             
             try {
-                console.log(`🗑️ Deleting order ${id}...`);
-                const res = await fetch(`/api/orders/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (!res.ok) throw new Error('Failed to delete order');
-                
-                console.log('✅ Order deleted');
-                await refreshData();
-            } catch (error) {
-                console.error('Error deleting order:', error);
-                alert('Failed to delete order');
+                await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+                refreshData();
+            } catch (e) {
+                alert('Failed to delete');
             }
         }
 
-        // Reset form
+        // RESET FORM
         function resetForm() {
             editMode = false;
             editingProductId = null;
             
-            // Reset UI
             document.getElementById('form-title').innerText = "New Drop Entry";
             document.getElementById('submit-btn').innerText = "Confirm Release";
-            document.getElementById('cancel-btn').classList.add('hidden');
             
-            // Clear form fields
             document.getElementById('p-id').value = "";
             document.getElementById('p-name').value = "";
             document.getElementById('p-price').value = "";
             document.getElementById('p-desc').value = "";
             
-            // Clear checkboxes
             document.querySelectorAll('.size-cb').forEach(cb => cb.checked = false);
             
-            // Clear file inputs
             document.getElementById('f1').value = "";
             document.getElementById('f2').value = "";
             document.getElementById('f1-preview').textContent = "";
             document.getElementById('f2-preview').textContent = "";
         }
+
+        // File previews
+        document.getElementById('f1').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('f1-preview').textContent = e.target.files[0].name;
+            }
+        });
+        
+        document.getElementById('f2').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('f2-preview').textContent = e.target.files[0].name;
+            }
+        });
     </script>
 </body>
 </html>
