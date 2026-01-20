@@ -10,8 +10,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Bechi yemchiou el-fichiét el-kol (index, product, admin)
-app.use(express.static(__dirname)); 
+// 1. EL-FIX EL-MUHEMM: Bech ma3adech y9ollek "Cannot GET /"
+// Hatha ykhalii el-backend ychouf el-fichiét index.html, product.html, etc.
+app.use(express.static(path.join(__dirname)));
 
 // --- DATABASE (MONGODB) ---
 const MONGOURI = process.env.MONGOURI || "mongodb+srv://placeholder:placeholder@cluster.mongodb.net/val10?retryWrites=true&w=majority";
@@ -20,13 +21,13 @@ mongoose.connect(MONGOURI)
     .then(() => console.log('✅ MongoDB Connecté'))
     .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// --- SCHEMAS (Moudifié) ---
+// --- SCHEMAS (Moudifiés pour le nouveau site) ---
 const ProductSchema = new mongoose.Schema({
     name: String,
     price: String,
     image: String,
-    description: String, // Zidna hadhi
-    sizes: [String],     // Zidna hadhi
+    description: String, // Zidna hadhi lel-Swipe page
+    sizes: [String],     // Zidna hadhi lel-Selection
     date: { type: Date, default: Date.now }
 });
 
@@ -42,37 +43,79 @@ const OrderSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', ProductSchema);
 const Order = mongoose.model('Order', OrderSchema);
 
-// --- API ROUTES ---
+// --- ROUTES POUR SERVIR LES PAGES HTML ---
 
-// 1. Jib el-sela el-kol (Lel-Index)
-app.get('/api/products', async (req, res) => {
-    const products = await Product.find().sort({ date: -1 });
-    res.json(products);
+// Route lel-index (Customer)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. Jib meryoul wahed b-el-ID (Lel-Product Page) - MUHEMMA BARCHA
-app.get('/api/products/:id', async (req, res) => {
+// Route lel-product detail (Swipe page)
+app.get('/product', (req, res) => {
+    res.sendFile(path.join(__dirname, 'product.html'));
+});
+
+// Route lel-admin (Bech todkhel wa7dek)
+app.get('/admin-panel', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// --- API ROUTES ---
+
+// 1. Jib Produits el-kol (Lel-Index)
+app.get('/api/products', async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).send("Produit introuvable");
-        res.json(product);
+        const products = await Product.find().sort({ date: -1 });
+        res.json(products);
     } catch (err) {
-        res.status(500).send("Erreur ID");
+        res.status(500).json({ error: "Erreur fetch" });
     }
 });
 
-// 3. A3mel Commande
+// 2. Jib produit wahed b-el-ID (Lel-Product Page)
+app.get('/api/products/:id', async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ message: "Produit introuvable" });
+        res.json(product);
+    } catch (err) {
+        res.status(500).json({ error: "ID invalide" });
+    }
+});
+
+// 3. A3mel Commande (Post Order)
 app.post('/api/order', async (req, res) => {
     try {
         const newOrder = new Order(req.body);
         await newOrder.save();
         res.json({ message: "Success" });
     } catch (e) {
-        res.status(500).json({ error: "Erreur" });
+        res.status(500).json({ error: "Erreur commande" });
     }
 });
 
-// 4. Route bech tfassakh commande
+// 4. Ajouter un produit (Depuis l'Admin)
+app.post('/api/products', async (req, res) => {
+    try {
+        const newProduct = new Product(req.body);
+        await newProduct.save();
+        res.status(201).json(newProduct);
+    } catch (err) {
+        res.status(500).json({ error: "Erreur ajout" });
+    }
+});
+
+// 5. Supprimer un produit (Depuis l'Admin)
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.json({ message: "Produit supprimé" });
+    } catch (err) {
+        res.status(500).json({ error: "Erreur suppression" });
+    }
+});
+
+// 6. Supprimer une commande
 app.delete('/api/orders/:id', async (req, res) => {
     try {
         await Order.findByIdAndDelete(req.params.id); 
@@ -82,19 +125,7 @@ app.delete('/api/orders/:id', async (req, res) => {
     }
 });
 
-// --- PAGES ROUTING ---
-
-// Page el-Meryoul
-app.get('/product', (req, res) => {
-    res.sendFile(path.join(__dirname, 'product.html'));
-});
-
-// Page el-Admin (Itheb testa3mel el-fichié admin.html f-blasit el-code mte3ek el-9dim)
-app.get('/val10-admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
-// --- ADMIN DASHBOARD (El-code el-9dim mte3ek m-sala7) ---
+// --- ADMIN DASHBOARD (Code el-9dim mte3ek m-sala7) ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASS || "val10boss";
 
 app.get('/admin', async (req, res) => {
@@ -103,33 +134,14 @@ app.get('/admin', async (req, res) => {
     const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
     if (login && password && login === auth.login && password === auth.password) {
-        const products = await Product.find().sort({ date: -1 });
-        const orders = await Order.find().sort({ date: -1 });
-
-        // Hna el-HTML mte3 el-dashboard... (khallih kima howa wala badlou b-sendFile admin.html)
-        // Nans-hak testa3mel res.sendFile(path.join(__dirname, 'admin.html')) bech ykoun design a7sen
+        // Option 1: Ken t-heb testa3mel el-Dashboard mte3ek el-9dim (HTML f-west el-JS)
+        // Option 2 (Affdhal): Ken creeit admin.html, na3mlou res.sendFile(path.join(__dirname, 'admin.html'))
         res.sendFile(path.join(__dirname, 'admin.html')); 
         return;
     }
 
     res.set('WWW-Authenticate', 'Basic realm="401"');
     res.status(401).send('Authentication required.');
-});
-
-// ACTIONS ADMIN
-app.post('/api/products', async (req, res) => {
-    try {
-        const newProduct = new Product(req.body);
-        await newProduct.save();
-        res.json({ message: "Added" });
-    } catch (err) {
-        res.status(500).send("Error");
-    }
-});
-
-app.post('/admin/delete', async (req, res) => {
-    await Product.findByIdAndDelete(req.body.id);
-    res.redirect('/admin');
 });
 
 // START
