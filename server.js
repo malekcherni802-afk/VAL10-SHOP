@@ -13,13 +13,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- DATABASE (MONGODB) ---
 const MONGOURI = process.env.MONGOURI || "mongodb+srv://placeholder:placeholder@cluster.mongodb.net/val10?retryWrites=true&w=majority";
-// NOTE: Itha ma7attitch MONGO_URI, el code bech yeplanté. Lazem database.
 
 mongoose.connect(MONGOURI)
     .then(() => console.log('✅ MongoDB Connecté'))
     .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// --- SCHEMAS (Forme mte3 Data) ---
+// --- SCHEMAS ---
 const ProductSchema = new mongoose.Schema({
     name: String,
     price: String,
@@ -30,32 +29,22 @@ const OrderSchema = new mongoose.Schema({
     fullName: String,
     phone: String,
     productName: String,
-    status: { type: String, default: 'Pending' }, // Pending, Confirmed
+    status: { type: String, default: 'Pending' },
     date: { type: Date, default: Date.now }
 });
 
 const Product = mongoose.model('Product', ProductSchema);
 const Order = mongoose.model('Order', OrderSchema);
 
-// --- API ROUTES (Site yetkallem m3ahom) ---
+// --- API ROUTES ---
 
-// 1. Jib Produits
+// Jib Produits
 app.get('/api/products', async (req, res) => {
     const products = await Product.find().sort({ date: -1 });
     res.json(products);
 });
-// Route bech tfassakh commande b-el ID
-app.delete('/api/orders/:id', async (req, res) => {
-    try {
-        // Thabbet esm el model "Order" kima msemmih enti l-fouq
-        await Order.findByIdAndDelete(req.params.id); 
-        res.status(200).json({ message: "✅ Commande t-fasskhet mrigla!" });
-    } catch (err) {
-        res.status(500).json({ error: "Ma najemch nfassakhha" });
-    }
-});
 
-// 2. A3mel Commande
+// A3mel Commande
 app.post('/api/order', async (req, res) => {
     try {
         const newOrder = new Order(req.body);
@@ -66,17 +55,25 @@ app.post('/api/order', async (req, res) => {
     }
 });
 
-// --- ADMIN PANEL (Server Side Rendering) ---
-const ADMIN_PASSWORD = process.env.ADMIN_PASS || "val10boss"; // Mot de passe par défaut
+// Route bech tfassakh commande
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        await Order.findByIdAndDelete(req.params.id); 
+        res.status(200).json({ message: "OK" });
+    } catch (err) {
+        res.status(500).json({ error: "Error" });
+    }
+});
+
+// --- ADMIN PANEL ---
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || "val10boss";
 
 app.get('/admin', async (req, res) => {
-    // Basic Auth Check
     const auth = { login: 'admin', password: ADMIN_PASSWORD };
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
     const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
     if (login && password && login === auth.login && password === auth.password) {
-        // Si Login s7i7, affichi Dashboard
         const products = await Product.find().sort({ date: -1 });
         const orders = await Order.find().sort({ date: -1 });
 
@@ -95,10 +92,6 @@ app.get('/admin', async (req, res) => {
                     <h1 class="text-3xl font-bold tracking-widest">VAL10 CONTROL</h1>
                     <span class="bg-green-600 px-3 py-1 rounded text-xs font-bold">ONLINE</span>
                 </div>
-          <div class="flex gap-2">
-                  <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation commande ${o.productName}..." target="_blank" class="text-green-400 text-xs hover:underline">WHATSAPP ↗</a>
-                 <button onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline ml-2">FAKKAKH ✕</button>
-               </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
@@ -106,7 +99,7 @@ app.get('/admin', async (req, res) => {
                             COMMANDES RÉCENTES
                             <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">${orders.length} TOTAL</span>
                         </h2>
-                        <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                        <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                             ${orders.map(o => `
                                 <div class="bg-gray-800 p-4 rounded border-l-4 border-yellow-500 shadow-md">
                                     <div class="flex justify-between items-start">
@@ -118,14 +111,14 @@ app.get('/admin', async (req, res) => {
                                     </div>
                                     <div class="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
                                         <p class="text-white font-medium">${o.productName}</p>
-                                        <div class="flex gap-2">
-    <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation..." target="_blank" class="text-green-400 text-xs hover:underline">WHATSAPP</a>
-    <button type="button" onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline ml-2">FASSAKH ✕</button>
-</div>
+                                        <div class="flex gap-3">
+                                            <a href="https://wa.me/216${o.phone}?text=Bonjour ${o.fullName}, confirmation..." target="_blank" class="text-green-400 text-xs hover:underline font-bold">WHATSAPP</a>
+                                            <button onclick="deleteOrder('${o._id}')" class="text-red-500 text-xs hover:underline font-bold">FASSAKH ✕</button>
+                                        </div>
                                     </div>
                                 </div>
                             `).join('')}
-                            ${orders.length === 0 ? '<p class="text-gray-600 italic">Aucune commande pour le moment.</p>' : ''}
+                            ${orders.length === 0 ? '<p class="text-gray-600 italic">Aucune commande.</p>' : ''}
                         </div>
                     </div>
 
@@ -149,33 +142,38 @@ app.get('/admin', async (req, res) => {
                     </div>
                 </div>
             </div>
+
             <script>
-            async function deleteOrder(id) {
-                if(confirm('Bech tfassakh el commande hadhi?')) {
-                    const res = await fetch('/api/orders/' + id, { method: 'DELETE' });
-                    if(res.ok) { alert('✅ OK'); location.reload(); }
+                async function deleteOrder(id) {
+                    if(confirm('Bech tfassakh el commande hadhi?')) {
+                        try {
+                            const res = await fetch('/api/orders/' + id, { method: 'DELETE' });
+                            if(res.ok) {
+                                alert('✅ Commande t-fasskhet!');
+                                location.reload();
+                            } else {
+                                alert('❌ Ma najemtech nfassakh');
+                            }
+                        } catch(err) {
+                            alert('❌ Erreur Connexion');
+                        }
+                    }
                 }
-            }
-        </script>
-  </body>
+            </script>
+        </body>
         </html>
-    `;
-    res.send(html);
-    return;
+        `;
+        res.send(html);
+        return;
     }
 
-    // Si Login Ghalet, otlob Mot de passe
     res.set('WWW-Authenticate', 'Basic realm="401"');
     res.status(401).send('Authentication required.');
 });
 
 // ACTIONS ADMIN
 app.post('/admin/add', async (req, res) => {
-    await new Product({
-        name: req.body.name,
-        price: req.body.price,
-        image: req.body.image
-    }).save();
+    await new Product(req.body).save();
     res.redirect('/admin');
 });
 
@@ -185,5 +183,5 @@ app.post('/admin/delete', async (req, res) => {
 });
 
 // START
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
