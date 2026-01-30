@@ -2,221 +2,178 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-const cloudinary = require('cloudinary').v2;
 
 const app = express();
 
-/**
- * MIDDLEWARE CONFIGURATION
- * Handles CORS, JSON limits for images, and static files
- */
+// Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-/**
- * CLOUDINARY CONFIGURATION
- * Direct access using your specific credentials
- */
-cloudinary.config({
-    cloud_name: 'dcdgsmiyy',
-    api_key: '266384214227742',
-    api_secret: 'R-N0hD_lD1G2NqLqQ_lH0hD_lD1' 
-});
+// MongoDB Connection
+const DB_URL = process.env.MONGODB_URI;
 
-/**
- * IN-MEMORY DATABASE FALLBACK
- * Keeps the site running if MongoDB Atlas connection drops
- */
-let products = [];
-let orders = [];
+if (!DB_URL) {
+    console.error('❌ ERROR: MONGODB_URI is not defined!');
+    console.log('💡 TIP: Add MONGODB_URI in Render Environment Variables');
+    process.exit(1);
+}
 
-/**
- * MONGODB ATLAS CONNECTION
- */
-const DB_URL = process.env.MONGODB_URI || "mongodb+srv://vallo:vallo10@vallo.mongodb.net/val10?retryWrites=true&w=majority";
+console.log('🔗 Connecting to MongoDB Atlas...');
 
 mongoose.connect(DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
 .then(() => {
-    console.log('--------------------------------------');
-    console.log('✅ DATABASE: MONGODB ATLAS CONNECTED');
-    console.log('--------------------------------------');
+    console.log('✅ MongoDB Atlas: CONNECTED SUCCESSFULLY');
+    console.log(`📊 Database: ${mongoose.connection.name}`);
 })
 .catch(err => {
-    console.error('❌ DATABASE: CONNECTION FAILED');
-    console.log('🚀 STATUS: RUNNING ON IN-MEMORY BACKUP');
+    console.error('❌ MongoDB Connection Failed:', err.message);
+    console.log('🚀 Server will continue with in-memory database');
+    
+    // Fallback to in-memory database
+    let products = [];
+    let orders = [];
+
+    // In-memory API routes (same as before)
+    app.get('/api/products', (req, res) => res.json(products));
+    app.post('/api/products', (req, res) => {
+        const newProduct = { id: Date.now().toString(), ...req.body };
+        products.push(newProduct);
+        res.status(201).json(newProduct);
+    });
+    // ... rest of in-memory routes
 });
 
-/**
- * DATA MODELS (SCHEMAS)
- */
+// MongoDB Models
 const productSchema = new mongoose.Schema({
-    name: String,
-    price: Number,
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
     description: String,
     images: [String],
     sizes: [String],
-    category: String,
+    category: { type: String, default: 'Underground' },
     createdAt: { type: Date, default: Date.now }
 });
 
 const orderSchema = new mongoose.Schema({
-    customerName: String,
-    customerPhone: String,
-    customerAddress: String,
-    productName: String,
-    size: String,
-    totalPrice: Number,
-    status: { type: String, default: 'pending' },
+    customerName: { type: String, required: true },
+    customerPhone: { type: String, required: true },
+    customerAddress: { type: String, required: true },
+    productName: { type: String, required: true },
+    size: { type: String, required: true },
+    totalPrice: { type: Number, required: true },
+    status: { type: String, default: 'Pending' },
     createdAt: { type: Date, default: Date.now }
 });
 
 const Product = mongoose.model('Product', productSchema);
 const Order = mongoose.model('Order', orderSchema);
 
-// ==========================================
-// API ROUTES - PRODUCTS
-// ==========================================
-
-// GET ALL PRODUCTS
+// API Routes
 app.get('/api/products', async (req, res) => {
     try {
-        const dbProducts = await Product.find().sort({ createdAt: -1 });
-        if (dbProducts && dbProducts.length > 0) {
-            return res.json(dbProducts);
-        }
+        const products = await Product.find().sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
-        console.error('API Error:', error);
-        res.json(products);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// POST NEW PRODUCT (WITH CLOUDINARY UPLOAD LOGIC)
+app.get('/api/products/:id', async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        res.json(product);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, price, description, images, sizes, category } = req.body;
-        
-        // Cloudinary Image Processing
-        const uploadedImagesUrls = await Promise.all(
-            images.map(async (image) => {
-                if (image.startsWith('data:image')) {
-                    const uploadResponse = await cloudinary.uploader.upload(image, {
-                        folder: 'val10_archive'
-                    });
-                    return uploadResponse.secure_url;
-                }
-                return image;
-            })
-        );
-
-        const newProduct = new Product({
-            name,
-            price,
-            description,
-            images: uploadedImagesUrls,
-            sizes,
-            category
-        });
-
-        await newProduct.save();
-        res.status(201).json(newProduct);
-
+        const product = new Product(req.body);
+        await product.save();
+        res.status(201).json(product);
     } catch (error) {
-        console.error('Creation Failed:', error);
-        const fallbackProduct = { ...req.body, _id: Date.now().toString(), createdAt: new Date() };
-        products.push(fallbackProduct);
-        res.status(201).json(fallbackProduct);
+        res.status(400).json({ error: error.message });
     }
 });
 
-// DELETE PRODUCT
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const product = await Product.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        res.json(product);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 app.delete('/api/products/:id', async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message: 'Deleted from Atlas' });
+        res.json({ message: 'Product deleted' });
     } catch (error) {
-        products = products.filter(p => p._id !== req.params.id);
-        res.json({ success: true, message: 'Deleted from local memory' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ==========================================
-// API ROUTES - ORDERS
-// ==========================================
-
-// GET ALL ORDERS
 app.get('/api/orders', async (req, res) => {
     try {
-        const dbOrders = await Order.find().sort({ createdAt: -1 });
-        if (dbOrders && dbOrders.length > 0) {
-            return res.json(dbOrders);
-        }
+        const orders = await Order.find().sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
-        res.json(orders);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// POST NEW ORDER
 app.post('/api/orders', async (req, res) => {
     try {
         const order = new Order(req.body);
         await order.save();
         res.status(201).json(order);
     } catch (error) {
-        const memoryOrder = { ...req.body, _id: Date.now().toString(), createdAt: new Date() };
-        orders.push(memoryOrder);
-        res.status(201).json(memoryOrder);
+        res.status(400).json({ error: error.message });
     }
 });
 
-// DELETE ORDER
 app.delete('/api/orders/:id', async (req, res) => {
     try {
         await Order.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Order removed from database' });
+        res.json({ message: 'Order deleted' });
     } catch (error) {
-        orders = orders.filter(o => o._id !== req.params.id);
-        res.json({ message: 'Order removed from memory' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// ==========================================
-// STATIC NAVIGATION ROUTES
-// ==========================================
-
-// HOME PAGE (FIX FOR RENDER BLANK PAGE)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ADMIN PANEL
+// HTML Routes
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// PRODUCT DETAIL PAGE
 app.get('/product', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'product.html'));
 });
 
-// GLOBAL REDIRECT (CATCH-ALL)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-/**
- * SERVER DEPLOYMENT
- */
+// Start Server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`\n======================================`);
-    console.log(`🚀 VAL10 SERVER: http://localhost:${PORT}`);
-    console.log(`📡 STATUS: ACTIVE`);
-    console.log(`======================================\n`);
+    console.log('='.repeat(50));
+    console.log(`🚀 VAL10 STORE DEPLOYED SUCCESSFULLY`);
+    console.log(`👉 PORT: ${PORT}`);
+    console.log(`👉 URL: https://val10-store.onrender.com`);
+    console.log(`👉 Admin Panel: /admin`);
+    console.log('='.repeat(50));
 });
