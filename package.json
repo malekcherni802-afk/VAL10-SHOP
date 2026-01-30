@@ -9,7 +9,12 @@
     "render-build": "npm install",
     "test": "echo \"No tests specified\" && exit 1"
   },
-  "keywords": ["val10", "ecommerce", "luxury", "store"],
+  "keywords": [
+    "val10",
+    "ecommerce",
+    "luxury",
+    "store"
+  ],
   "author": "VAL10 Studio",
   "license": "ISC",
   "dependencies": {
