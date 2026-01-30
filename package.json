@@ -1,25 +1,21 @@
 {
   "name": "val10-store",
-  "version": "3.0.0",
-  "description": "VAL10 Underground Luxury Store - Fixed Version",
+  "version": "1.0.0",
+  "description": "VAL10 Underground Luxury E-commerce Store",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "render": "node server.js",
-    "test": "echo \"No tests specified\""
+    "render-build": "npm install",
+    "test": "echo \"No tests specified\" && exit 1"
   },
-  "keywords": ["val10", "luxury", "ecommerce", "store"],
+  "keywords": ["val10", "ecommerce", "luxury", "store"],
   "author": "VAL10 Studio",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mongoose": "^7.5.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=16.0.0"
