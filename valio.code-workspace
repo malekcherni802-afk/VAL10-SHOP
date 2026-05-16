@@ -1,0 +1,49 @@
+{
+  "folders": [
+    {
+      "name": "VALIO — Frontend",
+      "path": "./frontend"
+    },
+    {
+      "name": "VALIO — Backend",
+      "path": "./backend"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.next": true
+    },
+    "tailwindCSS.experimental.classRegex": [
+      ["className\\s*=\\s*[\"'`]([^\"'`]*)[\"'`]"]
+    ],
+    "emmet.includeLanguages": {
+      "javascript": "javascriptreact"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "bradlc.vscode-tailwindcss",
+      "Prisma.prisma",
+      "ms-vscode.vscode-json"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Backend (Node)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder:VALIO — Backend}/server.js",
+        "envFile": "${workspaceFolder:VALIO — Backend}/.env",
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}

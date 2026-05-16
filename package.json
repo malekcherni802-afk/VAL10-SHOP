@@ -1,0 +1,17 @@
+{
+  "name": "valio",
+  "version": "1.0.0",
+  "description": "VALIO Gothic Luxury Fashion — Full Stack",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npm run seed",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+}

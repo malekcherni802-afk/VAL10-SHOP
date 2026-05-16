@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Courier+Prime&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #c0a060;
+  --accent-dim: rgba(192, 160, 96, 0.3);
+  --void: #000000;
+  --charcoal: #111111;
+  --ash: #1a1a1a;
+  --smoke: #2a2a2a;
+  --silver: #c0c0c0;
+  --ghost: #aaaaaa;
+  --mist: #666666;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background: #000;
+  color: #c0c0c0;
+  overflow-x: hidden;
+}
+
+body {
+  background: #000;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Cursor */
+* {
+  cursor: none;
+}
+
+a, button, [role="button"] {
+  cursor: none;
+}
+
+/* Gothic heading utility */
+.font-gothic {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.15em;
+}
+
+/* Valio logo style */
+.valio-logo {
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+/* Gold accent */
+.text-accent {
+  color: var(--accent);
+}
+
+.border-accent {
+  border-color: var(--accent);
+}
+
+/* Smooth reveal animation */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Noise grain overlay */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+/* Vignette */
+.vignette::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Magnetic button base */
+.magnetic-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Product card hover */
+.product-card {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+}
+
+/* Line decorations */
+.line-accent {
+  width: 60px;
+  height: 1px;
+  background: var(--accent);
+  display: inline-block;
+}
+
+/* Page transition overlay */
+#page-transition {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  transform-origin: center;
+}
+
+/* Intro overlay */
+#intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Admin styles */
+.admin-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(192, 160, 96, 0.3);
+  color: #c0c0c0;
+  padding: 10px 14px;
+  border-radius: 2px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.admin-input:focus {
+  border-color: var(--accent);
+}
+
+.admin-btn {
+  background: var(--accent);
+  color: #000;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  padding: 10px 24px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.admin-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.admin-btn-danger {
+  background: rgba(180, 50, 50, 0.8);
+  color: #fff;
+}
+
+/* Hide default scrollbar for lenis */
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
