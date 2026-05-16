@@ -2,218 +2,261 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { getImageUrl } from '../../lib/api';
 
-export default function ProductCard({ product, index = 0 }) {
+export default function ProductCard({ product, index }) {
   const cardRef = useRef(null);
-  const imgRef = useRef(null);
   const [hovered, setHovered] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    card.style.transform = `translateY(-8px) rotateX(${-y * 4}deg) rotateY(${x * 4}deg)`;
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setMousePos({ x, y });
+    const rotX = (y - 0.5) * -6;
+    const rotY = (x - 0.5) * 6;
+    card.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-6px)`;
   };
 
   const handleMouseLeave = () => {
     const card = cardRef.current;
     if (card) {
-      card.style.transform = 'translateY(0) rotateX(0) rotateY(0)';
+      card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0px)';
     }
     setHovered(false);
   };
 
-  const imageSrc = product.images?.[0]
-    ? getImageUrl(product.images[0])
-    : null;
+  const imageSrc = product.images?.[0] ? getImageUrl(product.images[0]) : null;
 
   return (
     <Link href={`/product/${product._id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div
         ref={cardRef}
+        className="product-card-v2"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={handleMouseLeave}
-        className="product-card"
         style={{
-          perspective: '800px',
-          transformStyle: 'preserve-3d',
-          transition: 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-          animationDelay: `${index * 0.1}s`,
+          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease',
         }}
       >
-        {/* Image container */}
+        {/* Image */}
         <div style={{
           position: 'relative',
           aspectRatio: '3/4',
-          background: '#111',
           overflow: 'hidden',
-          marginBottom: '16px',
+          background: 'var(--iron)',
         }}>
           {imageSrc ? (
             <img
-              ref={imgRef}
               src={imageSrc}
               alt={product.name}
+              className="card-img"
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: hovered ? 'scale(1.06)' : 'scale(1)',
-                transition: 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                filter: 'brightness(0.85)',
+                display: 'block',
               }}
             />
           ) : (
-            /* Placeholder with gothic pattern */
-            <div style={{
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(135deg, #111 0%, #1a1a1a 50%, #111 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <div style={{
-                fontFamily: 'Cinzel, serif',
-                fontSize: '3rem',
-                color: 'rgba(192,160,96,0.2)',
-                letterSpacing: '0.3em',
-              }}>
-                V
-              </div>
-              {/* Gothic grid overlay */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: `
-                  linear-gradient(rgba(192,160,96,0.05) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(192,160,96,0.05) 1px, transparent 1px)
-                `,
-                backgroundSize: '40px 40px',
-              }} />
-            </div>
+            <PlaceholderImage name={product.name} />
           )}
 
-          {/* Hover overlay */}
+          {/* Overlay gradient */}
+          <div className="card-overlay" />
+
+          {/* Glitch lines on hover */}
+          {hovered && (
+            <>
+              <div style={{
+                position: 'absolute',
+                top: `${20 + mousePos.y * 30}%`,
+                left: 0,
+                right: 0,
+                height: '1px',
+                background: 'rgba(200,255,0,0.4)',
+                pointerEvents: 'none',
+                animation: 'glitch 0.15s steps(2) 3',
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: `${55 + mousePos.y * 20}%`,
+                left: 0,
+                right: 0,
+                height: '1px',
+                background: 'rgba(200,255,0,0.2)',
+                pointerEvents: 'none',
+              }} />
+            </>
+          )}
+
+          {/* Badges */}
           <div style={{
             position: 'absolute',
-            inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            opacity: hovered ? 1 : 0,
-            transition: 'opacity 0.4s ease',
+            top: 16,
+            left: 16,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 6,
           }}>
+            {product.soldOut && (
+              <Badge label="SOLD OUT" color="var(--rust)" />
+            )}
+            {product.featured && !product.soldOut && (
+              <Badge label="FEATURED" color="var(--acid)" textColor="var(--void)" />
+            )}
+            {product.model3D && (
+              <Badge label="3D" color="rgba(100,180,255,0.9)" textColor="var(--void)" />
+            )}
+          </div>
+
+          {/* View CTA */}
+          <div
+            className="card-cta"
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              left: 0,
+              right: 0,
+              textAlign: 'center',
+              opacity: 0,
+              transform: 'translateY(8px)',
+              transition: 'opacity 0.35s ease, transform 0.35s ease',
+            }}
+          >
             <span style={{
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.7rem',
-              letterSpacing: '0.25em',
-              color: 'var(--accent)',
-              border: '1px solid rgba(192,160,96,0.6)',
-              padding: '10px 24px',
-              transform: hovered ? 'translateY(0)' : 'translateY(8px)',
-              transition: 'transform 0.3s ease',
+              display: 'inline-block',
+              fontFamily: 'var(--font-label)',
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--void)',
+              background: 'var(--acid)',
+              padding: '8px 22px',
             }}>
-              VIEW
+              View Piece
             </span>
           </div>
 
-          {/* Sold Out badge */}
-          {product.soldOut && (
-            <div style={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              background: 'rgba(0,0,0,0.85)',
-              border: '1px solid rgba(180,50,50,0.6)',
-              color: 'rgba(180,50,50,0.9)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.55rem',
-              letterSpacing: '0.15em',
-              padding: '4px 10px',
-            }}>
-              SOLD OUT
-            </div>
-          )}
+          {/* Acid border on hover */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            border: hovered ? '1px solid rgba(200,255,0,0.5)' : '1px solid transparent',
+            transition: 'border-color 0.3s ease',
+            pointerEvents: 'none',
+          }} />
 
-          {/* Featured badge */}
-          {product.featured && !product.soldOut && (
-            <div style={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              background: 'rgba(0,0,0,0.85)',
-              border: '1px solid rgba(192,160,96,0.4)',
-              color: 'var(--accent)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.55rem',
-              letterSpacing: '0.15em',
-              padding: '4px 10px',
-            }}>
-              FEATURED
-            </div>
-          )}
-
-          {/* 3D indicator */}
-          {product.model3D && (
-            <div style={{
-              position: 'absolute',
-              bottom: 12,
-              right: 12,
-              background: 'rgba(0,0,0,0.7)',
-              border: '1px solid rgba(192,160,96,0.3)',
-              color: 'rgba(192,160,96,0.8)',
-              fontFamily: 'Courier Prime, monospace',
-              fontSize: '0.6rem',
-              letterSpacing: '0.1em',
-              padding: '3px 8px',
-            }}>
-              3D
-            </div>
-          )}
+          {/* Corner marks on hover */}
+          {hovered && ['tl', 'tr', 'bl', 'br'].map(pos => (
+            <div key={pos} className={`corner-mark ${pos}`} style={{ position: 'absolute' }} />
+          ))}
         </div>
 
-        {/* Product info */}
-        <div style={{ padding: '0 4px' }}>
-          <div style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: '0.75rem',
-            letterSpacing: '0.15em',
-            color: '#fff',
-            marginBottom: '6px',
-            textTransform: 'uppercase',
-          }}>
-            {product.name}
-          </div>
-
+        {/* Info */}
+        <div style={{
+          padding: '18px 20px 20px',
+          background: 'var(--forge)',
+          borderTop: `1px solid ${hovered ? 'rgba(200,255,0,0.3)' : 'var(--slag)'}`,
+          transition: 'border-color 0.3s ease',
+        }}>
           <div style={{
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 12,
           }}>
+            <div>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                letterSpacing: '-0.01em',
+                color: '#fff',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}>
+                {product.name}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-label)',
+                fontSize: '0.6rem',
+                letterSpacing: '0.15em',
+                color: 'var(--mist)',
+                textTransform: 'uppercase',
+              }}>
+                {product.category}
+              </div>
+            </div>
             <div style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '1rem',
-              color: 'var(--accent)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              color: hovered ? 'var(--acid)' : 'var(--chrome)',
+              transition: 'color 0.3s ease',
+              flexShrink: 0,
             }}>
               ${product.price?.toLocaleString()}
-            </div>
-
-            <div style={{
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.55rem',
-              letterSpacing: '0.1em',
-              color: 'rgba(192,192,192,0.4)',
-              textTransform: 'uppercase',
-            }}>
-              {product.category}
             </div>
           </div>
         </div>
       </div>
     </Link>
+  );
+}
+
+function Badge({ label, color, textColor = '#fff' }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      background: color,
+      color: textColor,
+      fontFamily: 'var(--font-label)',
+      fontWeight: 700,
+      fontSize: '0.5rem',
+      letterSpacing: '0.12em',
+      padding: '3px 8px',
+      textTransform: 'uppercase',
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function PlaceholderImage({ name }) {
+  const initial = name ? name[0].toUpperCase() : 'V';
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: 'linear-gradient(135deg, var(--iron) 0%, var(--slag) 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    }}>
+      {/* Grid */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: `
+          linear-gradient(rgba(200,255,0,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(200,255,0,0.04) 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
+      }} />
+      <span style={{
+        fontFamily: 'var(--font-gothic)',
+        fontSize: '5rem',
+        color: 'rgba(200,255,0,0.12)',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        {initial}
+      </span>
+    </div>
   );
 }

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import ShopNav from '../../components/shop/ShopNav';
 import ImageGallery from '../../components/product/ImageGallery';
 import Footer from '../../components/shop/Footer';
@@ -17,52 +18,28 @@ export default function ProductPage({ product: initialProduct }) {
   const { id } = router.query;
   const [product, setProduct] = useState(initialProduct || null);
   const [loading, setLoading] = useState(!initialProduct);
-  const [viewMode, setViewMode] = useState('image'); // 'image' | '3d'
+  const [viewMode, setViewMode] = useState('image');
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     if (!initialProduct && id) {
       fetchProduct(id)
-        .then(p => { setProduct(p); setLoading(false); })
-        .catch(() => { setLoading(false); });
+        .then((p) => { setProduct(p); setLoading(false); })
+        .catch(() => setLoading(false));
     }
-  }, [id]);
+  }, [id, initialProduct]);
 
   useEffect(() => {
     if (product?.model3D) setViewMode('3d');
   }, [product]);
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh', background: '#000',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{
-          width: 40, height: 40,
-          border: '1px solid rgba(192,160,96,0.3)',
-          borderTop: '1px solid var(--accent)',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
+  const handleAdd = () => {
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
-  if (!product) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{
-          fontFamily: 'Cormorant Garamond, serif',
-          fontSize: '1.2rem',
-          color: 'rgba(192,192,192,0.4)',
-          fontStyle: 'italic',
-        }}>
-          Product not found.
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Loader />;
+  if (!product) return <NotFound />;
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const model3DUrl = product.model3D ? `${apiUrl}${product.model3D}` : null;
@@ -72,49 +49,55 @@ export default function ProductPage({ product: initialProduct }) {
       <Head>
         <title>{product.name} — VALIO</title>
       </Head>
-
       <ShopNav />
 
-      <main style={{ background: '#000', minHeight: '100vh', paddingTop: 100 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 48px' }}>
+      <main style={{ background: 'var(--void)', minHeight: '100vh', paddingTop: 64 }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 64px' }}>
+
           {/* Breadcrumb */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 60,
-          }}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 64,
+            }}
+          >
             <button
-              onClick={() => router.push('/shop')}
+              onClick={() => router.push('/')}
               style={{
                 background: 'none',
                 border: 'none',
-                fontFamily: 'Cinzel, serif',
-                fontSize: '0.6rem',
-                letterSpacing: '0.15em',
-                color: 'rgba(192,192,192,0.4)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.55rem',
+                letterSpacing: '0.2em',
+                color: 'var(--mist)',
                 cursor: 'none',
                 textTransform: 'uppercase',
-                transition: 'color 0.3s',
+                padding: 0,
+                transition: 'color 0.2s',
               }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(192,192,192,0.4)'}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--acid)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--mist)'}
             >
               Collection
             </button>
-            <span style={{ color: 'rgba(192,192,192,0.2)', fontSize: '0.7rem' }}>→</span>
+            <span style={{ color: 'var(--slag)', fontSize: '0.7rem' }}>→</span>
             <span style={{
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.6rem',
-              letterSpacing: '0.15em',
-              color: 'rgba(192,192,192,0.6)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.55rem',
+              letterSpacing: '0.2em',
+              color: 'var(--ghost)',
               textTransform: 'uppercase',
             }}>
               {product.name}
             </span>
-          </div>
+          </motion.div>
 
-          {/* Product layout */}
+          {/* Layout */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
@@ -122,29 +105,29 @@ export default function ProductPage({ product: initialProduct }) {
             alignItems: 'start',
           }}>
             {/* Left: viewer */}
-            <div>
-              {/* View toggle */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            >
               {product.model3D && (
-                <div style={{
-                  display: 'flex',
-                  gap: 8,
-                  marginBottom: 16,
-                }}>
-                  {['image', '3d'].map(mode => (
+                <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
+                  {['image', '3d'].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
                       style={{
-                        background: viewMode === mode ? 'rgba(192,160,96,0.15)' : 'transparent',
-                        border: `1px solid ${viewMode === mode ? 'var(--accent)' : 'rgba(192,192,192,0.2)'}`,
-                        color: viewMode === mode ? 'var(--accent)' : 'rgba(192,192,192,0.4)',
-                        fontFamily: 'Cinzel, serif',
-                        fontSize: '0.6rem',
+                        background: viewMode === mode ? 'var(--acid)' : 'var(--iron)',
+                        color: viewMode === mode ? 'var(--void)' : 'var(--mist)',
+                        border: 'none',
+                        fontFamily: 'var(--font-label)',
+                        fontWeight: 700,
+                        fontSize: '0.65rem',
                         letterSpacing: '0.15em',
-                        padding: '8px 20px',
+                        padding: '10px 24px',
                         cursor: 'none',
                         textTransform: 'uppercase',
-                        transition: 'all 0.3s',
+                        transition: 'background 0.25s, color 0.25s',
                       }}
                     >
                       {mode === '3d' ? '3D View' : 'Photos'}
@@ -156,86 +139,91 @@ export default function ProductPage({ product: initialProduct }) {
               {viewMode === '3d' && model3DUrl ? (
                 <div style={{
                   aspectRatio: '1',
-                  background: '#0a0a0a',
-                  border: '1px solid rgba(192,160,96,0.1)',
+                  background: 'var(--iron)',
+                  border: '1px solid var(--slag)',
                 }}>
                   <ProductViewer3D modelUrl={model3DUrl} />
                 </div>
               ) : (
                 <ImageGallery images={product.images} productName={product.name} />
               )}
-            </div>
+            </motion.div>
 
-            {/* Right: product info */}
-            <div style={{ paddingTop: 20 }}>
+            {/* Right: info */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            >
               {/* Category */}
               <div style={{
-                fontFamily: 'Cinzel, serif',
-                fontSize: '0.6rem',
-                letterSpacing: '0.25em',
-                color: 'rgba(192,160,96,0.6)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.55rem',
+                letterSpacing: '0.3em',
+                color: 'var(--acid)',
                 textTransform: 'uppercase',
                 marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
               }}>
+                <span style={{ width: 16, height: 1, background: 'var(--acid)', display: 'inline-block' }} />
                 {product.category}
               </div>
 
               {/* Name */}
               <h1 style={{
-                fontFamily: 'Cinzel, serif',
-                fontWeight: 700,
-                fontSize: 'clamp(1.8rem, 3vw, 3rem)',
-                letterSpacing: '0.1em',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 900,
+                fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+                letterSpacing: '-0.02em',
                 color: '#fff',
-                lineHeight: 1.2,
-                marginBottom: 24,
+                textTransform: 'uppercase',
+                lineHeight: 0.95,
+                marginBottom: 32,
               }}>
                 {product.name}
               </h1>
 
               {/* Price */}
               <div style={{
-                fontFamily: 'Cormorant Garamond, serif',
-                fontSize: '2rem',
-                color: 'var(--accent)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 800,
+                fontSize: '2.2rem',
+                color: 'var(--acid)',
+                letterSpacing: '-0.02em',
                 marginBottom: 32,
               }}>
                 ${product.price?.toLocaleString()}
               </div>
 
-              {/* Divider */}
-              <div style={{
-                width: '100%',
-                height: 1,
-                background: 'rgba(192,160,96,0.15)',
-                marginBottom: 32,
-              }} />
+              <div className="rule-h" style={{ marginBottom: 32 }} />
 
               {/* Description */}
-              <div style={{
-                fontFamily: 'Cormorant Garamond, serif',
-                fontSize: '1.05rem',
-                color: 'rgba(192,192,192,0.7)',
-                lineHeight: 1.9,
-                marginBottom: 48,
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '1rem',
+                color: 'rgba(232,232,232,0.55)',
+                lineHeight: 1.8,
+                marginBottom: 40,
               }}>
                 {product.description}
-              </div>
+              </p>
 
               {/* Tags */}
               {product.tags?.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 40 }}>
-                  {product.tags.map(tag => (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 40 }}>
+                  {product.tags.map((tag) => (
                     <span key={tag} style={{
-                      fontFamily: 'Cinzel, serif',
+                      fontFamily: 'var(--font-mono)',
                       fontSize: '0.55rem',
-                      letterSpacing: '0.15em',
-                      color: 'rgba(192,192,192,0.4)',
-                      border: '1px solid rgba(192,192,192,0.15)',
+                      letterSpacing: '0.12em',
+                      color: 'var(--mist)',
+                      border: '1px solid var(--slag)',
                       padding: '4px 12px',
                       textTransform: 'uppercase',
                     }}>
-                      {tag}
+                      #{tag}
                     </span>
                   ))}
                 </div>
@@ -244,11 +232,12 @@ export default function ProductPage({ product: initialProduct }) {
               {/* CTA */}
               {product.soldOut ? (
                 <div style={{
-                  border: '1px solid rgba(180,50,50,0.3)',
-                  color: 'rgba(180,50,50,0.7)',
-                  fontFamily: 'Cinzel, serif',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.2em',
+                  border: '1px solid rgba(255,58,26,0.3)',
+                  color: 'var(--rust)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.15em',
                   padding: '20px 40px',
                   textAlign: 'center',
                   textTransform: 'uppercase',
@@ -256,85 +245,63 @@ export default function ProductPage({ product: initialProduct }) {
                   Sold Out
                 </div>
               ) : (
-                <button
-                  style={{
-                    width: '100%',
-                    background: 'var(--accent)',
-                    color: '#000',
-                    border: 'none',
-                    fontFamily: 'Cinzel, serif',
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.25em',
-                    padding: '20px 40px',
-                    cursor: 'none',
-                    textTransform: 'uppercase',
-                    transition: 'opacity 0.3s ease, transform 0.2s ease',
-                    marginBottom: 16,
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                <motion.button
+                  className="btn-primary"
+                  onClick={handleAdd}
+                  style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Add to Collection
-                </button>
+                  {added ? '✓ Added to Collection' : 'Add to Collection'}
+                </motion.button>
               )}
 
-              {/* Wishlist */}
               <button
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  color: 'rgba(192,192,192,0.5)',
-                  border: '1px solid rgba(192,192,192,0.15)',
-                  fontFamily: 'Cinzel, serif',
-                  fontSize: '0.65rem',
-                  letterSpacing: '0.2em',
-                  padding: '14px 40px',
-                  cursor: 'none',
-                  textTransform: 'uppercase',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(192,192,192,0.4)';
-                  e.currentTarget.style.color = 'rgba(192,192,192,0.8)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'rgba(192,192,192,0.15)';
-                  e.currentTarget.style.color = 'rgba(192,192,192,0.5)';
-                }}
+                className="btn-ghost"
+                style={{ width: '100%', justifyContent: 'center' }}
               >
                 Save to Wishlist
               </button>
 
-              {/* Details */}
+              {/* Specs */}
               <div style={{
                 marginTop: 48,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
+                borderTop: '1px solid var(--slag)',
                 paddingTop: 32,
+                display: 'grid',
+                gap: 14,
               }}>
-                <div style={{
-                  fontFamily: 'Cinzel, serif',
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.2em',
-                  color: 'rgba(192,160,96,0.6)',
-                  textTransform: 'uppercase',
-                  marginBottom: 16,
-                }}>
-                  Details
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gap: 10,
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontSize: '0.9rem',
-                  color: 'rgba(192,192,192,0.5)',
-                }}>
-                  <div>Handcrafted limited edition</div>
-                  <div>Worldwide shipping available</div>
-                  <div>Returns within 14 days</div>
-                  {product.model3D && <div>3D preview available above</div>}
-                </div>
+                {[
+                  ['Material', 'Military-grade premium construction'],
+                  ['Edition', 'Limited run — handcrafted'],
+                  ['Shipping', 'Worldwide · 5–12 business days'],
+                  ['Returns', '14-day return window'],
+                ].map(([key, val]) => (
+                  <div key={key} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '140px 1fr',
+                    gap: 16,
+                  }}>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.55rem',
+                      letterSpacing: '0.2em',
+                      color: 'var(--mist)',
+                      textTransform: 'uppercase',
+                      paddingTop: 2,
+                    }}>
+                      {key}
+                    </span>
+                    <span style={{
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.85rem',
+                      color: 'var(--ghost)',
+                    }}>
+                      {val}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </main>
@@ -342,8 +309,7 @@ export default function ProductPage({ product: initialProduct }) {
       <Footer />
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
           main > div > div:last-child {
             grid-template-columns: 1fr !important;
             gap: 40px !important;
@@ -354,6 +320,46 @@ export default function ProductPage({ product: initialProduct }) {
   );
 }
 
+function Loader() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--void)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <div style={{
+        width: 32, height: 32,
+        border: '1px solid var(--slag)',
+        borderTop: '1px solid var(--acid)',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--void)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'var(--font-label)',
+      letterSpacing: '0.2em',
+      color: 'var(--mist)',
+      textTransform: 'uppercase',
+      fontSize: '0.8rem',
+    }}>
+      Product not found.
+    </div>
+  );
+}
+
 export async function getServerSideProps({ params }) {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -361,7 +367,7 @@ export async function getServerSideProps({ params }) {
     if (!res.ok) return { props: { product: null } };
     const product = await res.json();
     return { props: { product } };
-  } catch {
+  } catch (_) {
     return { props: { product: null } };
   }
 }

@@ -9,87 +9,112 @@ export default function CustomCursor() {
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
-    let mouseX = 0, mouseY = 0;
-    let ringX = 0, ringY = 0;
+    let mx = 0, my = 0;
+    let rx = 0, ry = 0;
     let animId;
+    let hovering = false;
 
     const onMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      dot.style.left = mouseX + 'px';
-      dot.style.top = mouseY + 'px';
+      mx = e.clientX;
+      my = e.clientY;
+      dot.style.left = mx + 'px';
+      dot.style.top = my + 'px';
     };
 
-    const onEnterLink = () => {
-      ring.classList.add('cursor-hover');
+    const onEnter = () => {
+      hovering = true;
+      ring.setAttribute('data-hover', '');
     };
-
-    const onLeaveLink = () => {
-      ring.classList.remove('cursor-hover');
+    const onLeave = () => {
+      hovering = false;
+      ring.removeAttribute('data-hover');
     };
 
     const animate = () => {
-      ringX += (mouseX - ringX) * 0.12;
-      ringY += (mouseY - ringY) * 0.12;
-      ring.style.left = ringX + 'px';
-      ring.style.top = ringY + 'px';
+      rx += (mx - rx) * 0.1;
+      ry += (my - ry) * 0.1;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
       animId = requestAnimationFrame(animate);
     };
 
     document.addEventListener('mousemove', onMove);
 
-    const links = document.querySelectorAll('a, button, [role="button"], .clickable');
-    links.forEach(el => {
-      el.addEventListener('mouseenter', onEnterLink);
-      el.addEventListener('mouseleave', onLeaveLink);
-    });
+    const addListeners = () => {
+      document.querySelectorAll('a, button, [role="button"], .clickable').forEach(el => {
+        el.addEventListener('mouseenter', onEnter);
+        el.addEventListener('mouseleave', onLeave);
+      });
+    };
+    addListeners();
+    const obs = new MutationObserver(addListeners);
+    obs.observe(document.body, { childList: true, subtree: true });
 
     animate();
 
     return () => {
       document.removeEventListener('mousemove', onMove);
       cancelAnimationFrame(animId);
+      obs.disconnect();
     };
   }, []);
 
   return (
     <>
       <style>{`
-        #cursor-dot {
+        #v-cursor-dot {
           position: fixed;
-          width: 6px;
-          height: 6px;
-          background: var(--accent);
+          width: 5px;
+          height: 5px;
+          background: var(--acid);
           border-radius: 50%;
           pointer-events: none;
           z-index: 99999;
           transform: translate(-50%, -50%);
-          transition: width 0.2s, height 0.2s;
+          mix-blend-mode: difference;
         }
-        #cursor-ring {
+        #v-cursor-ring {
           position: fixed;
-          width: 32px;
-          height: 32px;
-          border: 1px solid rgba(192,160,96,0.6);
-          border-radius: 50%;
+          width: 36px;
+          height: 36px;
           pointer-events: none;
           z-index: 99998;
           transform: translate(-50%, -50%);
-          transition: width 0.3s, height 0.3s, border-color 0.3s;
+          transition: width 0.25s ease, height 0.25s ease;
         }
-        #cursor-ring.cursor-hover {
-          width: 56px;
-          height: 56px;
-          border-color: var(--accent);
-          background: rgba(192,160,96,0.08);
+        #v-cursor-ring::before,
+        #v-cursor-ring::after {
+          content: '';
+          position: absolute;
+          background: var(--acid);
+          opacity: 0.6;
+          transition: opacity 0.25s;
+        }
+        /* crosshair lines */
+        #v-cursor-ring::before {
+          left: 50%; top: 0; bottom: 0;
+          width: 1px;
+          transform: translateX(-50%);
+        }
+        #v-cursor-ring::after {
+          top: 50%; left: 0; right: 0;
+          height: 1px;
+          transform: translateY(-50%);
+        }
+        #v-cursor-ring[data-hover] {
+          width: 60px;
+          height: 60px;
+        }
+        #v-cursor-ring[data-hover]::before,
+        #v-cursor-ring[data-hover]::after {
+          opacity: 1;
         }
         @media (max-width: 768px) {
-          #cursor-dot, #cursor-ring { display: none; }
-          * { cursor: auto !important; }
+          #v-cursor-dot, #v-cursor-ring { display: none; }
         }
       `}</style>
-      <div id="cursor-dot" ref={dotRef} />
-      <div id="cursor-ring" ref={ringRef} />
+      <div id="v-cursor-dot" ref={dotRef} />
+      <div id="v-cursor-ring" ref={ringRef} />
     </>
   );
 }

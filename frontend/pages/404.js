@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import SmokeCanvas from '../components/intro/SmokeCanvas';
+import { motion } from 'framer-motion';
 
 export default function NotFound() {
   return (
@@ -8,88 +8,71 @@ export default function NotFound() {
       <Head><title>404 — VALIO</title></Head>
       <div style={{
         minHeight: '100vh',
-        background: '#000',
+        background: 'var(--void)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
+        textAlign: 'center',
+        padding: 40,
         position: 'relative',
         overflow: 'hidden',
       }}>
-        <SmokeCanvas opacity={0.3} />
+        {/* Grid bg */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `
+            linear-gradient(rgba(200,255,0,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(200,255,0,0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }} />
 
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
           <div style={{
-            fontFamily: 'Cinzel, serif',
+            fontFamily: 'var(--font-display)',
             fontWeight: 900,
             fontSize: 'clamp(6rem, 20vw, 14rem)',
-            color: 'rgba(192,160,96,0.08)',
+            color: 'var(--acid)',
+            letterSpacing: '-0.04em',
             lineHeight: 1,
-            letterSpacing: '0.1em',
-            userSelect: 'none',
+            opacity: 0.15,
+            marginBottom: -20,
           }}>
             404
           </div>
 
           <div style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: '0.7rem',
-            letterSpacing: '0.4em',
-            color: 'var(--accent)',
-            textTransform: 'uppercase',
-            marginBottom: 16,
+            fontFamily: 'var(--font-gothic)',
+            fontSize: 'clamp(1.5rem, 4vw, 3rem)',
+            color: '#fff',
+            marginBottom: 24,
           }}>
             Lost in the Dark
           </div>
 
-          <div style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: '1.1rem',
-            color: 'rgba(192,192,192,0.4)',
-            fontStyle: 'italic',
+          <p style={{
+            fontFamily: 'var(--font-label)',
+            fontSize: '0.8rem',
+            letterSpacing: '0.15em',
+            color: 'var(--mist)',
+            textTransform: 'uppercase',
             marginBottom: 48,
+            maxWidth: 400,
           }}>
-            This page has vanished into the void.
-          </div>
+            This shadow does not exist. Return to the collection.
+          </p>
 
-          <Link href="/shop">
-            <button style={{
-              background: 'transparent',
-              border: '1px solid rgba(192,160,96,0.5)',
-              color: 'var(--accent)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '0.65rem',
-              letterSpacing: '0.25em',
-              padding: '14px 40px',
-              cursor: 'none',
-              textTransform: 'uppercase',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(192,160,96,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Return to Collection
-            </button>
+          <Link href="/" className="btn-primary" style={{ textDecoration: 'none' }}>
+            Return to VALIO
           </Link>
-        </div>
-
-        {/* Corner decorations */}
-        {[
-          { top: 32, left: 32, borderTop: true, borderLeft: true },
-          { top: 32, right: 32, borderTop: true, borderRight: true },
-          { bottom: 32, left: 32, borderBottom: true, borderLeft: true },
-          { bottom: 32, right: 32, borderBottom: true, borderRight: true },
-        ].map((c, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            ...c,
-            width: 40,
-            height: 40,
-            borderTop: c.borderTop ? '1px solid rgba(192,160,96,0.25)' : undefined,
-            borderBottom: c.borderBottom ? '1px solid rgba(192,160,96,0.25)' : undefined,
-            borderLeft: c.borderLeft ? '1px solid rgba(192,160,96,0.25)' : undefined,
-            borderRight: c.borderRight ? '1px solid rgba(192,160,96,0.25)' : undefined,
-          }} />
-        ))}
+        </motion.div>
       </div>
     </>
   );

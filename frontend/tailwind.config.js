@@ -8,45 +8,69 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        void: '#000000',
-        charcoal: '#111111',
-        ash: '#1a1a1a',
-        smoke: '#2a2a2a',
-        silver: '#c0c0c0',
-        gold: '#c0a060',
-        mist: '#666666',
-        ghost: '#aaaaaa',
+        void:     '#000000',
+        obsidian: '#080808',
+        forge:    '#0d0d0d',
+        iron:     '#111111',
+        slag:     '#1a1a1a',
+        steel:    '#242424',
+        blade:    '#2e2e2e',
+        chrome:   '#e8e8e8',
+        white:    '#ffffff',
+        acid:     '#c8ff00',       /* neon chartreuse accent */
+        rust:     '#ff3a1a',       /* industrial rust red */
+        ember:    '#ff6b00',       /* hot metal orange */
+        mist:     '#5a5a5a',
+        ghost:    '#888888',
       },
       fontFamily: {
-        gothic: ['Cinzel', 'serif'],
-        body: ['Cormorant Garamond', 'serif'],
-        mono: ['Courier Prime', 'monospace'],
+        display:  ['"Unbounded"', 'sans-serif'],
+        gothic:   ['"Uncial Antiqua"', 'serif'],
+        body:     ['"Space Grotesk"', 'sans-serif'],
+        mono:     ['"Space Mono"', 'monospace'],
+        label:    ['"Barlow Condensed"', 'sans-serif'],
+      },
+      letterSpacing: {
+        'ultra':  '0.5em',
+        'wide':   '0.25em',
+        'tight':  '-0.04em',
+      },
+      backgroundImage: {
+        'noise': "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
       },
       animation: {
-        'fade-in': 'fadeIn 1.5s ease forwards',
-        'float': 'float 6s ease-in-out infinite',
-        'smoke-drift': 'smokeDrift 20s ease-in-out infinite',
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'flicker':     'flicker 3s linear infinite',
+        'scan':        'scan 8s linear infinite',
+        'glitch':      'glitch 0.3s steps(2) infinite',
+        'drift':       'drift 20s ease-in-out infinite',
+        'pulse-acid':  'pulseAcid 2s ease-in-out infinite',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+        flicker: {
+          '0%, 97%, 100%': { opacity: '1' },
+          '98%':           { opacity: '0.4' },
+          '99%':           { opacity: '0.8' },
         },
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-10px)' },
+        scan: {
+          '0%':   { backgroundPosition: '0 -100vh' },
+          '100%': { backgroundPosition: '0 100vh' },
         },
-        smokeDrift: {
-          '0%': { transform: 'translateX(-10%) translateY(10%) scale(1)', opacity: '0.3' },
-          '50%': { transform: 'translateX(5%) translateY(-5%) scale(1.1)', opacity: '0.5' },
-          '100%': { transform: 'translateX(-10%) translateY(10%) scale(1)', opacity: '0.3' },
-        }
+        glitch: {
+          '0%':   { clipPath: 'inset(30% 0 40% 0)', transform: 'translateX(-4px)' },
+          '50%':  { clipPath: 'inset(60% 0 10% 0)', transform: 'translateX(4px)' },
+          '100%': { clipPath: 'inset(10% 0 70% 0)', transform: 'translateX(-2px)' },
+        },
+        drift: {
+          '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%':      { transform: 'translate(10px, -8px) scale(1.01)' },
+          '66%':      { transform: 'translate(-6px, 12px) scale(0.99)' },
+        },
+        pulseAcid: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(200,255,0,0.3)' },
+          '50%':      { boxShadow: '0 0 40px rgba(200,255,0,0.7), 0 0 80px rgba(200,255,0,0.2)' },
+        },
       },
-      backdropBlur: {
-        xs: '2px',
-      }
     },
   },
   plugins: [],
-}
+};
