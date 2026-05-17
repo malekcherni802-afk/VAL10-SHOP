@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchSettings } from './api';
+import { fetchSiteSettings } from './api';
 
 const DEFAULT_SETTINGS = {
   accentColor: '#c0a060',
@@ -24,7 +24,7 @@ export function useSettings() {
     }
 
     if (!fetchPromise) {
-      fetchPromise = fetchSettings();
+      fetchPromise = fetchSiteSettings();
     }
 
     fetchPromise

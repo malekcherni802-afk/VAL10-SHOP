@@ -2,30 +2,34 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchProducts, getImageUrl } from '../lib/api';
+import { fetchProducts, getImageUrl, fetchBackgrounds, fetchSiteSettings } from '../lib/api';
 
 /* ── STAGE ─────────────────────────────────────────────────── */
 const S = { INTRO: 'intro', PORTAL: 'portal', SHOP: 'shop' };
 
-/* ── REAL BRAND PHOTOS ──────────────────────────────────────── */
-const SLIDES = [
-  '/lookbook-8.jpg', // sunset field – cinematic wide
-  '/lookbook-7.jpg', // two hoodies from behind, rocky hillside
-  '/lookbook-1.jpg', // Made for Legacy street
-  '/lookbook-5.jpg', // gym long-sleeve black
-  '/lookbook-6.jpg', // logo close-up
-  '/lookbook-4.jpg', // group gym shot
-  '/lookbook-2.jpg', // duo gym pose
-  '/lookbook-3.jpg', // two guys crossed arms
+/* ── FALLBACK PHOTOS (used when no dynamic backgrounds exist) ── */
+const FALLBACK_SLIDES = [
+  '/lookbook-8.jpg',
+  '/lookbook-7.jpg',
+  '/lookbook-1.jpg',
+  '/lookbook-5.jpg',
+  '/lookbook-6.jpg',
+  '/lookbook-4.jpg',
+  '/lookbook-2.jpg',
+  '/lookbook-3.jpg',
 ];
 
 /* ════════════════════════════════════════════════════════════ */
 /*  BOUTIQUE BACKGROUND                                        */
 /* ════════════════════════════════════════════════════════════ */
-function BoutiqueScene() {
+function BoutiqueScene({ introSettings }) {
+  const opacity = parseFloat(introSettings?.introOpacity) || 0.6;
+  const imgWidth = introSettings?.introImageWidth === '100pct' ? '100%' : (introSettings?.introImageWidth || '100%');
+  const imgHeight = introSettings?.introImageHeight || 'auto';
+
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      {/* Dimly lit boutique — real photo as backdrop */}
+      {/* Dimly lit boutique - real photo as backdrop */}
       <div style={{
         position: 'absolute', inset: 0,
         backgroundImage: 'url(/lookbook-7.jpg)',
@@ -33,6 +37,10 @@ function BoutiqueScene() {
         backgroundPosition: 'center 30%',
         filter: 'brightness(0.18) saturate(0.6)',
         transform: 'scale(1.05)',
+        opacity,
+        width: imgWidth,
+        height: imgHeight === 'auto' ? '100%' : imgHeight,
+        transition: 'opacity 0.5s ease',
       }} />
 
       {/* Atmospheric deep gradient */}
@@ -157,7 +165,7 @@ function BoutiqueScene() {
 /* ════════════════════════════════════════════════════════════ */
 /*  INTRO SCREEN                                               */
 /* ════════════════════════════════════════════════════════════ */
-function IntroScreen({ onShop }) {
+function IntroScreen({ onShop, introSettings }) {
   const [ready, setReady] = useState(false);
   const [oHover, setOHover] = useState(false);
 
@@ -176,7 +184,7 @@ function IntroScreen({ onShop }) {
       alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden',
     }}>
-      <BoutiqueScene />
+      <BoutiqueScene introSettings={introSettings} />
 
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px' }}>
@@ -728,6 +736,8 @@ function ShopInterface({ onReenter }) {
   const [products, setProducts] = useState([]);
   const [filter, setFilter]     = useState('all');
   const [loading, setLoading]   = useState(true);
+  const [bgImages, setBgImages]  = useState(FALLBACK_SLIDES);
+  const [introSettings, setIntroSettings] = useState(null);
   const lenisRef = useRef(null);
 
   useEffect(() => {
@@ -741,6 +751,26 @@ function ShopInterface({ onReenter }) {
       } catch (_) {}
     })();
     return () => { lenisRef.current?.destroy(); };
+  }, []);
+
+  // Fetch dynamic backgrounds
+  useEffect(() => {
+    fetchBackgrounds()
+      .then(data => {
+        if (data && data.length > 0) {
+          setBgImages(data.map(b => b.url));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch intro settings
+  useEffect(() => {
+    fetchSiteSettings()
+      .then(data => {
+        if (data) setIntroSettings(data);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -787,7 +817,7 @@ function ShopInterface({ onReenter }) {
           height: '100vh', position: 'relative', overflow: 'hidden',
           display: 'flex', alignItems: 'flex-end',
         }}>
-          <BackgroundSlider images={SLIDES} />
+          <BackgroundSlider images={bgImages} />
 
           <div style={{
             position: 'relative', zIndex: 2,
@@ -1169,6 +1199,14 @@ function Spinner() {
 /* ════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   const [stage, setStage] = useState(S.INTRO);
+  const [introSettings, setIntroSettings] = useState(null);
+
+  // Fetch intro settings on mount
+  useEffect(() => {
+    fetchSiteSettings()
+      .then(data => { if (data) setIntroSettings(data); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1197,7 +1235,7 @@ export default function HomePage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <IntroScreen onShop={enterShop} />
+            <IntroScreen onShop={enterShop} introSettings={introSettings} />
           </motion.div>
         )}
       </AnimatePresence>

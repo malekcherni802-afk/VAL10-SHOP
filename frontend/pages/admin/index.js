@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { adminLogin, fetchProducts, deleteProduct, updateSettings, fetchSettings } from '../../lib/api';
+import { adminLogin, fetchProducts, deleteProduct, updateSiteSettings, fetchSiteSettings } from '../../lib/api';
 import AdminProductForm from '../../components/admin/AdminProductForm';
 import AdminProductList from '../../components/admin/AdminProductList';
 
@@ -62,7 +62,7 @@ export default function AdminPage() {
 
   async function loadSettings() {
     try {
-      const s = await fetchSettings();
+      const s = await fetchSiteSettings();
       setSettings(s);
     } catch (e) {}
   }
@@ -74,7 +74,7 @@ export default function AdminPage() {
   }
 
   async function handleSaveSettings() {
-    await updateSettings(settings, token);
+    await updateSiteSettings(settings);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);
   }

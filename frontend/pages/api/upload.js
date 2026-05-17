@@ -15,25 +15,42 @@ export default async function handler(req, res) {
   const apiKey     = process.env.CLOUDINARY_API_KEY;
   const apiSecret  = process.env.CLOUDINARY_API_SECRET;
 
+  console.log('[upload] Cloudinary config check:', {
+    cloudName: cloudName ? `SET (${cloudName.length} chars)` : 'MISSING',
+    apiKey:    apiKey    ? `SET (${apiKey.length} chars)`    : 'MISSING',
+    apiSecret: apiSecret ? `SET (${apiSecret.length} chars)` : 'MISSING',
+  });
+
   if (!cloudName || !apiKey || !apiSecret) {
-    return res.status(500).json({ error: 'Cloudinary not configured' });
+    const missing = [];
+    if (!cloudName) missing.push('CLOUDINARY_CLOUD_NAME');
+    if (!apiKey)    missing.push('CLOUDINARY_API_KEY');
+    if (!apiSecret) missing.push('CLOUDINARY_API_SECRET');
+    console.error('[upload] Missing env vars:', missing.join(', '));
+    return res.status(500).json({
+      error: `Cloudinary not configured. Missing: ${missing.join(', ')}`,
+      missing,
+    });
   }
 
   try {
-    // Parse multipart body without external parser
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const buffer = Buffer.concat(chunks);
 
-    // Extract boundary from Content-Type header
+    if (buffer.length === 0) {
+      console.error('[upload] Empty request body');
+      return res.status(400).json({ error: 'Empty request body' });
+    }
+
     const contentType = req.headers['content-type'] || '';
     const boundaryMatch = contentType.match(/boundary=(.+)$/);
     if (!boundaryMatch) {
-      return res.status(400).json({ error: 'No boundary found' });
+      console.error('[upload] No boundary in Content-Type:', contentType);
+      return res.status(400).json({ error: 'No boundary found in Content-Type' });
     }
     const boundary = boundaryMatch[1];
 
-    // Parse multipart manually
     const parts = buffer.toString('binary').split(`--${boundary}`);
     let fileData = null;
     let fileName = 'upload';
@@ -54,14 +71,15 @@ export default async function handler(req, res) {
     }
 
     if (!fileData) {
+      console.error('[upload] No file data found in multipart body');
       return res.status(400).json({ error: 'No file found in request' });
     }
 
-    // Build signed Cloudinary upload
+    console.log('[upload] File parsed:', { fileName, fileMime, size: fileData.length });
+
     const timestamp = Math.round(Date.now() / 1000);
     const folder    = 'valio';
 
-    // Generate HMAC-SHA1 signature
     const crypto = await import('crypto');
     const signStr = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const signature = crypto
@@ -69,7 +87,6 @@ export default async function handler(req, res) {
       .update(signStr)
       .digest('hex');
 
-    // Build form for Cloudinary
     const form = new FormData();
     const blob = new Blob([fileData], { type: fileMime });
     form.append('file', blob, fileName);
@@ -78,24 +95,32 @@ export default async function handler(req, res) {
     form.append('signature', signature);
     form.append('folder', folder);
 
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: form }
-    );
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    console.log('[upload] Sending to Cloudinary:', uploadUrl);
+
+    const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
 
     if (!uploadRes.ok) {
       const errText = await uploadRes.text();
-      console.error('Cloudinary error:', errText);
-      return res.status(500).json({ error: 'Cloudinary upload failed' });
+      console.error('[upload] Cloudinary API error:', uploadRes.status, errText);
+      return res.status(502).json({
+        error: 'Cloudinary upload failed',
+        status: uploadRes.status,
+        detail: errText,
+      });
     }
 
     const data = await uploadRes.json();
+    console.log('[upload] Upload successful:', data.secure_url);
     return res.status(200).json({
       url:       data.secure_url,
       public_id: data.public_id,
     });
   } catch (err) {
-    console.error('Upload error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('[upload] Unhandled error:', err);
+    return res.status(500).json({
+      error: 'Internal server error',
+      detail: err.message,
+    });
   }
 }
