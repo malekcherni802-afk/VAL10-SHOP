@@ -9,8 +9,7 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
-      <div className="grain-overlay" aria-hidden="true" />
-      <div className="scanline" aria-hidden="true" />
+      <div className="grain" aria-hidden="true" />
       <CustomCursor />
       <Component {...pageProps} />
     </>

@@ -1,342 +1,281 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import ShopNav from '../../components/shop/ShopNav';
-import ImageGallery from '../../components/product/ImageGallery';
-import Footer from '../../components/shop/Footer';
 import { fetchProduct, getImageUrl } from '../../lib/api';
 
-const ProductViewer3D = dynamic(
-  () => import('../../components/product/ProductViewer3D'),
-  { ssr: false }
-);
-
-export default function ProductPage({ product: initialProduct }) {
-  const router = useRouter();
-  const { id } = router.query;
-  const [product, setProduct] = useState(initialProduct || null);
-  const [loading, setLoading] = useState(!initialProduct);
-  const [viewMode, setViewMode] = useState('image');
-  const [added, setAdded] = useState(false);
+export default function ProductPage({ product: init }) {
+  const router  = useRouter();
+  const { id }  = router.query;
+  const [product, setProduct] = useState(init || null);
+  const [loading, setLoading] = useState(!init);
+  const [activeImg, setActiveImg] = useState(0);
+  const [added, setAdded]         = useState(false);
 
   useEffect(() => {
-    if (!initialProduct && id) {
+    if (!init && id) {
       fetchProduct(id)
-        .then((p) => { setProduct(p); setLoading(false); })
+        .then(p => { setProduct(p); setLoading(false); })
         .catch(() => setLoading(false));
     }
-  }, [id, initialProduct]);
+  }, [id, init]);
 
-  useEffect(() => {
-    if (product?.model3D) setViewMode('3d');
-  }, [product]);
-
-  const handleAdd = () => {
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
-
-  if (loading) return <Loader />;
+  if (loading) return <FullLoader />;
   if (!product) return <NotFound />;
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  const model3DUrl = product.model3D ? `${apiUrl}${product.model3D}` : null;
+  const images = product.images || [];
+  const activeSrc = images[activeImg] ? getImageUrl(images[activeImg]) : null;
 
   return (
     <>
       <Head>
         <title>{product.name} — VALIO</title>
       </Head>
-      <ShopNav />
 
-      <main style={{ background: 'var(--void)', minHeight: '100vh', paddingTop: 64 }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 64px' }}>
+      {/* Minimal nav */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        height: 68, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '0 52px',
+        background: 'rgba(0,0,0,0.95)', borderBottom: '1px solid var(--steel)',
+        backdropFilter: 'blur(16px)',
+      }}>
+        <button
+          onClick={() => router.push('/')}
+          style={{
+            background: 'none', border: 'none', color: 'var(--ghost)',
+            fontFamily: '"DM Mono", monospace', fontSize: '0.6rem',
+            letterSpacing: '0.2em', textTransform: 'uppercase',
+            cursor: 'none', transition: 'color .2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--ghost)'}
+        >
+          ← Collection
+        </button>
+        <div style={{
+          fontFamily: '"Uncial Antiqua", serif',
+          fontSize: '1.5rem', color: '#fff',
+        }}>
+          VALIO
+        </div>
+        <div style={{ width: 100 }} />
+      </nav>
 
-          {/* Breadcrumb */}
+      <main style={{ background: 'var(--void)', minHeight: '100vh', paddingTop: 68 }}>
+        <div style={{ maxWidth: 1300, margin: '0 auto', padding: '60px 52px' }}>
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 64,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 80, alignItems: 'start',
             }}
           >
-            <button
-              onClick={() => router.push('/')}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.55rem',
-                letterSpacing: '0.2em',
-                color: 'var(--mist)',
-                cursor: 'none',
-                textTransform: 'uppercase',
-                padding: 0,
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--acid)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--mist)'}
-            >
-              Collection
-            </button>
-            <span style={{ color: 'var(--slag)', fontSize: '0.7rem' }}>→</span>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.55rem',
-              letterSpacing: '0.2em',
-              color: 'var(--ghost)',
-              textTransform: 'uppercase',
-            }}>
-              {product.name}
-            </span>
-          </motion.div>
+            {/* Left — gallery */}
+            <div>
+              {/* Main image */}
+              <div style={{
+                aspectRatio: '3/4', overflow: 'hidden',
+                background: 'var(--forge)', marginBottom: 10,
+                position: 'relative',
+              }}>
+                {activeSrc ? (
+                  <img
+                    src={activeSrc}
+                    alt={product.name}
+                    style={{
+                      width: '100%', height: '100%',
+                      objectFit: 'cover', display: 'block',
+                      filter: 'brightness(0.88) contrast(1.05)',
+                    }}
+                  />
+                ) : <PlaceholderImg />}
+                {/* Gold border */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  border: '1px solid rgba(212,168,67,0.2)',
+                  pointerEvents: 'none',
+                }} />
+              </div>
 
-          {/* Layout */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 80,
-            alignItems: 'start',
-          }}>
-            {/* Left: viewer */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {product.model3D && (
-                <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
-                  {['image', '3d'].map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setViewMode(mode)}
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {images.map((img, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setActiveImg(i)}
                       style={{
-                        background: viewMode === mode ? 'var(--acid)' : 'var(--iron)',
-                        color: viewMode === mode ? 'var(--void)' : 'var(--mist)',
-                        border: 'none',
-                        fontFamily: 'var(--font-label)',
-                        fontWeight: 700,
-                        fontSize: '0.65rem',
-                        letterSpacing: '0.15em',
-                        padding: '10px 24px',
+                        width: 64, height: 64, overflow: 'hidden',
+                        border: i === activeImg
+                          ? '1px solid var(--gold)'
+                          : '1px solid var(--blade)',
+                        opacity: i === activeImg ? 1 : 0.5,
                         cursor: 'none',
-                        textTransform: 'uppercase',
-                        transition: 'background 0.25s, color 0.25s',
+                        transition: 'border-color .3s, opacity .3s',
+                        flexShrink: 0,
                       }}
                     >
-                      {mode === '3d' ? '3D View' : 'Photos'}
-                    </button>
+                      <img
+                        src={getImageUrl(img)}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
+            </div>
 
-              {viewMode === '3d' && model3DUrl ? (
-                <div style={{
-                  aspectRatio: '1',
-                  background: 'var(--iron)',
-                  border: '1px solid var(--slag)',
-                }}>
-                  <ProductViewer3D modelUrl={model3DUrl} />
-                </div>
-              ) : (
-                <ImageGallery images={product.images} productName={product.name} />
-              )}
-            </motion.div>
-
-            {/* Right: info */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {/* Category */}
+            {/* Right — info */}
+            <div>
               <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.55rem',
-                letterSpacing: '0.3em',
-                color: 'var(--acid)',
-                textTransform: 'uppercase',
-                marginBottom: 16,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
+                fontFamily: '"DM Mono", monospace', fontSize: '0.55rem',
+                letterSpacing: '0.3em', color: 'var(--gold)',
+                textTransform: 'uppercase', marginBottom: 18,
+                display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <span style={{ width: 16, height: 1, background: 'var(--acid)', display: 'inline-block' }} />
-                {product.category}
+                <span style={{ width: 14, height: 1, background: 'var(--gold)', display: 'inline-block' }} />
+                {product.category || 'Apparel'}
               </div>
 
-              {/* Name */}
               <h1 style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 900,
-                fontSize: 'clamp(2rem, 4vw, 3.5rem)',
-                letterSpacing: '-0.02em',
-                color: '#fff',
-                textTransform: 'uppercase',
-                lineHeight: 0.95,
-                marginBottom: 32,
+                fontFamily: '"Bebas Neue", sans-serif', fontWeight: 400,
+                fontSize: 'clamp(2.2rem, 4vw, 3.8rem)',
+                letterSpacing: '0.05em', color: '#fff',
+                textTransform: 'uppercase', lineHeight: 0.95,
+                marginBottom: 28,
               }}>
                 {product.name}
               </h1>
 
-              {/* Price */}
               <div style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                fontSize: '2.2rem',
-                color: 'var(--acid)',
-                letterSpacing: '-0.02em',
-                marginBottom: 32,
+                fontFamily: '"Playfair Display", serif',
+                fontWeight: 500, fontSize: '2rem',
+                color: 'var(--gold)', marginBottom: 32,
               }}>
-                ${product.price?.toLocaleString()}
+                {product.price ? `${Number(product.price).toLocaleString()} DZD` : ''}
               </div>
 
-              <div className="rule-h" style={{ marginBottom: 32 }} />
+              <div style={{ width: '100%', height: 1, background: 'var(--blade)', marginBottom: 32 }} />
 
-              {/* Description */}
               <p style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '1rem',
-                color: 'rgba(232,232,232,0.55)',
-                lineHeight: 1.8,
-                marginBottom: 40,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '0.98rem', color: 'rgba(232,232,232,0.55)',
+                lineHeight: 1.85, marginBottom: 44,
               }}>
                 {product.description}
               </p>
 
-              {/* Tags */}
               {product.tags?.length > 0 && (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 40 }}>
-                  {product.tags.map((tag) => (
-                    <span key={tag} style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.55rem',
-                      letterSpacing: '0.12em',
-                      color: 'var(--mist)',
-                      border: '1px solid var(--slag)',
-                      padding: '4px 12px',
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 44 }}>
+                  {product.tags.map(t => (
+                    <span key={t} style={{
+                      fontFamily: '"DM Mono", monospace', fontSize: '0.52rem',
+                      letterSpacing: '0.12em', color: 'var(--ash)',
+                      border: '1px solid var(--blade)', padding: '4px 12px',
                       textTransform: 'uppercase',
                     }}>
-                      #{tag}
+                      {t}
                     </span>
                   ))}
                 </div>
               )}
 
-              {/* CTA */}
               {product.soldOut ? (
                 <div style={{
-                  border: '1px solid rgba(255,58,26,0.3)',
-                  color: 'var(--rust)',
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 700,
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.15em',
-                  padding: '20px 40px',
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
+                  fontFamily: '"Bebas Neue", sans-serif', fontSize: '1rem',
+                  letterSpacing: '0.15em', textAlign: 'center', padding: '20px',
+                  border: '1px solid rgba(200,60,40,0.3)',
+                  color: 'rgba(200,60,40,0.7)',
                 }}>
-                  Sold Out
+                  SOLD OUT
                 </div>
               ) : (
-                <motion.button
-                  className="btn-primary"
-                  onClick={handleAdd}
-                  style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {added ? '✓ Added to Collection' : 'Add to Collection'}
-                </motion.button>
+                <>
+                  <motion.button
+                    className="btn-gold"
+                    onClick={() => { setAdded(true); setTimeout(() => setAdded(false), 2200); }}
+                    whileTap={{ scale: 0.97 }}
+                    style={{ width: '100%', justifyContent: 'center', marginBottom: 12 }}
+                  >
+                    {added ? '✓ ADDED' : 'ADD TO COLLECTION'}
+                  </motion.button>
+                  <button className="btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+                    SAVE TO WISHLIST
+                  </button>
+                </>
               )}
 
-              <button
-                className="btn-ghost"
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                Save to Wishlist
-              </button>
-
               {/* Specs */}
-              <div style={{
-                marginTop: 48,
-                borderTop: '1px solid var(--slag)',
-                paddingTop: 32,
-                display: 'grid',
-                gap: 14,
-              }}>
+              <div style={{ marginTop: 48, borderTop: '1px solid var(--blade)', paddingTop: 32 }}>
                 {[
-                  ['Material', 'Military-grade premium construction'],
-                  ['Edition', 'Limited run — handcrafted'],
-                  ['Shipping', 'Worldwide · 5–12 business days'],
-                  ['Returns', '14-day return window'],
-                ].map(([key, val]) => (
-                  <div key={key} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '140px 1fr',
-                    gap: 16,
+                  ['Material',  'Premium performance fabric'],
+                  ['Edition',   'Limited — handcrafted run'],
+                  ['Shipping',  'Algeria · Worldwide available'],
+                  ['Returns',   '14-day return window'],
+                ].map(([k, v]) => (
+                  <div key={k} style={{
+                    display: 'grid', gridTemplateColumns: '130px 1fr',
+                    gap: 16, marginBottom: 14,
                   }}>
                     <span style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.55rem',
-                      letterSpacing: '0.2em',
-                      color: 'var(--mist)',
-                      textTransform: 'uppercase',
-                      paddingTop: 2,
+                      fontFamily: '"DM Mono", monospace', fontSize: '0.52rem',
+                      letterSpacing: '0.18em', color: 'var(--ash)',
+                      textTransform: 'uppercase', paddingTop: 2,
                     }}>
-                      {key}
+                      {k}
                     </span>
                     <span style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '0.85rem',
-                      color: 'var(--ghost)',
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontSize: '0.85rem', color: 'var(--ghost)',
                     }}>
-                      {val}
+                      {v}
                     </span>
                   </div>
                 ))}
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </main>
 
-      <Footer />
-
       <style>{`
         @media (max-width: 900px) {
-          main > div > div:last-child {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
+          main > div > div { grid-template-columns: 1fr !important; gap: 48px !important; }
         }
       `}</style>
     </>
   );
 }
 
-function Loader() {
+function PlaceholderImg() {
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'var(--void)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: '100%', height: '100%',
+      background: 'var(--forge)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span style={{ fontFamily: '"Uncial Antiqua", serif', fontSize: '5rem', color: 'rgba(212,168,67,0.12)' }}>V</span>
+    </div>
+  );
+}
+
+function FullLoader() {
+  return (
+    <div style={{
+      minHeight: '100vh', background: '#000',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
         width: 32, height: 32,
-        border: '1px solid var(--slag)',
-        borderTop: '1px solid var(--acid)',
-        borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite',
+        border: '1px solid var(--steel)', borderTop: '1px solid var(--gold)',
+        borderRadius: '50%', animation: 'spin .8s linear infinite',
       }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
@@ -344,16 +283,10 @@ function Loader() {
 function NotFound() {
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'var(--void)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'var(--font-label)',
-      letterSpacing: '0.2em',
-      color: 'var(--mist)',
-      textTransform: 'uppercase',
-      fontSize: '0.8rem',
+      minHeight: '100vh', background: '#000',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '"DM Mono", monospace', fontSize: '0.7rem',
+      letterSpacing: '0.2em', color: 'var(--ash)', textTransform: 'uppercase',
     }}>
       Product not found.
     </div>
@@ -365,8 +298,7 @@ export async function getServerSideProps({ params }) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const res = await fetch(`${apiUrl}/api/products/${params.id}`);
     if (!res.ok) return { props: { product: null } };
-    const product = await res.json();
-    return { props: { product } };
+    return { props: { product: await res.json() } };
   } catch (_) {
     return { props: { product: null } };
   }

@@ -1,120 +1,90 @@
 import { useEffect, useRef } from 'react';
 
 export default function CustomCursor() {
-  const dotRef = useRef(null);
+  const dotRef  = useRef(null);
   const ringRef = useRef(null);
 
   useEffect(() => {
-    const dot = dotRef.current;
+    const dot  = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
 
-    let mx = 0, my = 0;
-    let rx = 0, ry = 0;
-    let animId;
-    let hovering = false;
+    let mx = 0, my = 0, rx = 0, ry = 0, rafId;
 
     const onMove = (e) => {
-      mx = e.clientX;
-      my = e.clientY;
+      mx = e.clientX; my = e.clientY;
       dot.style.left = mx + 'px';
-      dot.style.top = my + 'px';
+      dot.style.top  = my + 'px';
     };
 
-    const onEnter = () => {
-      hovering = true;
-      ring.setAttribute('data-hover', '');
-    };
-    const onLeave = () => {
-      hovering = false;
-      ring.removeAttribute('data-hover');
-    };
+    const onEnter = () => ring.setAttribute('data-hover', '');
+    const onLeave = () => ring.removeAttribute('data-hover');
 
-    const animate = () => {
+    const tick = () => {
       rx += (mx - rx) * 0.1;
       ry += (my - ry) * 0.1;
       ring.style.left = rx + 'px';
-      ring.style.top = ry + 'px';
-      animId = requestAnimationFrame(animate);
+      ring.style.top  = ry + 'px';
+      rafId = requestAnimationFrame(tick);
     };
 
     document.addEventListener('mousemove', onMove);
 
-    const addListeners = () => {
-      document.querySelectorAll('a, button, [role="button"], .clickable').forEach(el => {
+    const attach = () => {
+      document.querySelectorAll('a,button,[role="button"]').forEach(el => {
         el.addEventListener('mouseenter', onEnter);
         el.addEventListener('mouseleave', onLeave);
       });
     };
-    addListeners();
-    const obs = new MutationObserver(addListeners);
-    obs.observe(document.body, { childList: true, subtree: true });
+    attach();
 
-    animate();
+    const mo = new MutationObserver(attach);
+    mo.observe(document.body, { childList: true, subtree: true });
 
+    tick();
     return () => {
       document.removeEventListener('mousemove', onMove);
-      cancelAnimationFrame(animId);
-      obs.disconnect();
+      cancelAnimationFrame(rafId);
+      mo.disconnect();
     };
   }, []);
 
   return (
     <>
       <style>{`
-        #v-cursor-dot {
-          position: fixed;
-          width: 5px;
-          height: 5px;
-          background: var(--acid);
-          border-radius: 50%;
-          pointer-events: none;
-          z-index: 99999;
-          transform: translate(-50%, -50%);
+        #vc-dot {
+          position: fixed; width: 6px; height: 6px;
+          background: var(--gold); border-radius: 50%;
+          pointer-events: none; z-index: 99999;
+          transform: translate(-50%,-50%);
           mix-blend-mode: difference;
+          transition: width .2s, height .2s;
         }
-        #v-cursor-ring {
-          position: fixed;
-          width: 36px;
-          height: 36px;
-          pointer-events: none;
-          z-index: 99998;
-          transform: translate(-50%, -50%);
-          transition: width 0.25s ease, height 0.25s ease;
+        #vc-ring {
+          position: fixed; width: 40px; height: 40px;
+          pointer-events: none; z-index: 99998;
+          transform: translate(-50%,-50%);
+          transition: width .3s ease, height .3s ease;
         }
-        #v-cursor-ring::before,
-        #v-cursor-ring::after {
-          content: '';
-          position: absolute;
-          background: var(--acid);
-          opacity: 0.6;
-          transition: opacity 0.25s;
+        #vc-ring::before, #vc-ring::after {
+          content: ''; position: absolute;
+          background: rgba(212,168,67,0.55);
         }
-        /* crosshair lines */
-        #v-cursor-ring::before {
-          left: 50%; top: 0; bottom: 0;
-          width: 1px;
+        #vc-ring::before {
+          left: 50%; top: 0; bottom: 0; width: 1px;
           transform: translateX(-50%);
         }
-        #v-cursor-ring::after {
-          top: 50%; left: 0; right: 0;
-          height: 1px;
+        #vc-ring::after {
+          top: 50%; left: 0; right: 0; height: 1px;
           transform: translateY(-50%);
         }
-        #v-cursor-ring[data-hover] {
-          width: 60px;
-          height: 60px;
-        }
-        #v-cursor-ring[data-hover]::before,
-        #v-cursor-ring[data-hover]::after {
-          opacity: 1;
-        }
-        @media (max-width: 768px) {
-          #v-cursor-dot, #v-cursor-ring { display: none; }
-        }
+        #vc-ring[data-hover] { width: 64px; height: 64px; }
+        #vc-ring[data-hover]::before,
+        #vc-ring[data-hover]::after { background: var(--gold); }
+        @media (max-width: 768px) { #vc-dot, #vc-ring { display:none; } }
       `}</style>
-      <div id="v-cursor-dot" ref={dotRef} />
-      <div id="v-cursor-ring" ref={ringRef} />
+      <div id="vc-dot"  ref={dotRef}  />
+      <div id="vc-ring" ref={ringRef} />
     </>
   );
 }
