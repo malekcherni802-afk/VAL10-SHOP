@@ -2,45 +2,39 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchProducts, getImageUrl, fetchBackgrounds, fetchSiteSettings } from '../lib/api';
+import { fetchProducts, getImageUrl, fetchBackgrounds, fetchSettings } from '../lib/api';
 
 /* ── STAGE ─────────────────────────────────────────────────── */
 const S = { INTRO: 'intro', PORTAL: 'portal', SHOP: 'shop' };
 
-/* ── FALLBACK PHOTOS (used when no dynamic backgrounds exist) ── */
-const FALLBACK_SLIDES = [
-  '/lookbook-8.jpg',
-  '/lookbook-7.jpg',
-  '/lookbook-1.jpg',
-  '/lookbook-5.jpg',
-  '/lookbook-6.jpg',
-  '/lookbook-4.jpg',
-  '/lookbook-2.jpg',
-  '/lookbook-3.jpg',
+/* ── REAL BRAND PHOTOS ──────────────────────────────────────── */
+const SLIDES = [
+  '/lookbook-8.jpg', // sunset field – cinematic wide
+  '/lookbook-7.jpg', // two hoodies from behind, rocky hillside
+  '/lookbook-1.jpg', // Made for Legacy street
+  '/lookbook-5.jpg', // gym long-sleeve black
+  '/lookbook-6.jpg', // logo close-up
+  '/lookbook-4.jpg', // group gym shot
+  '/lookbook-2.jpg', // duo gym pose
+  '/lookbook-3.jpg', // two guys crossed arms
 ];
 
 /* ════════════════════════════════════════════════════════════ */
 /*  BOUTIQUE BACKGROUND                                        */
 /* ════════════════════════════════════════════════════════════ */
-function BoutiqueScene({ introSettings }) {
-  const opacity = parseFloat(introSettings?.introOpacity) || 0.6;
-  const imgWidth = introSettings?.introImageWidth === '100pct' ? '100%' : (introSettings?.introImageWidth || '100%');
-  const imgHeight = introSettings?.introImageHeight || 'auto';
-
+function BoutiqueScene({ opacity = 0.6, imgWidth = '100%', imgHeight = '100%' }) {
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      {/* Dimly lit boutique - real photo as backdrop */}
+      {/* Dimly lit boutique — real photo as backdrop */}
       <div style={{
         position: 'absolute', inset: 0,
         backgroundImage: 'url(/lookbook-7.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center 30%',
-        filter: 'brightness(0.18) saturate(0.6)',
-        transform: 'scale(1.05)',
-        opacity,
+        filter: `brightness(${opacity * 0.3}) saturate(0.6)`,
         width: imgWidth,
-        height: imgHeight === 'auto' ? '100%' : imgHeight,
-        transition: 'opacity 0.5s ease',
+        height: imgHeight,
+        transform: 'scale(1.05)',
       }} />
 
       {/* Atmospheric deep gradient */}
@@ -165,7 +159,7 @@ function BoutiqueScene({ introSettings }) {
 /* ════════════════════════════════════════════════════════════ */
 /*  INTRO SCREEN                                               */
 /* ════════════════════════════════════════════════════════════ */
-function IntroScreen({ onShop, introSettings }) {
+function IntroScreen({ onShop, introOpacity, introImgWidth, introImgHeight, introEnabled }) {
   const [ready, setReady] = useState(false);
   const [oHover, setOHover] = useState(false);
 
@@ -184,7 +178,9 @@ function IntroScreen({ onShop, introSettings }) {
       alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden',
     }}>
-      <BoutiqueScene introSettings={introSettings} />
+      {introEnabled !== false && (
+        <BoutiqueScene opacity={introOpacity} imgWidth={introImgWidth} imgHeight={introImgHeight} />
+      )}
 
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px' }}>
@@ -733,12 +729,21 @@ function PlaceholderImg({ name }) {
 const APPAREL_CATS = ['all', 'hoodies', 't-shirts', 'compression', 'outerwear'];
 
 function ShopInterface({ onReenter }) {
-  const [products, setProducts] = useState([]);
-  const [filter, setFilter]     = useState('all');
-  const [loading, setLoading]   = useState(true);
-  const [bgImages, setBgImages]  = useState(FALLBACK_SLIDES);
-  const [introSettings, setIntroSettings] = useState(null);
+  const [products, setProducts]     = useState([]);
+  const [filter, setFilter]         = useState('all');
+  const [loading, setLoading]       = useState(true);
+  const [slideImages, setSlideImages] = useState(SLIDES);
   const lenisRef = useRef(null);
+
+  // Fetch dynamic backgrounds from DB (fallback to hardcoded SLIDES)
+  useEffect(() => {
+    fetchBackgrounds()
+      .then(d => {
+        const bgs = (d.backgrounds || []).filter(b => b.active).map(b => b.url);
+        if (bgs.length > 0) setSlideImages(bgs);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -751,26 +756,6 @@ function ShopInterface({ onReenter }) {
       } catch (_) {}
     })();
     return () => { lenisRef.current?.destroy(); };
-  }, []);
-
-  // Fetch dynamic backgrounds
-  useEffect(() => {
-    fetchBackgrounds()
-      .then(data => {
-        if (data && data.length > 0) {
-          setBgImages(data.map(b => b.url));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Fetch intro settings
-  useEffect(() => {
-    fetchSiteSettings()
-      .then(data => {
-        if (data) setIntroSettings(data);
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -817,7 +802,7 @@ function ShopInterface({ onReenter }) {
           height: '100vh', position: 'relative', overflow: 'hidden',
           display: 'flex', alignItems: 'flex-end',
         }}>
-          <BackgroundSlider images={bgImages} />
+          <BackgroundSlider images={slideImages} />
 
           <div style={{
             position: 'relative', zIndex: 2,
@@ -1198,19 +1183,28 @@ function Spinner() {
 /*  PAGE ROOT                                                  */
 /* ════════════════════════════════════════════════════════════ */
 export default function HomePage() {
-  const [stage, setStage] = useState(S.INTRO);
-  const [introSettings, setIntroSettings] = useState(null);
-
-  // Fetch intro settings on mount
-  useEffect(() => {
-    fetchSiteSettings()
-      .then(data => { if (data) setIntroSettings(data); })
-      .catch(() => {});
-  }, []);
+  const [stage, setStage]   = useState(S.INTRO);
+  const [introSettings, setIntroSettings] = useState({
+    introOpacity:   0.6,
+    introImgWidth:  '100%',
+    introImgHeight: '100%',
+    introEnabled:   true,
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (sessionStorage.getItem('valio_entered')) setStage(S.SHOP);
+    // Fetch intro settings from DB
+    fetchSettings().then(s => {
+      if (s && Object.keys(s).length) {
+        setIntroSettings(prev => ({
+          introOpacity:   s.introOpacity   != null ? s.introOpacity   : prev.introOpacity,
+          introImgWidth:  s.introImgWidth  != null ? s.introImgWidth  : prev.introImgWidth,
+          introImgHeight: s.introImgHeight != null ? s.introImgHeight : prev.introImgHeight,
+          introEnabled:   s.introEnabled   != null ? s.introEnabled   : prev.introEnabled,
+        }));
+      }
+    }).catch(() => {});
   }, []);
 
   const enterShop = useCallback(() => setStage(S.PORTAL), []);
@@ -1235,7 +1229,13 @@ export default function HomePage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <IntroScreen onShop={enterShop} introSettings={introSettings} />
+            <IntroScreen
+              onShop={enterShop}
+              introOpacity={introSettings.introOpacity}
+              introImgWidth={introSettings.introImgWidth}
+              introImgHeight={introSettings.introImgHeight}
+              introEnabled={introSettings.introEnabled}
+            />
           </motion.div>
         )}
       </AnimatePresence>

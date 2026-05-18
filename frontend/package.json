@@ -9,18 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@babel/runtime": "^7.29.2",
     "@studio-freight/lenis": "^1.0.42",
-    "@supabase/supabase-js": "^2.105.4",
     "framer-motion": "^11.0.3",
     "next": "14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.5",
-    "@babel/preset-react": "^7.28.5",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",

@@ -1,161 +1,90 @@
-# VALIO — Gothic Luxury Fashion
+# VALIO v3 — Luxury Streetwear Platform
 
-> Dark. Cinematic. Immersive.
+## What's new in this update (Bug Fixes)
 
----
+### Fix 1 — Cloudinary Upload
+- `pages/api/upload.js` fully rewritten with binary-safe multipart parsing
+- Verbose `console.log` at every step so you see the exact error in Vercel logs
+- Env vars validated on every request with clear error messages
 
-## Tech Stack
+### Fix 2 — Dynamic Shop Backgrounds
+- New MongoDB collection: `backgrounds`
+- Admin panel → **Shop Backgrounds** tab: upload, show/hide, delete
+- Shop page fetches active backgrounds from API, falls back to built-in photos
 
-| Layer     | Technology                          |
-|-----------|-------------------------------------|
-| Frontend  | Next.js 14, Tailwind CSS, GSAP, Three.js, Lenis |
-| Backend   | Node.js, Express.js, MongoDB        |
-| Auth      | JWT (JSON Web Tokens)               |
-| Storage   | Local (extendable to S3/Cloudinary) |
-| Deploy    | Render (backend) + Vercel (frontend)|
-
----
-
-## Project Structure
-
-```
-VALIO/
-├── frontend/          # Next.js app
-├── backend/           # Express API
-├── admin/             # Admin dashboard (embedded in frontend /admin)
-├── database/          # MongoDB seed data
-├── render.yaml        # Render deployment config
-├── .gitignore
-└── README.md
-```
+### Fix 3 — Intro Settings (Opacity & Size)
+- Admin panel → **Settings** tab: slider for opacity (default 60%), width, height fields
+- Live preview swatch in the admin panel
+- Saved to MongoDB, applied on every public page load without redeploy
 
 ---
 
-## Local Development
-
-### 1. Clone & Install
+## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/valio.git
-cd valio
-
-# Backend
+# 1. Backend
 cd backend
+cp .env.example .env          # fill in MONGODB_URI, JWT_SECRET
 npm install
+node database/seed.js         # seeds default settings
+npm run dev                   # → http://localhost:5000
 
-# Frontend
-cd ../frontend
+# 2. Frontend
+cd frontend
+cp .env.local.example .env.local   # fill in Cloudinary keys
 npm install
+npm run dev                   # → http://localhost:3000
 ```
 
-### 2. Environment Variables
+## Environment Variables
 
-**backend/.env**
-```env
+### frontend/.env.local
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000
+CLOUDINARY_CLOUD_NAME=dcdgsmiyy
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### backend/.env
+```
 PORT=5000
-MONGODB_URI=mongodb+srv://USER:PASS@cluster.mongodb.net/valio
-JWT_SECRET=your_super_secret_jwt_key_here
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=random_secret_string
+ADMIN_PASSWORD=valio_admin_2024
 CORS_ORIGIN=http://localhost:3000
 ```
 
-**frontend/.env.local**
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-NEXT_PUBLIC_ADMIN_PASSWORD=valio_admin_2024
+## Admin Panel (Hidden URL)
 ```
-
-### 3. Run Development
-
-```bash
-# Terminal 1 — Backend
-cd backend && npm run dev
-
-# Terminal 2 — Frontend
-cd frontend && npm run dev
+http://localhost:3000/secret-control-panel
 ```
+No link exists anywhere in the public UI.
 
-Open: http://localhost:3000
+## Cloudinary Debug Checklist
+If you still get upload errors, check Vercel logs for `[upload]` lines:
+1. `env check` — confirms all 3 env vars are SET
+2. `raw body size` — confirms file was received
+3. `file part` — confirms file was parsed from multipart
+4. `Cloudinary status` + `body` — shows exact Cloudinary response
 
----
+Common issues:
+- Missing env vars in Vercel dashboard → add them under Project Settings → Environment Variables
+- Wrong cloud name → verify at cloudinary.com/console
+- API key / secret mismatch → regenerate at cloudinary.com/settings/api_keys
 
-## Admin Panel
-
-URL: `http://localhost:3000/admin`
-
-Default credentials:
-- Password: `valio_admin_2024`
-
-Change via `NEXT_PUBLIC_ADMIN_PASSWORD` env variable.
-
----
-
-## Deployment Guide
-
-### Step 1 — GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial VALIO commit"
-git remote add origin https://github.com/YOUR_USERNAME/valio.git
-git push -u origin main
-```
-
-### Step 2 — MongoDB Atlas
-
-1. Go to [https://cloud.mongodb.com](https://cloud.mongodb.com)
-2. Create a free cluster
-3. Create database user
-4. Whitelist IP: `0.0.0.0/0` (all — for Render)
-5. Get connection string: `mongodb+srv://user:pass@cluster.mongodb.net/valio`
-
-### Step 3 — Deploy Backend to Render
-
-1. Go to [https://render.com](https://render.com)
-2. New → Web Service
-3. Connect your GitHub repo
-4. Settings:
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. Add Environment Variables:
-   - `MONGODB_URI` = your Atlas URI
-   - `JWT_SECRET` = random string
-   - `CORS_ORIGIN` = your Vercel frontend URL
-   - `PORT` = 5000
-
-### Step 4 — Deploy Frontend to Vercel
-
-1. Go to [https://vercel.com](https://vercel.com)
-2. Import GitHub repo
-3. Settings:
-   - **Root Directory**: `frontend`
-   - **Framework**: Next.js
-4. Add Environment Variables:
-   - `NEXT_PUBLIC_API_URL` = your Render backend URL
-   - `NEXT_PUBLIC_ADMIN_PASSWORD` = your admin password
-
-### Step 5 — Seed Database (optional)
-
-```bash
-cd backend
-node database/seed.js
-```
-
----
-
-## Features
-
-- 🎭 Cinematic smoke intro with logo reveal
-- 🌀 Portal zoom transition (O letter → fullscreen)
-- 🛍️ Gothic luxury shop with scroll animations
-- 📦 3D product viewer (Three.js GLB support)
-- 🔐 Protected admin dashboard
-- ➕ Add/edit/delete products
-- 📁 Image & 3D model upload
-- 🎨 Theme color customization
-- 📱 Fully responsive
-
----
-
-*VALIO — Enter the darkness.*
+## API Routes
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/products | — | All products |
+| POST | /api/products | ✅ | Create product |
+| PATCH | /api/products/:id | ✅ | Update product |
+| DELETE | /api/products/:id | ✅ | Delete product |
+| GET | /api/backgrounds | — | Active backgrounds (public) |
+| GET | /api/backgrounds/all | ✅ | All backgrounds (admin) |
+| POST | /api/backgrounds | ✅ | Add background |
+| PATCH | /api/backgrounds/:id | ✅ | Toggle active/hidden |
+| DELETE | /api/backgrounds/:id | ✅ | Remove background |
+| GET | /api/settings | — | All settings (public) |
+| PUT | /api/settings | ✅ | Update settings |
+| POST | /api/auth/login | — | Admin login |

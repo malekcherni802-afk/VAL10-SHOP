@@ -1,7 +1,7 @@
 /**
- * Secure Cloudinary Upload API Route
- * Cloudinary credentials stay server-side only — never exposed to client.
+ * VALIO — Secure Cloudinary Upload Route
  * POST /api/upload  →  { url, public_id }
+ * Credentials 100% server-side via process.env.
  */
 
 export const config = { api: { bodyParser: false } };
@@ -11,116 +11,137 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const cloudName  = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey     = process.env.CLOUDINARY_API_KEY;
-  const apiSecret  = process.env.CLOUDINARY_API_SECRET;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey    = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-  console.log('[upload] Cloudinary config check:', {
-    cloudName: cloudName ? `SET (${cloudName.length} chars)` : 'MISSING',
-    apiKey:    apiKey    ? `SET (${apiKey.length} chars)`    : 'MISSING',
-    apiSecret: apiSecret ? `SET (${apiSecret.length} chars)` : 'MISSING',
+  // Verbose env check so you can debug in Vercel logs
+  console.log('[upload] env check:', {
+    cloudName: cloudName || 'MISSING',
+    apiKey:    apiKey    ? apiKey.slice(0, 6) + '...' : 'MISSING',
+    apiSecret: apiSecret ? 'SET' : 'MISSING',
   });
 
   if (!cloudName || !apiKey || !apiSecret) {
-    const missing = [];
-    if (!cloudName) missing.push('CLOUDINARY_CLOUD_NAME');
-    if (!apiKey)    missing.push('CLOUDINARY_API_KEY');
-    if (!apiSecret) missing.push('CLOUDINARY_API_SECRET');
-    console.error('[upload] Missing env vars:', missing.join(', '));
-    return res.status(500).json({
-      error: `Cloudinary not configured. Missing: ${missing.join(', ')}`,
-      missing,
-    });
+    const missing = [
+      !cloudName && 'CLOUDINARY_CLOUD_NAME',
+      !apiKey    && 'CLOUDINARY_API_KEY',
+      !apiSecret && 'CLOUDINARY_API_SECRET',
+    ].filter(Boolean).join(', ');
+    return res.status(500).json({ error: 'Missing env: ' + missing });
   }
 
   try {
+    // 1. Collect raw request body
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
-    const buffer = Buffer.concat(chunks);
+    const rawBody = Buffer.concat(chunks);
+    console.log('[upload] raw body size:', rawBody.length);
 
-    if (buffer.length === 0) {
-      console.error('[upload] Empty request body');
-      return res.status(400).json({ error: 'Empty request body' });
-    }
+    // 2. Extract boundary
+    const ct = req.headers['content-type'] || '';
+    const bm = ct.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
+    if (!bm) return res.status(400).json({ error: 'No multipart boundary' });
+    const boundary = bm[1] || bm[2];
 
-    const contentType = req.headers['content-type'] || '';
-    const boundaryMatch = contentType.match(/boundary=(.+)$/);
-    if (!boundaryMatch) {
-      console.error('[upload] No boundary in Content-Type:', contentType);
-      return res.status(400).json({ error: 'No boundary found in Content-Type' });
-    }
-    const boundary = boundaryMatch[1];
+    // 3. Parse parts (binary-safe via Buffer)
+    let fileBuffer = null;
+    let fileName   = 'upload.jpg';
+    let fileMime   = 'image/jpeg';
 
-    const parts = buffer.toString('binary').split(`--${boundary}`);
-    let fileData = null;
-    let fileName = 'upload';
-    let fileMime = 'image/jpeg';
+    const delimFirst = Buffer.from('--' + boundary);
+    const delimNext  = Buffer.from('\r\n--' + boundary);
 
-    for (const part of parts) {
-      if (part.includes('Content-Disposition') && part.includes('filename')) {
-        const nameMatch = part.match(/filename="([^"]+)"/);
-        if (nameMatch) fileName = nameMatch[1];
-        const mimeMatch = part.match(/Content-Type: ([^\r\n]+)/);
-        if (mimeMatch) fileMime = mimeMatch[1].trim();
-        const bodyStart = part.indexOf('\r\n\r\n') + 4;
-        const bodyEnd   = part.lastIndexOf('\r\n');
-        if (bodyStart > 4 && bodyEnd > bodyStart) {
-          fileData = Buffer.from(part.slice(bodyStart, bodyEnd), 'binary');
-        }
+    let pos = rawBody.indexOf(delimFirst);
+    while (pos !== -1) {
+      const hdrStart = pos + delimFirst.length + 2;          // skip \r\n
+      const hdrEnd   = rawBody.indexOf(Buffer.from('\r\n\r\n'), hdrStart);
+      if (hdrEnd === -1) break;
+
+      const hdr      = rawBody.slice(hdrStart, hdrEnd).toString('utf8');
+      const dataStart = hdrEnd + 4;
+      const nextBound = rawBody.indexOf(delimNext, dataStart);
+      const dataEnd   = nextBound !== -1 ? nextBound : rawBody.length;
+
+      if (hdr.includes('filename=')) {
+        const nm = hdr.match(/filename="([^"]+)"/);
+        if (nm) fileName = nm[1];
+        const mm = hdr.match(/Content-Type:\s*([^\r\n]+)/i);
+        if (mm) fileMime = mm[1].trim();
+        fileBuffer = rawBody.slice(dataStart, dataEnd);
+        console.log('[upload] file part:', fileName, fileMime, fileBuffer.length, 'bytes');
       }
+
+      pos = nextBound !== -1
+        ? rawBody.indexOf(delimFirst, nextBound + delimNext.length)
+        : -1;
     }
 
-    if (!fileData) {
-      console.error('[upload] No file data found in multipart body');
-      return res.status(400).json({ error: 'No file found in request' });
+    if (!fileBuffer || fileBuffer.length === 0) {
+      return res.status(400).json({ error: 'No file data in request' });
     }
 
-    console.log('[upload] File parsed:', { fileName, fileMime, size: fileData.length });
-
+    // 4. Build Cloudinary signed signature
+    const crypto    = (await import('crypto')).default;
     const timestamp = Math.round(Date.now() / 1000);
     const folder    = 'valio';
+    const sigString = `folder=${folder}&timestamp=${timestamp}` + apiSecret;
+    const signature = crypto.createHash('sha1').update(sigString).digest('hex');
+    console.log('[upload] signature ready');
 
-    const crypto = await import('crypto');
-    const signStr = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
-    const signature = crypto
-      .createHash('sha1')
-      .update(signStr)
-      .digest('hex');
+    // 5. Build raw multipart body for Cloudinary
+    const b2   = `----ValioCloudinary${Date.now()}`;
+    const CRLF = '\r\n';
 
-    const form = new FormData();
-    const blob = new Blob([fileData], { type: fileMime });
-    form.append('file', blob, fileName);
-    form.append('api_key', apiKey);
-    form.append('timestamp', String(timestamp));
-    form.append('signature', signature);
-    form.append('folder', folder);
+    const field = (name, value) =>
+      `--${b2}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
 
-    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    console.log('[upload] Sending to Cloudinary:', uploadUrl);
+    const textPart = Buffer.from(
+      field('api_key', apiKey) +
+      field('timestamp', String(timestamp)) +
+      field('signature', signature) +
+      field('folder', folder),
+      'utf8'
+    );
 
-    const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
+    const filePart = Buffer.from(
+      `--${b2}${CRLF}` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"${CRLF}` +
+      `Content-Type: ${fileMime}${CRLF}${CRLF}`,
+      'utf8'
+    );
 
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      console.error('[upload] Cloudinary API error:', uploadRes.status, errText);
-      return res.status(502).json({
-        error: 'Cloudinary upload failed',
-        status: uploadRes.status,
-        detail: errText,
+    const footerPart = Buffer.from(`${CRLF}--${b2}--${CRLF}`, 'utf8');
+    const body = Buffer.concat([textPart, filePart, fileBuffer, footerPart]);
+
+    console.log('[upload] sending to Cloudinary, body size:', body.length);
+
+    // 6. POST to Cloudinary
+    const cloudRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${b2}` },
+        body,
+      }
+    );
+
+    const responseText = await cloudRes.text();
+    console.log('[upload] Cloudinary status:', cloudRes.status, '| body:', responseText.slice(0, 400));
+
+    if (!cloudRes.ok) {
+      return res.status(500).json({
+        error:   'Cloudinary rejected the upload',
+        status:  cloudRes.status,
+        details: responseText,
       });
     }
 
-    const data = await uploadRes.json();
-    console.log('[upload] Upload successful:', data.secure_url);
-    return res.status(200).json({
-      url:       data.secure_url,
-      public_id: data.public_id,
-    });
+    const result = JSON.parse(responseText);
+    return res.status(200).json({ url: result.secure_url, public_id: result.public_id });
+
   } catch (err) {
-    console.error('[upload] Unhandled error:', err);
-    return res.status(500).json({
-      error: 'Internal server error',
-      detail: err.message,
-    });
+    console.error('[upload] unexpected error:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 }

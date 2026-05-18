@@ -2,109 +2,121 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 /* ── Products ─────────────────────────────────────────────── */
 export async function fetchProducts(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  const res = await fetch(`${API_URL}/api/products${query ? '?' + query : ''}`);
-  if (!res.ok) throw new Error('Failed to fetch products');
-  return res.json();
+  const q = new URLSearchParams(params).toString();
+  const r = await fetch(`${API_URL}/api/products${q ? '?' + q : ''}`);
+  if (!r.ok) throw new Error('Failed to fetch products');
+  return r.json();
 }
-
 export async function fetchProduct(id) {
-  const res = await fetch(`${API_URL}/api/products/${id}`);
-  if (!res.ok) throw new Error('Failed to fetch product');
-  return res.json();
+  const r = await fetch(`${API_URL}/api/products/${id}`);
+  if (!r.ok) throw new Error('Not found');
+  return r.json();
 }
 
 /* ── Auth ─────────────────────────────────────────────────── */
 export async function adminLogin(password) {
-  const res = await fetch(`${API_URL}/api/auth/login`, {
+  const r = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
-  return res.json();
+  return r.json();
 }
 
-/* ── Product mutations (backend multipart) ────────────────── */
+/* ── Product mutations ────────────────────────────────────── */
 export async function createProduct(formData, token) {
-  const res = await fetch(`${API_URL}/api/products`, {
+  const r = await fetch(`${API_URL}/api/products`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
-  return res.json();
+  return r.json();
 }
-
 export async function updateProduct(id, formData, token) {
-  const res = await fetch(`${API_URL}/api/products/${id}`, {
+  const r = await fetch(`${API_URL}/api/products/${id}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
-  return res.json();
+  return r.json();
 }
-
 export async function deleteProduct(id, token) {
-  const res = await fetch(`${API_URL}/api/products/${id}`, {
+  const r = await fetch(`${API_URL}/api/products/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
-  return res.json();
+  return r.json();
 }
 
-/* ── Cloudinary secure upload via Next.js API route ──────── */
-export async function uploadToCloudinary(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: formData });
-  if (!res.ok) throw new Error('Upload failed');
-  return res.json(); // { url, public_id }
-}
-
-/* ── Backgrounds (Supabase-backed) ────────────────────────── */
+/* ── Backgrounds ──────────────────────────────────────────── */
 export async function fetchBackgrounds() {
-  const res = await fetch('/api/backgrounds');
-  if (!res.ok) throw new Error('Failed to fetch backgrounds');
-  return res.json();
+  try {
+    const r = await fetch(`${API_URL}/api/backgrounds`);
+    if (!r.ok) return { backgrounds: [] };
+    return r.json();
+  } catch (_) { return { backgrounds: [] }; }
 }
-
-export async function addBackground(url, public_id, sort_order) {
-  const res = await fetch('/api/backgrounds', {
+export async function fetchAllBackgrounds(token) {
+  const r = await fetch(`${API_URL}/api/backgrounds/all`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return r.json();
+}
+export async function addBackground(data, token) {
+  const r = await fetch(`${API_URL}/api/backgrounds`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, public_id, sort_order }),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to add background');
-  return res.json();
+  return r.json();
+}
+export async function deleteBackground(id, token) {
+  const r = await fetch(`${API_URL}/api/backgrounds/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return r.json();
+}
+export async function patchBackground(id, data, token) {
+  const r = await fetch(`${API_URL}/api/backgrounds/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  return r.json();
 }
 
-export async function deleteBackground(id) {
-  const res = await fetch(`/api/backgrounds?id=${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete background');
-  return res.json();
+/* ── Settings ─────────────────────────────────────────────── */
+export async function fetchSettings() {
+  try {
+    const r = await fetch(`${API_URL}/api/settings`);
+    if (!r.ok) return {};
+    return r.json();
+  } catch (_) { return {}; }
 }
-
-/* ── Site Settings (Supabase-backed) ──────────────────────── */
-export async function fetchSiteSettings() {
-  const res = await fetch('/api/settings');
-  if (!res.ok) throw new Error('Failed to fetch settings');
-  return res.json();
-}
-
-export async function updateSiteSettings(settings) {
-  const res = await fetch('/api/settings', {
+export async function saveSettings(data, token) {
+  const r = await fetch(`${API_URL}/api/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to update settings');
-  return res.json();
+  return r.json();
+}
+
+/* ── Cloudinary upload via Next.js API route ──────────────── */
+export async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/upload', { method: 'POST', body: fd });
+  const json = await r.json();
+  if (!r.ok) throw new Error(json.error || 'Upload failed');
+  return json; // { url, public_id }
 }
 
 /* ── Helpers ──────────────────────────────────────────────── */
-export function getImageUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${API_URL}${path}`;
+export function getImageUrl(p) {
+  if (!p) return null;
+  if (p.startsWith('http')) return p;
+  return `${API_URL}${p}`;
 }
-
 export { API_URL };

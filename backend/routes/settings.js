@@ -1,24 +1,27 @@
-const express = require('express');
-const router = express.Router();
-const Settings = require('../models/Settings');
+const express        = require('express');
+const router         = express.Router();
+const Settings       = require('../models/Settings');
 const authMiddleware = require('../middleware/auth');
 
-// GET /api/settings — public settings
+// GET /api/settings — public
 router.get('/', async (req, res) => {
   try {
-    const settings = await Settings.find();
-    const obj = {};
-    settings.forEach(s => { obj[s.key] = s.value; });
+    const rows = await Settings.find();
+    const obj  = {};
+    rows.forEach(s => { obj[s.key] = s.value; });
     res.json(obj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT /api/settings — update settings (protected)
+// PUT /api/settings — protected, upsert any key-value pairs
 router.put('/', authMiddleware, async (req, res) => {
   try {
     const updates = req.body;
+    if (!updates || typeof updates !== 'object') {
+      return res.status(400).json({ error: 'Body must be a JSON object' });
+    }
     for (const [key, value] of Object.entries(updates)) {
       await Settings.findOneAndUpdate(
         { key },
@@ -26,7 +29,7 @@ router.put('/', authMiddleware, async (req, res) => {
         { upsert: true, new: true }
       );
     }
-    res.json({ message: 'Settings updated' });
+    res.json({ message: 'Settings saved' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
