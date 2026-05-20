@@ -6,7 +6,7 @@ import CustomCursor from '../../components/ui/CustomCursor';
 import Navbar from '../../components/ui/Navbar';
 import CartDrawer from '../../components/ui/CartDrawer';
 import { fetchProductById, fetchProducts } from '../../lib/api';
-import { useCart } from '../_app';
+import { useCart } from '../../lib/CartContext';
 
 export async function getServerSideProps({ params }) {
   try {
