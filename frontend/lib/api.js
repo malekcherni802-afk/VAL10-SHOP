@@ -1,122 +1,225 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+/**
+ * VALIO v4 — centralised API client
+ * All requests use NEXT_PUBLIC_API_URL so the same code works in dev,
+ * SSR (getServerSideProps), and production without any changes.
+ */
 
-/* ── Products ─────────────────────────────────────────────── */
-export async function fetchProducts(params = {}) {
-  const q = new URLSearchParams(params).toString();
-  const r = await fetch(`${API_URL}/api/products${q ? '?' + q : ''}`);
-  if (!r.ok) throw new Error('Failed to fetch products');
-  return r.json();
-}
-export async function fetchProduct(id) {
-  const r = await fetch(`${API_URL}/api/products/${id}`);
-  if (!r.ok) throw new Error('Not found');
-  return r.json();
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+/* ── helpers ────────────────────────────────────────────────── */
+
+function authHeader(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-/* ── Auth ─────────────────────────────────────────────────── */
-export async function adminLogin(password) {
-  const r = await fetch(`${API_URL}/api/auth/login`, {
-    method: 'POST',
+async function handleResponse(res) {
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { message: text }; }
+  if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ── health ─────────────────────────────────────────────────── */
+
+export async function fetchHealth() {
+  const res = await fetch(`${BASE}/api/health`);
+  return handleResponse(res);
+}
+
+/* ── auth ───────────────────────────────────────────────────── */
+
+export async function login(password) {
+  const res = await fetch(`${BASE}/api/auth/login`, {
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
+    body:    JSON.stringify({ password }),
   });
-  return r.json();
+  return handleResponse(res);
 }
 
-/* ── Product mutations ────────────────────────────────────── */
-export async function createProduct(formData, token) {
-  const r = await fetch(`${API_URL}/api/products`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
+export async function verifyToken(token) {
+  const res = await fetch(`${BASE}/api/auth/verify`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ token }),
   });
-  return r.json();
-}
-export async function updateProduct(id, formData, token) {
-  const r = await fetch(`${API_URL}/api/products/${id}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  });
-  return r.json();
-}
-export async function deleteProduct(id, token) {
-  const r = await fetch(`${API_URL}/api/products/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return r.json();
+  return handleResponse(res);
 }
 
-/* ── Backgrounds ──────────────────────────────────────────── */
-export async function fetchBackgrounds() {
-  try {
-    const r = await fetch(`${API_URL}/api/backgrounds`);
-    if (!r.ok) return { backgrounds: [] };
-    return r.json();
-  } catch (_) { return { backgrounds: [] }; }
-}
-export async function fetchAllBackgrounds(token) {
-  const r = await fetch(`${API_URL}/api/backgrounds/all`, {
-    headers: { Authorization: `Bearer ${token}` },
+export async function refreshToken(token) {
+  const res = await fetch(`${BASE}/api/auth/refresh`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
   });
-  return r.json();
-}
-export async function addBackground(data, token) {
-  const r = await fetch(`${API_URL}/api/backgrounds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  return r.json();
-}
-export async function deleteBackground(id, token) {
-  const r = await fetch(`${API_URL}/api/backgrounds/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return r.json();
-}
-export async function patchBackground(id, data, token) {
-  const r = await fetch(`${API_URL}/api/backgrounds/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  return r.json();
+  return handleResponse(res);
 }
 
-/* ── Settings ─────────────────────────────────────────────── */
+/* ── products — public ──────────────────────────────────────── */
+
+export async function fetchProducts({ category, featured, limit, skip, search } = {}) {
+  const params = new URLSearchParams();
+  if (category && category !== 'all') params.set('category', category);
+  if (featured) params.set('featured', 'true');
+  if (limit)    params.set('limit', String(limit));
+  if (skip)     params.set('skip', String(skip));
+  if (search)   params.set('search', search);
+
+  const res = await fetch(`${BASE}/api/products?${params.toString()}`, {
+    next: { revalidate: 30 },
+  });
+  return handleResponse(res);
+}
+
+export async function fetchProductById(id) {
+  const res = await fetch(`${BASE}/api/products/${id}`, {
+    next: { revalidate: 30 },
+  });
+  return handleResponse(res);
+}
+
+/* ── products — admin ───────────────────────────────────────── */
+
+export async function fetchAllProductsAdmin(token, { category, limit, skip } = {}) {
+  const params = new URLSearchParams();
+  if (category && category !== 'all') params.set('category', category);
+  if (limit) params.set('limit', String(limit));
+  if (skip)  params.set('skip',  String(skip));
+
+  const res = await fetch(`${BASE}/api/products/all?${params.toString()}`, {
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}
+
+export async function createProduct(token, formData) {
+  const res = await fetch(`${BASE}/api/products`, {
+    method:  'POST',
+    headers: authHeader(token),
+    body:    formData,
+  });
+  return handleResponse(res);
+}
+
+export async function updateProduct(token, id, formData) {
+  const res = await fetch(`${BASE}/api/products/${id}`, {
+    method:  'PATCH',
+    headers: authHeader(token),
+    body:    formData,
+  });
+  return handleResponse(res);
+}
+
+export async function deleteProduct(token, id) {
+  const res = await fetch(`${BASE}/api/products/${id}`, {
+    method:  'DELETE',
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}
+
+/* ── settings ───────────────────────────────────────────────── */
+
 export async function fetchSettings() {
-  try {
-    const r = await fetch(`${API_URL}/api/settings`);
-    if (!r.ok) return {};
-    return r.json();
-  } catch (_) { return {}; }
+  const res = await fetch(`${BASE}/api/settings`, { next: { revalidate: 60 } });
+  return handleResponse(res);
 }
-export async function saveSettings(data, token) {
-  const r = await fetch(`${API_URL}/api/settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
+
+export async function updateSettings(token, settings) {
+  const res = await fetch(`${BASE}/api/settings`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body:    JSON.stringify(settings),
   });
-  return r.json();
+  return handleResponse(res);
 }
 
-/* ── Cloudinary upload via Next.js API route ──────────────── */
-export async function uploadToCloudinary(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  const r = await fetch('/api/upload', { method: 'POST', body: fd });
-  const json = await r.json();
-  if (!r.ok) throw new Error(json.error || 'Upload failed');
-  return json; // { url, public_id }
+/* ── backgrounds ────────────────────────────────────────────── */
+
+export async function fetchBackgrounds() {
+  const res = await fetch(`${BASE}/api/backgrounds`, { next: { revalidate: 60 } });
+  return handleResponse(res);
 }
 
-/* ── Helpers ──────────────────────────────────────────────── */
-export function getImageUrl(p) {
-  if (!p) return null;
-  if (p.startsWith('http')) return p;
-  return `${API_URL}${p}`;
+export async function fetchAllBackgroundsAdmin(token) {
+  const res = await fetch(`${BASE}/api/backgrounds/all`, {
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
 }
-export { API_URL };
+
+export async function createBackground(token, payload) {
+  const res = await fetch(`${BASE}/api/backgrounds`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body:    JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function updateBackground(token, id, payload) {
+  const res = await fetch(`${BASE}/api/backgrounds/${id}`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body:    JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteBackground(token, id) {
+  const res = await fetch(`${BASE}/api/backgrounds/${id}`, {
+    method:  'DELETE',
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}
+
+/* ── orders — public ────────────────────────────────────────── */
+
+export async function placeOrder(payload) {
+  const res = await fetch(`${BASE}/api/orders`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+/* ── orders — admin ─────────────────────────────────────────── */
+
+export async function fetchOrdersAdmin(token, { status, limit, skip, search } = {}) {
+  const params = new URLSearchParams();
+  if (status && status !== 'all') params.set('status', status);
+  if (limit)  params.set('limit',  String(limit));
+  if (skip)   params.set('skip',   String(skip));
+  if (search) params.set('search', search);
+
+  const res = await fetch(`${BASE}/api/orders?${params.toString()}`, {
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchOrderStats(token) {
+  const res = await fetch(`${BASE}/api/orders/stats`, {
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}
+
+export async function updateOrder(token, id, payload) {
+  const res = await fetch(`${BASE}/api/orders/${id}`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body:    JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteOrder(token, id) {
+  const res = await fetch(`${BASE}/api/orders/${id}`, {
+    method:  'DELETE',
+    headers: authHeader(token),
+  });
+  return handleResponse(res);
+}

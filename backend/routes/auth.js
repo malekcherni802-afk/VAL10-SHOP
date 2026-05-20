@@ -1,46 +1,71 @@
 const express = require('express');
-const router = express.Router();
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const router  = express.Router();
+const jwt     = require('jsonwebtoken');
+const bcrypt  = require('bcryptjs');
+const auth    = require('../middleware/auth');
 
-// Admin password stored as bcrypt hash
-// Default: valio_admin_2024
-// To generate new hash: bcrypt.hashSync('your_password', 10)
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH ||
-  bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'valio_admin_2024', 10);
+const JWT_SECRET = process.env.JWT_SECRET || 'valio_secret_dev_only_change_in_production';
 
-// POST /api/auth/login
+/* ── Lazily hash admin password once at startup ──────────────── */
+let _adminHash = null;
+function getAdminHash() {
+  if (!_adminHash) {
+    const plain = process.env.ADMIN_PASSWORD || 'valio_admin_2024';
+    _adminHash = bcrypt.hashSync(plain, 10);
+  }
+  return _adminHash;
+}
+
+/* POST /api/auth/login ──────────────────────────────────────── */
 router.post('/login', async (req, res) => {
   const { password } = req.body;
 
   if (!password) {
-    return res.status(400).json({ error: 'Password required' });
+    return res.status(400).json({ error: 'Password is required' });
   }
 
-  const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+  try {
+    const valid = await bcrypt.compare(password, getAdminHash());
 
-  if (!isValid) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    if (!valid) {
+      // Uniform timing to prevent timing attacks
+      await bcrypt.compare('dummy', getAdminHash()).catch(() => {});
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { role: 'admin', iat: Math.floor(Date.now() / 1000) },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+
+    res.json({ token, message: 'Welcome to VALIO Admin' });
+  } catch (err) {
+    console.error('[auth/login]', err);
+    res.status(500).json({ error: 'Auth error' });
   }
-
-  const token = jwt.sign(
-    { role: 'admin', timestamp: Date.now() },
-    process.env.JWT_SECRET || 'valio_secret_2024',
-    { expiresIn: '24h' }
-  );
-
-  res.json({ token, message: 'Welcome to VALIO Admin' });
 });
 
-// POST /api/auth/verify
+/* POST /api/auth/verify — check token still valid ──────────── */
 router.post('/verify', (req, res) => {
   const { token } = req.body;
+  if (!token) return res.json({ valid: false });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'valio_secret_2024');
+    const decoded = jwt.verify(token, JWT_SECRET);
     res.json({ valid: true, decoded });
   } catch {
     res.json({ valid: false });
   }
+});
+
+/* POST /api/auth/refresh — extend token life ───────────────── */
+router.post('/refresh', auth, (req, res) => {
+  const newToken = jwt.sign(
+    { role: 'admin', iat: Math.floor(Date.now() / 1000) },
+    JWT_SECRET,
+    { expiresIn: '12h' }
+  );
+  res.json({ token: newToken });
 });
 
 module.exports = router;

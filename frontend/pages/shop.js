@@ -1,167 +1,239 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
-import { motion } from 'framer-motion';
-import ShopNav from '../components/shop/ShopNav';
-import ProductCard from '../components/shop/ProductCard';
-import Footer from '../components/shop/Footer';
+import { useRouter } from 'next/router';
+import CustomCursor from '../components/ui/CustomCursor';
+import Navbar from '../components/ui/Navbar';
+import CartDrawer from '../components/ui/CartDrawer';
+import ProductCard from '../components/ui/ProductCard';
 import { fetchProducts } from '../lib/api';
 
+const CATEGORIES = [
+  { value: 'all',         label: 'ALL' },
+  { value: 'hoodies',     label: 'HOODIES' },
+  { value: 't-shirts',    label: 'T-SHIRTS' },
+  { value: 'compression', label: 'COMPRESSION' },
+  { value: 'outerwear',   label: 'OUTERWEAR' },
+  { value: 'accessories', label: 'ACCESSORIES' },
+  { value: 'other',       label: 'OTHER' },
+];
+
+const PAGE_SIZE = 24;
+
 export default function ShopPage() {
+  const router   = useRouter();
+  const initCat  = (router.query.category || 'all');
+
+  const [category, setCategory] = useState(initCat);
+  const [search,   setSearch]   = useState('');
   const [products, setProducts] = useState([]);
-  const [filter, setFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const lenisRef = useRef(null);
-  const categories = ['all', 'clothing', 'jewelry', 'accessories', 'footwear'];
+  const [total,    setTotal]    = useState(0);
+  const [skip,     setSkip]     = useState(0);
+  const [loading,  setLoading]  = useState(true);
+  const [loadMore, setLoadMore] = useState(false);
+  const [error,    setError]    = useState('');
 
+  // Sync category from URL
   useEffect(() => {
-    async function initLenis() {
-      try {
-        const LenisModule = await import('@studio-freight/lenis');
-        const Lenis = LenisModule.default;
-        const lenis = new Lenis({ duration: 1.4, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
-        lenisRef.current = lenis;
-        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
-        requestAnimationFrame(raf);
-      } catch (_) {}
+    if (router.query.category) setCategory(router.query.category);
+  }, [router.query.category]);
+
+  const load = useCallback(async (reset = false) => {
+    const currentSkip = reset ? 0 : skip;
+    reset ? setLoading(true) : setLoadMore(true);
+    setError('');
+    try {
+      const data = await fetchProducts({
+        category: category !== 'all' ? category : undefined,
+        search:   search || undefined,
+        limit:    PAGE_SIZE,
+        skip:     currentSkip,
+      });
+      if (reset) {
+        setProducts(data.products || []);
+      } else {
+        setProducts(prev => [...prev, ...(data.products || [])]);
+      }
+      setTotal(data.total || 0);
+      setSkip(currentSkip + PAGE_SIZE);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setLoadMore(false);
     }
-    initLenis();
-    return () => { if (lenisRef.current) lenisRef.current.destroy(); };
-  }, []);
+  }, [category, search, skip]);
 
+  // Reload when category or search changes
   useEffect(() => {
-    setLoading(true);
-    const params = filter !== 'all' ? { category: filter } : {};
-    fetchProducts(params)
-      .then((data) => { setProducts(data.products || []); setLoading(false); })
-      .catch(() => { setProducts([]); setLoading(false); });
-  }, [filter]);
+    setSkip(0);
+    load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, search]);
 
-  useEffect(() => {
-    if (loading) return;
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.style.opacity = '1';
-          e.target.style.transform = 'translateY(0)';
-        }
-      }),
-      { threshold: 0.08 }
-    );
-    document.querySelectorAll('.js-reveal').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, [products, loading]);
+  function handleCategoryChange(val) {
+    setCategory(val);
+    router.push({ pathname: '/shop', query: val !== 'all' ? { category: val } : {} }, undefined, { shallow: true });
+  }
+
+  const hasMore = products.length < total;
 
   return (
     <>
-      <Head><title>Collection — VALIO</title></Head>
-      <ShopNav />
-      <main style={{ background: 'var(--void)', minHeight: '100vh', paddingTop: 64 }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '80px 64px' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            style={{ marginBottom: 60 }}
-          >
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.55rem',
-              letterSpacing: '0.3em',
-              color: 'var(--acid)',
-              textTransform: 'uppercase',
-              marginBottom: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}>
-              <span style={{ width: 20, height: 1, background: 'var(--acid)', display: 'inline-block' }} />
-              Full Collection
-            </div>
-            <h1 style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 900,
-              fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-              letterSpacing: '-0.02em',
-              color: '#fff',
-              textTransform: 'uppercase',
-            }}>
-              All Pieces
-            </h1>
-          </motion.div>
+      <Head>
+        <title>Shop — VALIO</title>
+        <meta name="description" content="Browse the VALIO collection — luxury Algerian streetwear." />
+      </Head>
 
-          {/* Filters */}
-          <div style={{ display: 'flex', gap: 2, marginBottom: 48, flexWrap: 'wrap' }}>
-            {categories.map(cat => (
+      <CustomCursor />
+      <Navbar />
+      <CartDrawer />
+
+      <main style={{ background: '#000', minHeight: '100vh', paddingTop: '68px' }}>
+        {/* ── Page header ── */}
+        <div style={{
+          padding:     'clamp(48px,8vw,100px) clamp(20px,5vw,80px) clamp(32px,5vw,60px)',
+          borderBottom:'1px solid #111',
+          background:  'linear-gradient(to bottom, #0c0c0c, #000)',
+        }}>
+          <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <p style={{
+              fontFamily: '"DM Mono",monospace', fontSize: '0.6rem',
+              letterSpacing: '0.4em', color: '#d4a843', textTransform: 'uppercase',
+              marginBottom: '12px',
+            }}>
+              Collection
+            </p>
+            <h1 style={{
+              fontFamily: '"Bebas Neue",sans-serif',
+              fontSize:   'clamp(3rem,8vw,7rem)',
+              letterSpacing:'0.04em', color: '#e8e8e8', lineHeight: 0.9,
+              marginBottom: '32px',
+            }}>
+              THE SHOP
+            </h1>
+
+            {/* Search */}
+            <div style={{ maxWidth: '440px' }}>
+              <input
+                type="text"
+                placeholder="Search products…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="admin-field"
+                style={{ fontSize: '0.85rem' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Category filter ── */}
+        <div style={{
+          borderBottom: '1px solid #111',
+          padding:      '0 clamp(20px,5vw,80px)',
+          overflowX:    'auto',
+          background:   '#000',
+        }}>
+          <div style={{
+            maxWidth:     '1400px',
+            margin:       '0 auto',
+            display:      'flex',
+            gap:          '0',
+          }}>
+            {CATEGORIES.map(cat => (
               <button
-                key={cat}
-                onClick={() => setFilter(cat)}
+                key={cat.value}
+                onClick={() => handleCategoryChange(cat.value)}
                 style={{
-                  background: filter === cat ? 'var(--acid)' : 'var(--iron)',
-                  color: filter === cat ? 'var(--void)' : 'var(--ghost)',
-                  border: 'none',
-                  fontFamily: 'var(--font-label)',
-                  fontWeight: 700,
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.12em',
+                  background:    'none',
+                  border:        'none',
+                  borderBottom:  category === cat.value ? '2px solid #d4a843' : '2px solid transparent',
+                  color:         category === cat.value ? '#d4a843' : '#555',
+                  fontFamily:    '"DM Mono",monospace',
+                  fontSize:      '0.6rem',
+                  letterSpacing: '0.2em',
+                  padding:       '18px 20px',
                   textTransform: 'uppercase',
-                  padding: '11px 22px',
-                  cursor: 'none',
-                  transition: 'background 0.25s, color 0.25s',
+                  transition:    'color 0.2s ease, border-color 0.2s ease',
+                  whiteSpace:    'nowrap',
                 }}
+                onMouseEnter={e => { if (category !== cat.value) e.target.style.color = '#aaa'; }}
+                onMouseLeave={e => { if (category !== cat.value) e.target.style.color = '#555'; }}
               >
-                {cat}
+                {cat.label}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ── Products ── */}
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: 'clamp(32px,5vw,60px) clamp(20px,5vw,80px)' }}>
+          {/* Count */}
+          <p style={{
+            fontFamily:    '"DM Mono",monospace', fontSize: '0.6rem',
+            letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase',
+            marginBottom:  '32px',
+          }}>
+            {loading ? 'Loading…' : `${total} product${total !== 1 ? 's' : ''}`}
+          </p>
+
+          {/* Error */}
+          {error && (
+            <div style={{
+              background: 'rgba(224,85,85,0.08)', border: '1px solid rgba(224,85,85,0.2)',
+              padding: '16px 20px', marginBottom: '32px',
+              fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', color: '#e05555',
+            }}>
+              {error}
+            </div>
+          )}
 
           {/* Grid */}
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-              <div style={{
-                width: 32, height: 32,
-                border: '1px solid var(--slag)',
-                borderTop: '1px solid var(--acid)',
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '2px',
+            }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} style={{
+                  background: '#0c0c0c', aspectRatio: '3/4',
+                  animation: 'fadeIn 1.5s ease infinite alternate',
+                  opacity: 0.4,
+                }} />
+              ))}
             </div>
           ) : products.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '80px 0',
-              fontFamily: 'var(--font-label)',
-              fontSize: '0.8rem',
-              letterSpacing: '0.2em',
-              color: 'var(--mist)',
-              textTransform: 'uppercase',
-            }}>
-              No pieces in this category.
+            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+              <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', letterSpacing: '0.2em', color: '#555', textTransform: 'uppercase' }}>
+                No products found
+              </p>
             </div>
           ) : (
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: 2,
+              display:             'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap:                 '2px',
             }}>
-              {products.map((product, i) => (
-                <div
-                  key={product._id}
-                  className="js-reveal"
-                  style={{
-                    opacity: 0,
-                    transform: 'translateY(50px)',
-                    transition: `opacity 0.7s ease ${(i % 6) * 0.07}s, transform 0.7s ease ${(i % 6) * 0.07}s`,
-                  }}
-                >
-                  <ProductCard product={product} index={i} />
-                </div>
+              {products.map((p, i) => (
+                <ProductCard key={p._id} product={p} priority={i < 4} />
               ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {hasMore && !loading && (
+            <div style={{ textAlign: 'center', marginTop: '60px' }}>
+              <button
+                className="btn-outline"
+                onClick={() => load(false)}
+                disabled={loadMore}
+              >
+                {loadMore ? 'Loading…' : `LOAD MORE (${total - products.length} remaining)`}
+              </button>
             </div>
           )}
         </div>
       </main>
-      <Footer />
     </>
   );
 }

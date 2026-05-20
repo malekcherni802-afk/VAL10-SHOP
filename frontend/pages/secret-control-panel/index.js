@@ -1,799 +1,1428 @@
-/* eslint-disable no-unused-vars */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import {
-  adminLogin,
-  fetchProducts,
-  deleteProduct,
-  uploadToCloudinary,
-  fetchAllBackgrounds,
-  addBackground,
-  deleteBackground,
-  patchBackground,
-  fetchSettings,
-  saveSettings,
+  login, verifyToken, refreshToken,
+  fetchAllProductsAdmin, createProduct, updateProduct, deleteProduct,
+  fetchSettings, updateSettings,
+  fetchAllBackgroundsAdmin, createBackground, updateBackground, deleteBackground,
+  fetchOrdersAdmin, fetchOrderStats, updateOrder, deleteOrder,
 } from '../../lib/api';
+import CloudinaryUploader from '../../components/ui/CloudinaryUploader';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const CATS = ['hoodies', 't-shirts', 'compression', 'outerwear', 'other'];
+/* ────────────────────────────────────────────────────────────── */
+/*  CONSTANTS                                                      */
+/* ────────────────────────────────────────────────────────────── */
 
-/* ─── UI ATOMS ──────────────────────────────────────────────── */
-function Lbl({ children }) {
-  return (
-    <label style={{
-      display: 'block', fontFamily: '"DM Mono",monospace',
-      fontSize: '0.55rem', letterSpacing: '0.2em',
-      color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 8,
-    }}>{children}</label>
-  );
-}
+const CATEGORIES = ['hoodies', 't-shirts', 'compression', 'outerwear', 'accessories', 'other'];
+const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
-function Toggle({ value, onChange, label }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        style={{
-          width: 44, height: 22,
-          background: value ? 'var(--gold)' : 'var(--steel)',
-          border: 'none', borderRadius: 11, cursor: 'none',
-          position: 'relative', transition: 'background .3s', flexShrink: 0,
-        }}
-      >
-        <div style={{
-          width: 16, height: 16, background: '#000', borderRadius: '50%',
-          position: 'absolute', top: 3,
-          left: value ? 25 : 3, transition: 'left .3s',
-        }} />
-      </button>
-      {label && (
-        <span style={{
-          fontFamily: '"DM Mono",monospace', fontSize: '0.58rem',
-          letterSpacing: '0.12em', color: 'var(--ghost)', textTransform: 'uppercase',
-        }}>
-          {label}
-        </span>
-      )}
-    </div>
-  );
-}
+const STATUS_COLORS = {
+  pending:   { bg: 'rgba(212,168,67,0.12)',  color: '#d4a843' },
+  confirmed: { bg: 'rgba(100,180,100,0.12)', color: '#64b464' },
+  shipped:   { bg: 'rgba(100,160,220,0.12)', color: '#64a0dc' },
+  delivered: { bg: 'rgba(150,100,220,0.12)', color: '#9664dc' },
+  cancelled: { bg: 'rgba(224,85,85,0.12)',   color: '#e05555' },
+};
 
-function ErrBox({ msg }) {
-  if (!msg) return null;
-  return (
-    <div style={{
-      border: '1px solid rgba(200,40,40,0.3)', color: 'rgba(210,70,50,0.9)',
-      padding: '12px 16px', fontFamily: '"DM Sans",sans-serif', fontSize: '0.85rem', marginTop: 8,
-    }}>
-      {msg}
-    </div>
-  );
-}
-
-function OkBox({ msg }) {
-  if (!msg) return null;
-  return (
-    <div style={{
-      border: '1px solid rgba(40,180,80,0.3)', color: 'rgba(60,200,100,0.9)',
-      padding: '12px 16px', fontFamily: '"DM Sans",sans-serif', fontSize: '0.85rem', marginTop: 8,
-    }}>
-      {msg}
-    </div>
-  );
-}
-
-function Spin() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-      <div style={{
-        width: 28, height: 28,
-        border: '1px solid var(--steel)', borderTop: '1px solid var(--gold)',
-        borderRadius: '50%', animation: 'spin .8s linear infinite',
-      }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
-}
-
-/* ─── CLOUDINARY UPLOADER ───────────────────────────────────── */
-function Uploader({ onUploaded }) {
-  const [files, setFiles]       = useState([]);
-  const [previews, setPreviews] = useState([]);
-  const [busy, setBusy]         = useState(false);
-  const [err, setErr]           = useState('');
-  const ref = useRef(null);
-
-  const pick = (e) => {
-    const arr = Array.from(e.target.files);
-    setFiles(arr);
-    setPreviews(arr.map((f) => URL.createObjectURL(f)));
-    setErr('');
-  };
-
-  const go = async () => {
-    if (!files.length) return;
-    setBusy(true);
-    setErr('');
-    try {
-      const results = await Promise.all(files.map((f) => uploadToCloudinary(f)));
-      onUploaded(results);
-      setFiles([]);
-      setPreviews([]);
-      if (ref.current) ref.current.value = '';
-    } catch (e) {
-      setErr(e.message || 'Upload failed — check CLOUDINARY env vars in .env.local');
-    }
-    setBusy(false);
-  };
-
-  return (
-    <div style={{ border: '1px solid var(--blade)', padding: 18 }}>
-      <div
-        onClick={() => ref.current && ref.current.click()}
-        style={{
-          border: '1px dashed var(--blade)', padding: '18px',
-          textAlign: 'center', cursor: 'none', marginBottom: 10,
-          background: 'rgba(255,255,255,0.02)', transition: 'border-color .3s',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--gold)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--blade)'; }}
-      >
-        <span style={{
-          fontFamily: '"DM Mono",monospace', fontSize: '0.58rem',
-          letterSpacing: '0.15em', color: 'var(--ash)', textTransform: 'uppercase',
-        }}>
-          {files.length ? `${files.length} file(s) selected` : 'Click to select images'}
-        </span>
-      </div>
-      <input ref={ref} type="file" accept="image/*" multiple onChange={pick} style={{ display: 'none' }} />
-
-      {previews.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-          {previews.map((src, i) => (
-            <img key={i} src={src} alt="" style={{ width: 60, height: 60, objectFit: 'cover', opacity: 0.75 }} />
-          ))}
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <button type="button" onClick={go} disabled={busy} className="btn-gold"
-          style={{ fontSize: '0.68rem', padding: '10px 24px', marginTop: 4 }}>
-          {busy ? 'UPLOADING…' : `UPLOAD TO CLOUDINARY (${files.length})`}
-        </button>
-      )}
-      <ErrBox msg={err} />
-      <div style={{
-        marginTop: 10, fontFamily: '"DM Mono",monospace',
-        fontSize: '0.48rem', letterSpacing: '0.12em', color: 'rgba(85,85,85,0.5)',
-      }}>
-        Stored securely via Cloudinary · API secret never leaves the server
-      </div>
-    </div>
-  );
-}
-
-/* ─── PRODUCT FORM ──────────────────────────────────────────── */
-function ProductForm({ product, token, onSaved, onCancel }) {
-  const [form, setForm] = useState({
-    name:        product ? product.name        : '',
-    description: product ? product.description : '',
-    price:       product ? String(product.price || '') : '',
-    category:    product ? (product.category || 'hoodies') : 'hoodies',
-    soldOut:     product ? !!product.soldOut  : false,
-    featured:    product ? !!product.featured : false,
-    tags:        product && product.tags ? product.tags.join(', ') : '',
-  });
-  const [urls, setUrls]     = useState(product && product.images ? product.images : []);
-  const [saving, setSaving] = useState(false);
-  const [err, setErr]       = useState('');
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setErr('');
-    try {
-      const fd = new FormData();
-      fd.append('name',        form.name);
-      fd.append('description', form.description);
-      fd.append('price',       form.price);
-      fd.append('category',    form.category);
-      fd.append('soldOut',     String(form.soldOut));
-      fd.append('featured',    String(form.featured));
-      fd.append('tags',        form.tags);
-      fd.append('imageUrls',   JSON.stringify(urls));
-
-      const url    = product ? `${API_URL}/api/products/${product._id}` : `${API_URL}/api/products`;
-      const method = product ? 'PATCH' : 'POST';
-      const r = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, body: fd });
-      if (!r.ok) {
-        const j = await r.json();
-        throw new Error(j.error || 'Save failed');
-      }
-      onSaved();
-    } catch (e) {
-      setErr(e.message);
-    }
-    setSaving(false);
-  };
-
-  const removeUrl = (u) => setUrls((a) => a.filter((x) => x !== u));
-
-  return (
-    <form onSubmit={submit} style={{ maxWidth: 680, display: 'grid', gap: 22 }}>
-      <div>
-        <Lbl>Product Name *</Lbl>
-        <input className="admin-field" required placeholder="Legacy Hoodie"
-          value={form.name} onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))} />
-      </div>
-      <div>
-        <Lbl>Description *</Lbl>
-        <textarea className="admin-field" required rows={4}
-          value={form.description}
-          onChange={(e) => setForm((v) => ({ ...v, description: e.target.value }))}
-          style={{ resize: 'vertical' }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-        <div>
-          <Lbl>Price (DZD) *</Lbl>
-          <input type="number" min="0" className="admin-field" required
-            value={form.price} onChange={(e) => setForm((v) => ({ ...v, price: e.target.value }))} />
-        </div>
-        <div>
-          <Lbl>Category</Lbl>
-          <select className="admin-field" value={form.category}
-            onChange={(e) => setForm((v) => ({ ...v, category: e.target.value }))}
-            style={{ background: 'rgba(255,255,255,0.04)' }}>
-            {CATS.map((c) => (
-              <option key={c} value={c} style={{ background: '#111' }}>
-                {c.charAt(0).toUpperCase() + c.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div>
-        <Lbl>Tags (comma-separated)</Lbl>
-        <input className="admin-field" placeholder="black, limited, premium"
-          value={form.tags} onChange={(e) => setForm((v) => ({ ...v, tags: e.target.value }))} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-        <Toggle value={form.soldOut}  onChange={(v) => setForm((s) => ({ ...s, soldOut:  v }))} label="Sold Out" />
-        <Toggle value={form.featured} onChange={(v) => setForm((s) => ({ ...s, featured: v }))} label="Featured" />
-      </div>
-
-      {urls.length > 0 && (
-        <div>
-          <Lbl>Current Images</Lbl>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {urls.map((u, i) => (
-              <div key={i} style={{ position: 'relative', width: 72, height: 72 }}>
-                <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button type="button" onClick={() => removeUrl(u)} style={{
-                  position: 'absolute', top: 2, right: 2,
-                  background: 'rgba(200,40,40,0.85)', border: 'none',
-                  color: '#fff', width: 18, height: 18, borderRadius: '50%',
-                  fontSize: '0.75rem', cursor: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>×</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <Lbl>Upload Images (Cloudinary)</Lbl>
-        <Uploader onUploaded={(rs) => setUrls((a) => [...a, ...rs.map((r) => r.url)])} />
-      </div>
-
-      <ErrBox msg={err} />
-
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button type="submit" disabled={saving} className="btn-gold"
-          style={{ fontSize: '0.72rem', padding: '12px 32px' }}>
-          {saving ? 'SAVING…' : product ? 'UPDATE PRODUCT' : 'CREATE PRODUCT'}
-        </button>
-        <button type="button" onClick={onCancel} className="btn-outline"
-          style={{ fontSize: '0.7rem' }}>CANCEL</button>
-      </div>
-    </form>
-  );
-}
-
-/* ─── PRODUCT LIST ──────────────────────────────────────────── */
-function ProductList({ products, onEdit, onDelete }) {
-  if (!products.length) {
-    return (
-      <div style={{
-        textAlign: 'center', padding: '60px 0',
-        fontFamily: '"Playfair Display",serif', fontStyle: 'italic',
-        fontSize: '1rem', color: 'var(--ash)',
-      }}>No products yet. Add your first piece.</div>
-    );
-  }
-  return (
-    <div style={{ display: 'grid', gap: 2 }}>
-      {products.map((p) => (
-        <div key={p._id} style={{
-          display: 'grid', gridTemplateColumns: '72px 1fr auto',
-          gap: 18, alignItems: 'center',
-          background: 'var(--forge)', border: '1px solid var(--steel)',
-          padding: '14px 18px', transition: 'border-color .3s',
-        }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(212,168,67,0.3)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--steel)'; }}
-        >
-          <div style={{ width: 72, height: 72, background: 'var(--iron)', overflow: 'hidden' }}>
-            {p.images && p.images[0] ? (
-              <img
-                src={p.images[0].startsWith('http') ? p.images[0] : `${API_URL}${p.images[0]}`}
-                alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              <div style={{
-                width: '100%', height: '100%', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                fontFamily: '"Uncial Antiqua",serif', fontSize: '1.5rem',
-                color: 'rgba(212,168,67,0.2)',
-              }}>V</div>
-            )}
-          </div>
-          <div>
-            <div style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: '1rem', color: '#fff', marginBottom: 4 }}>
-              {p.name}
-            </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontFamily: '"Playfair Display",serif', fontSize: '0.9rem', color: 'var(--gold)' }}>
-                {p.price ? `${Number(p.price).toLocaleString()} DZD` : '—'}
-              </span>
-              <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.52rem', color: 'var(--ash)', textTransform: 'uppercase' }}>
-                {p.category}
-              </span>
-              {p.soldOut && (
-                <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', color: 'rgba(200,60,40,0.8)', border: '1px solid rgba(200,60,40,0.3)', padding: '2px 8px' }}>SOLD OUT</span>
-              )}
-              {p.featured && (
-                <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', color: 'var(--gold)', border: '1px solid rgba(212,168,67,0.3)', padding: '2px 8px' }}>FEATURED</span>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => onEdit(p)} className="btn-gold" style={{ fontSize: '0.62rem', padding: '8px 18px' }}>EDIT</button>
-            <button onClick={() => onDelete(p._id)} style={{
-              background: 'rgba(200,40,40,0.12)', border: '1px solid rgba(200,40,40,0.35)',
-              color: 'rgba(200,60,40,0.8)', fontFamily: '"Bebas Neue",sans-serif',
-              fontSize: '0.7rem', letterSpacing: '0.1em', padding: '8px 18px',
-              cursor: 'none', transition: 'background .2s',
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(200,40,40,0.25)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(200,40,40,0.12)'; }}
-            >DELETE</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── BACKGROUNDS MANAGER ───────────────────────────────────── */
-function BackgroundsManager({ token }) {
-  const [items, setItems]   = useState([]);
-  const [loading, setLoad]  = useState(true);
-  const [err, setErr]       = useState('');
-  const [ok, setOk]         = useState('');
-
-  const load = async () => {
-    setLoad(true);
-    const d = await fetchAllBackgrounds(token);
-    setItems(d.backgrounds || []);
-    setLoad(false);
-  };
-  useEffect(() => { load(); }, []); // eslint-disable-line
-
-  const onUploaded = async (results) => {
-    setErr(''); setOk('');
-    try {
-      for (const r of results) {
-        await addBackground({ url: r.url, public_id: r.public_id, label: '' }, token);
-      }
-      setOk(`${results.length} background(s) added.`);
-      load();
-    } catch (e) {
-      setErr(e.message);
-    }
-  };
-
-  const handleToggle = async (item) => {
-    await patchBackground(item._id, { active: !item.active }, token);
-    load();
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Remove this background image?')) return;
-    await deleteBackground(id, token);
-    load();
-  };
-
-  return (
-    <div style={{ maxWidth: 800 }}>
-      <div style={{ marginBottom: 32 }}>
-        <Lbl>Upload New Background Images</Lbl>
-        <Uploader onUploaded={onUploaded} />
-        <OkBox msg={ok} />
-        <ErrBox msg={err} />
-      </div>
-
-      <div style={{
-        fontFamily: '"DM Mono",monospace', fontSize: '0.55rem',
-        letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 16,
-      }}>
-        Current Backgrounds ({items.length})
-      </div>
-
-      {loading ? <Spin /> : items.length === 0 ? (
-        <div style={{ fontFamily: '"Playfair Display",serif', fontStyle: 'italic', color: 'var(--ash)', fontSize: '0.95rem', padding: '32px 0' }}>
-          No backgrounds yet. Upload above — they replace the default slides on the shop page.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 2 }}>
-          {items.map((item) => (
-            <div key={item._id} style={{
-              display: 'grid', gridTemplateColumns: '100px 1fr auto',
-              gap: 16, alignItems: 'center',
-              background: 'var(--forge)', border: '1px solid var(--steel)',
-              padding: '12px 16px',
-              opacity: item.active ? 1 : 0.45,
-              transition: 'border-color .3s',
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(212,168,67,0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--steel)'; }}
-            >
-              <div style={{ width: 100, height: 64, overflow: 'hidden', background: '#111' }}>
-                <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div>
-                <div style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.1em', color: 'var(--ghost)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.url.split('/').pop()}
-                </div>
-                <div style={{ marginTop: 6, fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', color: item.active ? 'rgba(60,200,100,0.7)' : 'var(--ash)' }}>
-                  {item.active ? 'ACTIVE' : 'HIDDEN'}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => handleToggle(item)} className="btn-outline" style={{ fontSize: '0.6rem', padding: '7px 14px' }}>
-                  {item.active ? 'HIDE' : 'SHOW'}
-                </button>
-                <button onClick={() => handleDelete(item._id)} style={{
-                  background: 'rgba(200,40,40,0.12)', border: '1px solid rgba(200,40,40,0.3)',
-                  color: 'rgba(200,60,40,0.8)', fontFamily: '"Bebas Neue",sans-serif',
-                  fontSize: '0.68rem', letterSpacing: '0.1em', padding: '7px 14px',
-                  cursor: 'none', transition: 'background .2s',
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(200,40,40,0.25)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(200,40,40,0.12)'; }}
-                >DELETE</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{ marginTop: 20, fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', letterSpacing: '0.15em', color: 'rgba(85,85,85,0.5)', lineHeight: 1.8 }}>
-        Active images are fetched dynamically by the shop carousel.<br />
-        Falls back to built-in photos when no backgrounds are uploaded.
-      </div>
-    </div>
-  );
-}
-
-/* ─── SETTINGS PANEL ────────────────────────────────────────── */
-function SettingsPanel({ token }) {
-  const [cfg, setCfg] = useState({
-    introOpacity:   0.6,
-    introImgWidth:  '100%',
-    introImgHeight: '100%',
-    introEnabled:   true,
-  });
-  const [saving, setSaving] = useState(false);
-  const [ok, setOk]         = useState('');
-  const [err, setErr]       = useState('');
-
-  useEffect(() => {
-    fetchSettings().then((d) => {
-      if (d && Object.keys(d).length) {
-        setCfg((prev) => ({
-          introOpacity:   d.introOpacity   != null ? d.introOpacity   : prev.introOpacity,
-          introImgWidth:  d.introImgWidth  != null ? d.introImgWidth  : prev.introImgWidth,
-          introImgHeight: d.introImgHeight != null ? d.introImgHeight : prev.introImgHeight,
-          introEnabled:   d.introEnabled   != null ? d.introEnabled   : prev.introEnabled,
-        }));
-      }
-    });
-  }, []);
-
-  const save = async () => {
-    setSaving(true); setOk(''); setErr('');
-    try {
-      await saveSettings(cfg, token);
-      setOk('Settings saved successfully.');
-    } catch (e) {
-      setErr(e.message || 'Save failed');
-    }
-    setSaving(false);
-  };
-
-  const pct = Math.round(Number(cfg.introOpacity) * 100);
-
-  return (
-    <div style={{ maxWidth: 600 }}>
-      <div style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 32 }}>
-        Landing Page — Intro Clothing Preview Controls
-      </div>
-
-      <div style={{ display: 'grid', gap: 28 }}>
-        <div>
-          <Lbl>Show Boutique Background on Intro</Lbl>
-          <Toggle
-            value={!!cfg.introEnabled}
-            onChange={(v) => setCfg((s) => ({ ...s, introEnabled: v }))}
-            label={cfg.introEnabled ? 'Enabled' : 'Disabled'}
-          />
-        </div>
-
-        <div>
-          <Lbl>Clothing Preview Opacity — {pct}%</Lbl>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <input
-              type="range" min="0" max="1" step="0.05"
-              value={cfg.introOpacity}
-              onChange={(e) => setCfg((s) => ({ ...s, introOpacity: parseFloat(e.target.value) }))}
-              style={{ flex: 1, accentColor: 'var(--gold)', cursor: 'none' }}
-            />
-            <div style={{
-              width: 52, height: 52,
-              background: `rgba(212,168,67,${cfg.introOpacity})`,
-              border: '1px solid var(--blade)', flexShrink: 0,
-            }} />
-          </div>
-          <div style={{ marginTop: 8, fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--ash)' }}>
-            Default: 0.6 (60%) — controls how visible the boutique rack preview is
-          </div>
-        </div>
-
-        <div>
-          <Lbl>Image Container Width</Lbl>
-          <input className="admin-field" value={cfg.introImgWidth}
-            onChange={(e) => setCfg((s) => ({ ...s, introImgWidth: e.target.value }))}
-            placeholder="100%, 1200px, 90vw" />
-          <div style={{ marginTop: 6, fontFamily: '"DM Mono",monospace', fontSize: '0.48rem', color: 'var(--ash)', letterSpacing: '0.1em' }}>
-            CSS value — %, px, vw
-          </div>
-        </div>
-
-        <div>
-          <Lbl>Image Container Height</Lbl>
-          <input className="admin-field" value={cfg.introImgHeight}
-            onChange={(e) => setCfg((s) => ({ ...s, introImgHeight: e.target.value }))}
-            placeholder="100%, 900px, 100vh" />
-        </div>
-
-        {/* Live preview */}
-        <div style={{ border: '1px solid var(--blade)', padding: 16, position: 'relative', overflow: 'hidden', height: 130 }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: 'url(/lookbook-7.jpg)',
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            filter: `brightness(${cfg.introOpacity}) saturate(0.6)`,
-            width: cfg.introImgWidth, height: cfg.introImgHeight,
-            maxWidth: '100%', maxHeight: '100%',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: 8, right: 12,
-            fontFamily: '"DM Mono",monospace', fontSize: '0.5rem',
-            letterSpacing: '0.15em', color: 'var(--gold)', textTransform: 'uppercase',
-          }}>Live Preview</div>
-        </div>
-
-        <div>
-          <button type="button" onClick={save} disabled={saving} className="btn-gold"
-            style={{ fontSize: '0.72rem', padding: '12px 32px' }}>
-            {saving ? 'SAVING…' : 'SAVE SETTINGS'}
-          </button>
-          <OkBox msg={ok} />
-          <ErrBox msg={err} />
-        </div>
-      </div>
-
-      <div style={{ marginTop: 32, borderTop: '1px solid var(--blade)', paddingTop: 20, fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(85,85,85,0.5)', lineHeight: 1.8 }}>
-        Stored in MongoDB · Applied on every page load · No redeploy needed.
-      </div>
-    </div>
-  );
-}
-
-/* ─── LOGIN ─────────────────────────────────────────────────── */
-function LoginScreen({ onAuth }) {
-  const [pw, setPw]     = useState('');
-  const [err, setErr]   = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setBusy(true); setErr('');
-    const res = await adminLogin(pw);
-    if (res.token) {
-      localStorage.setItem('valio_token', res.token);
-      onAuth(res.token);
-    } else {
-      setErr('Access denied.');
-    }
-    setBusy(false);
-  };
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 380, border: '1px solid rgba(212,168,67,0.2)', padding: '52px 44px' }}>
-        <div style={{ fontFamily: '"Uncial Antiqua",serif', fontSize: '1.8rem', color: '#fff', textAlign: 'center', marginBottom: 6 }}>VALIO</div>
-        <div style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.3em', color: 'var(--gold)', textAlign: 'center', marginBottom: 44, textTransform: 'uppercase' }}>Control Panel</div>
-        <form onSubmit={submit}>
-          <div style={{ marginBottom: 20 }}>
-            <Lbl>Access Key</Lbl>
-            <input type="password" value={pw} onChange={(e) => setPw(e.target.value)}
-              className="admin-field" placeholder="••••••••" required autoFocus />
-          </div>
-          {err && <div style={{ color: 'rgba(200,60,40,0.8)', fontFamily: '"DM Sans",sans-serif', fontSize: '0.82rem', marginBottom: 14, textAlign: 'center' }}>{err}</div>}
-          <button type="submit" disabled={busy} className="btn-gold" style={{ width: '100%', justifyContent: 'center' }}>
-            {busy ? 'VERIFYING…' : 'ENTER'}
-          </button>
-        </form>
-        <div style={{ marginTop: 28, fontFamily: '"DM Mono",monospace', fontSize: '0.48rem', letterSpacing: '0.2em', color: 'rgba(85,85,85,0.4)', textAlign: 'center' }}>RESTRICTED ACCESS</div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── DASHBOARD ─────────────────────────────────────────────── */
 const TABS = [
-  { id: 'products',    label: 'Products' },
-  { id: 'add',         label: '+ Add Product' },
-  { id: 'backgrounds', label: 'Shop Backgrounds' },
-  { id: 'settings',    label: 'Settings' },
+  { id: 'overview',     label: 'Overview',    icon: '◈' },
+  { id: 'products',     label: 'Products',    icon: '▣' },
+  { id: 'orders',       label: 'Orders',      icon: '◎' },
+  { id: 'backgrounds',  label: 'Backgrounds', icon: '◉' },
+  { id: 'settings',     label: 'Settings',    icon: '⚙' },
 ];
 
-function Dashboard({ token, onLogout }) {
-  const [tab, setTab]           = useState('products');
-  const [products, setProducts] = useState([]);
-  const [editing, setEditing]   = useState(null);
-  const [showForm, setShowForm] = useState(false);
+/* ────────────────────────────────────────────────────────────── */
+/*  HELPERS                                                        */
+/* ────────────────────────────────────────────────────────────── */
 
-  const load = () => {
-    fetch(`${API_URL}/api/products?limit=200`)
-      .then((r) => r.json())
-      .then((d) => setProducts(d.products || []))
-      .catch(() => {});
-  };
-  useEffect(() => { load(); }, []);
-
-  const goTab = (id) => {
-    if (id === 'add') { setShowForm(true); setEditing(null); setTab('products'); }
-    else { setTab(id); setShowForm(false); setEditing(null); }
-  };
-
-  const hdr = showForm
-    ? (editing ? 'Edit Product' : 'Add Product')
-    : (TABS.find((t) => t.id === tab) || {}).label || '';
-
+function Spinner({ size = 20 }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex' }}>
-      {/* Sidebar */}
-      <div style={{ width: 230, background: '#000', borderRight: '1px solid rgba(212,168,67,0.1)', display: 'flex', flexDirection: 'column', padding: '32px 0', flexShrink: 0 }}>
-        <div style={{ padding: '0 24px 28px', borderBottom: '1px solid rgba(212,168,67,0.1)', marginBottom: 8 }}>
-          <div style={{ fontFamily: '"Uncial Antiqua",serif', fontSize: '1.3rem', color: '#fff', marginBottom: 4 }}>VALIO</div>
-          <div style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.5rem', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase' }}>Control Panel</div>
-        </div>
-        <nav style={{ flex: 1 }}>
-          {TABS.map((t) => {
-            const on = t.id !== 'add' && tab === t.id && !showForm;
-            return (
-              <button key={t.id} onClick={() => goTab(t.id)} style={{
-                width: '100%', background: on ? 'rgba(212,168,67,0.08)' : 'transparent',
-                border: 'none', borderLeft: on ? '2px solid var(--gold)' : '2px solid transparent',
-                color: on ? 'var(--gold)' : 'var(--ash)',
-                fontFamily: '"DM Mono",monospace', fontSize: '0.6rem', letterSpacing: '0.12em',
-                padding: '13px 24px', textAlign: 'left', cursor: 'none',
-                textTransform: 'uppercase', transition: 'all .25s',
-              }}
-                onMouseEnter={(e) => { if (!on) e.currentTarget.style.color = 'var(--ghost)'; }}
-                onMouseLeave={(e) => { if (!on) e.currentTarget.style.color = 'var(--ash)'; }}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
-        <div style={{ padding: '0 16px' }}>
-          <button onClick={onLogout} style={{
-            width: '100%', background: 'transparent',
-            border: '1px solid rgba(200,40,40,0.25)', color: 'rgba(200,60,40,0.6)',
-            fontFamily: '"DM Mono",monospace', fontSize: '0.58rem', letterSpacing: '0.12em',
-            padding: 10, cursor: 'none', textTransform: 'uppercase', transition: 'all .3s',
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(200,40,40,0.5)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(200,40,40,0.25)'; }}
-          >Logout</button>
-        </div>
-      </div>
+    <span style={{
+      display:      'inline-block',
+      width:        size, height: size,
+      border:       `2px solid #333`,
+      borderTop:    `2px solid #d4a843`,
+      borderRadius: '50%',
+      animation:    'spin 0.7s linear infinite',
+      flexShrink:   0,
+    }} />
+  );
+}
 
-      {/* Main content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <div style={{ borderBottom: '1px solid rgba(212,168,67,0.1)', padding: '22px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ fontFamily: '"Bebas Neue",sans-serif', fontWeight: 400, fontSize: '1.2rem', letterSpacing: '0.1em', color: '#fff' }}>{hdr}</h1>
-          {tab === 'products' && !showForm && (
-            <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.15em', color: 'var(--ash)' }}>
-              {products.length} products
-            </span>
-          )}
-        </div>
+function Toast({ message, type = 'success', onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  const bg = type === 'error' ? 'rgba(224,85,85,0.15)' : 'rgba(212,168,67,0.12)';
+  const cl = type === 'error' ? '#e05555' : '#d4a843';
+  const br = type === 'error' ? 'rgba(224,85,85,0.3)' : 'rgba(212,168,67,0.25)';
+  return (
+    <div style={{
+      position:      'fixed', bottom: '32px', right: '32px',
+      zIndex:         99999,
+      background:     bg, border: `1px solid ${br}`,
+      color:          cl,
+      fontFamily:    '"DM Mono",monospace', fontSize: '0.75rem',
+      letterSpacing: '0.1em',
+      padding:        '14px 22px',
+      maxWidth:       '380px',
+      animation:      'slideUp 0.35s ease both',
+      boxShadow:      '0 8px 40px rgba(0,0,0,0.8)',
+    }}>
+      {message}
+    </div>
+  );
+}
 
-        <div style={{ padding: '36px 40px' }}>
-          {tab === 'products' && !showForm && (
-            <div>
-              <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-gold" onClick={() => { setShowForm(true); setEditing(null); }}
-                  style={{ fontSize: '0.7rem', padding: '10px 24px' }}>
-                  + ADD PRODUCT
-                </button>
-              </div>
-              <ProductList
-                products={products}
-                onEdit={(p) => { setEditing(p); setShowForm(true); }}
-                onDelete={async (id) => {
-                  if (!confirm('Delete this product permanently?')) return;
-                  await deleteProduct(id, token);
-                  load();
-                }}
-              />
-            </div>
-          )}
-          {showForm && (
-            <ProductForm
-              product={editing}
-              token={token}
-              onSaved={() => { setShowForm(false); setEditing(null); load(); }}
-              onCancel={() => { setShowForm(false); setEditing(null); }}
-            />
-          )}
-          {tab === 'backgrounds' && !showForm && <BackgroundsManager token={token} />}
-          {tab === 'settings'    && !showForm && <SettingsPanel token={token} />}
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div style={{
+      position:   'fixed', inset: 0, zIndex: 99990,
+      background: 'rgba(0,0,0,0.85)',
+      display:    'flex', alignItems: 'center', justifyContent: 'center',
+      padding:    '24px',
+    }}>
+      <div style={{
+        background: '#0c0c0c', border: '1px solid #2a2a2a',
+        padding:    '40px', maxWidth: '420px', width: '100%',
+      }}>
+        <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '28px', fontFamily: '"DM Sans",sans-serif' }}>
+          {message}
+        </p>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={onCancel}>
+            CANCEL
+          </button>
+          <button onClick={onConfirm} style={{
+            flex: 1, background: '#e05555', border: 'none', color: '#fff',
+            fontFamily: '"Bebas Neue",sans-serif', fontSize: '0.95rem',
+            letterSpacing: '0.12em', padding: '14px', cursor: 'none',
+          }}>
+            DELETE
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── PAGE ROOT ─────────────────────────────────────────────── */
-export default function SecretControlPanel() {
-  const [token, setToken] = useState(null);
+/* ────────────────────────────────────────────────────────────── */
+/*  PRODUCT FORM MODAL                                            */
+/* ────────────────────────────────────────────────────────────── */
+
+function ProductModal({ token, product, onSave, onClose }) {
+  const isEdit = !!product;
+  const [form, setForm] = useState({
+    name:        product?.name        || '',
+    description: product?.description || '',
+    price:       product?.price       || '',
+    category:    product?.category    || 'other',
+    sizes:       product?.sizes?.join(', ')  || '',
+    tags:        product?.tags?.join(', ')   || '',
+    stock:       product?.stock       || '',
+    soldOut:     product?.soldOut     || false,
+    featured:    product?.featured    || false,
+    visible:     product?.visible     !== false ? true : false,
+  });
+  const [images,  setImages]  = useState(product?.images || []);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState('');
+
+  const set = field => e => setForm(f => ({
+    ...f,
+    [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value,
+  }));
+
+  function addImage(url) {
+    setImages(prev => [...prev, url]);
+  }
+  function removeImage(url) {
+    setImages(prev => prev.filter(u => u !== url));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.name.trim() || !form.description.trim() || form.price === '') {
+      setError('Name, description and price are required'); return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const fd = new FormData();
+      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      fd.append('imageUrls', JSON.stringify(images));
+
+      if (isEdit) {
+        await updateProduct(token, product._id, fd);
+      } else {
+        await createProduct(token, fd);
+      }
+      onSave();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position:   'fixed', inset: 0, zIndex: 99980,
+      background: 'rgba(0,0,0,0.9)',
+      overflowY:  'auto',
+      padding:    '40px 20px',
+      display:    'flex',
+      justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#0c0c0c', border: '1px solid #2a2a2a',
+        width:      '100%', maxWidth: '700px',
+        padding:    '40px',
+        alignSelf:  'flex-start',
+      }}>
+        {/* Modal header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <h2 style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: '1.6rem', color: '#e8e8e8', letterSpacing: '0.1em' }}>
+            {isEdit ? 'EDIT PRODUCT' : 'NEW PRODUCT'}
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#555', fontSize: '1.5rem', lineHeight: 1 }}>
+            ×
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ background: 'rgba(224,85,85,0.08)', border: '1px solid rgba(224,85,85,0.2)', color: '#e05555', padding: '12px 16px', marginBottom: '24px', fontFamily: '"DM Mono",monospace', fontSize: '0.75rem' }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Name */}
+          <div>
+            <label style={labelStyle}>Product Name *</label>
+            <input className="admin-field" value={form.name} onChange={set('name')} required />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={labelStyle}>Description *</label>
+            <textarea className="admin-field" rows={4} value={form.description} onChange={set('description')}
+              required style={{ resize: 'vertical' }} />
+          </div>
+
+          {/* Price + Category */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={labelStyle}>Price (DZD) *</label>
+              <input className="admin-field" type="number" min="0" step="1" value={form.price} onChange={set('price')} required />
+            </div>
+            <div>
+              <label style={labelStyle}>Category</label>
+              <select className="admin-field" value={form.category} onChange={set('category')}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Sizes + Tags */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={labelStyle}>Sizes (comma-separated)</label>
+              <input className="admin-field" value={form.sizes} onChange={set('sizes')} placeholder="XS, S, M, L, XL" />
+            </div>
+            <div>
+              <label style={labelStyle}>Tags (comma-separated)</label>
+              <input className="admin-field" value={form.tags} onChange={set('tags')} placeholder="black, oversized, logo" />
+            </div>
+          </div>
+
+          {/* Stock */}
+          <div>
+            <label style={labelStyle}>Stock Count (optional)</label>
+            <input className="admin-field" type="number" min="0" value={form.stock} onChange={set('stock')} placeholder="Leave blank for unlimited" />
+          </div>
+
+          {/* Toggles */}
+          <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
+            {[
+              { field: 'soldOut',  label: 'Sold Out' },
+              { field: 'featured', label: 'Featured' },
+              { field: 'visible',  label: 'Visible' },
+            ].map(({ field, label }) => (
+              <label key={field} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'none' }}>
+                <input type="checkbox" checked={form[field]} onChange={set(field)}
+                  style={{ width: '16px', height: '16px', accentColor: '#d4a843' }} />
+                <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase' }}>
+                  {label}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Images */}
+          <div>
+            <label style={labelStyle}>Product Images</label>
+            <CloudinaryUploader
+              token={token}
+              folder="valio/products"
+              onUpload={addImage}
+              onError={msg => setError(msg)}
+            />
+            {/* Image previews */}
+            {images.length > 0 && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
+                {images.map((url, i) => (
+                  <div key={url + i} style={{ position: 'relative', width: '80px', height: '100px' }}>
+                    <img src={url} alt={`Image ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <button type="button" onClick={() => removeImage(url)}
+                      style={{
+                        position:   'absolute', top: '4px', right: '4px',
+                        background: 'rgba(0,0,0,0.8)', border: 'none',
+                        color:      '#e05555', width: '20px', height: '20px',
+                        fontSize:   '0.7rem', lineHeight: '20px',
+                        display:    'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                      ×
+                    </button>
+                    {i === 0 && (
+                      <div style={{
+                        position:   'absolute', bottom: '4px', left: '4px',
+                        background: 'rgba(212,168,67,0.9)', color: '#000',
+                        fontFamily: '"DM Mono",monospace', fontSize: '0.5rem',
+                        padding:    '2px 5px', letterSpacing: '0.1em',
+                      }}>
+                        MAIN
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '8px' }}>
+            <button type="button" className="btn-outline" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>
+              CANCEL
+            </button>
+            <button type="submit" className="btn-gold" style={{ flex: 2, justifyContent: 'center' }} disabled={saving}>
+              {saving ? <><Spinner size={16} /> SAVING…</> : (isEdit ? 'SAVE CHANGES' : 'CREATE PRODUCT')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  OVERVIEW TAB                                                   */
+/* ────────────────────────────────────────────────────────────── */
+
+function OverviewTab({ token }) {
+  const [stats,   setStats]   = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const t = localStorage.getItem('valio_token');
-      if (t) setToken(t);
+    fetchOrderStats(token)
+      .then(setStats)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const cards = stats ? [
+    { label: 'Total Orders',    value: stats.total,     color: '#d4a843' },
+    { label: 'Pending',         value: stats.pending,   color: '#d4a843' },
+    { label: 'Shipped',         value: stats.shipped,   color: '#64a0dc' },
+    { label: 'Delivered',       value: stats.delivered, color: '#64b464' },
+    { label: 'Cancelled',       value: stats.cancelled, color: '#e05555' },
+    { label: 'Revenue (Active)',value: `${(stats.revenue || 0).toLocaleString()} DZD`, color: '#9664dc' },
+  ] : [];
+
+  return (
+    <div>
+      <h2 style={sectionTitle}>Overview</h2>
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#555' }}>
+          <Spinner /> Loading stats…
+        </div>
+      ) : (
+        <div style={{
+          display:             'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap:                 '2px',
+          marginBottom:        '48px',
+        }}>
+          {cards.map(({ label, value, color }) => (
+            <div key={label} style={{
+              background: '#0c0c0c',
+              border:     '1px solid #1a1a1a',
+              padding:    '28px 24px',
+            }}>
+              <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.6rem', letterSpacing: '0.2em', color: '#555', textTransform: 'uppercase', marginBottom: '12px' }}>
+                {label}
+              </p>
+              <p style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: '2.2rem', color, letterSpacing: '0.05em', lineHeight: 1 }}>
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ padding: '28px', background: '#080808', border: '1px solid #1a1a1a' }}>
+        <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', color: '#555', lineHeight: 1.9 }}>
+          VALIO Admin v4 — All data saved to MongoDB. Media hosted on Cloudinary.
+          <br />Use the sidebar to manage products, orders, and site settings.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  PRODUCTS TAB                                                   */
+/* ────────────────────────────────────────────────────────────── */
+
+function ProductsTab({ token, onToast }) {
+  const [products,  setProducts]  = useState([]);
+  const [total,     setTotal]     = useState(0);
+  const [loading,   setLoading]   = useState(true);
+  const [catFilter, setCatFilter] = useState('all');
+  const [modal,     setModal]     = useState(null);   // null | 'new' | product object
+  const [confirm,   setConfirm]   = useState(null);   // product to delete
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAllProductsAdmin(token, {
+        category: catFilter !== 'all' ? catFilter : undefined,
+        limit: 200,
+      });
+      setProducts(data.products || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setLoading(false);
     }
+  }, [token, catFilter, onToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleDelete(product) {
+    try {
+      await deleteProduct(token, product._id);
+      onToast(`"${product.name}" deleted`);
+      load();
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setConfirm(null);
+    }
+  }
+
+  async function handleToggle(product, field) {
+    try {
+      const fd = new FormData();
+      fd.append(field, !product[field]);
+      await updateProduct(token, product._id, fd);
+      setProducts(prev => prev.map(p => p._id === product._id ? { ...p, [field]: !p[field] } : p));
+      onToast(`${field} updated`);
+    } catch (err) {
+      onToast(err.message, 'error');
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+        <h2 style={sectionTitle}>Products <span style={{ color: '#555', fontSize: '1rem' }}>({total})</span></h2>
+        <button className="btn-gold" onClick={() => setModal('new')}>
+          + NEW PRODUCT
+        </button>
+      </div>
+
+      {/* Category filter */}
+      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #1a1a1a', marginBottom: '24px', overflowX: 'auto' }}>
+        {['all', ...CATEGORIES].map(c => (
+          <button key={c} onClick={() => setCatFilter(c)} style={{
+            background:    'none', border: 'none',
+            borderBottom:  catFilter === c ? '2px solid #d4a843' : '2px solid transparent',
+            color:         catFilter === c ? '#d4a843' : '#555',
+            fontFamily:    '"DM Mono",monospace', fontSize: '0.6rem',
+            letterSpacing: '0.15em', padding: '12px 18px',
+            textTransform: 'uppercase', whiteSpace: 'nowrap',
+            transition:    'color 0.2s ease',
+          }}>
+            {c === 'all' ? 'ALL' : c}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#555', padding: '40px 0' }}>
+          <Spinner /> Loading products…
+        </div>
+      ) : products.length === 0 ? (
+        <div style={{ padding: '60px 0', textAlign: 'center' }}>
+          <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', letterSpacing: '0.2em', color: '#555', textTransform: 'uppercase' }}>
+            No products
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {products.map(product => (
+            <div key={product._id} style={{
+              display:     'grid',
+              gridTemplateColumns: '56px 1fr auto',
+              gap:         '16px',
+              alignItems:  'center',
+              background:  '#0c0c0c',
+              border:      '1px solid #161616',
+              padding:     '12px 16px',
+              transition:  'border-color 0.2s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#2a2a2a'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#161616'}
+            >
+              {/* Thumbnail */}
+              <div style={{ width: '56px', height: '70px', background: '#111', overflow: 'hidden', flexShrink: 0 }}>
+                {product.images?.[0] && (
+                  <img src={product.images[0]} alt={product.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+              </div>
+
+              {/* Info */}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <span style={{ fontFamily: '"DM Sans",sans-serif', fontWeight: 500, fontSize: '0.88rem', color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {product.name}
+                  </span>
+                  {!product.visible && <Badge color="#555">Hidden</Badge>}
+                  {product.soldOut  && <Badge color="#e05555">Sold Out</Badge>}
+                  {product.featured && <Badge color="#d4a843">Featured</Badge>}
+                </div>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <span style={metaStyle}>{product.category}</span>
+                  <span style={{ ...metaStyle, color: '#d4a843' }}>{product.price.toLocaleString()} DZD</span>
+                  {product.images?.length > 0 && <span style={metaStyle}>{product.images.length} image{product.images.length !== 1 ? 's' : ''}</span>}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <AdminBtn onClick={() => handleToggle(product, 'visible')} title={product.visible ? 'Hide' : 'Show'}>
+                  {product.visible ? '👁' : '🚫'}
+                </AdminBtn>
+                <AdminBtn onClick={() => handleToggle(product, 'featured')} title={product.featured ? 'Unfeature' : 'Feature'}>
+                  {product.featured ? '★' : '☆'}
+                </AdminBtn>
+                <AdminBtn onClick={() => setModal(product)}>EDIT</AdminBtn>
+                <AdminBtn onClick={() => setConfirm(product)} danger>DEL</AdminBtn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modals */}
+      {modal && (
+        <ProductModal
+          token={token}
+          product={modal === 'new' ? null : modal}
+          onSave={() => { setModal(null); load(); onToast('Product saved!'); }}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {confirm && (
+        <ConfirmModal
+          message={`Delete "${confirm.name}"? This cannot be undone.`}
+          onConfirm={() => handleDelete(confirm)}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  ORDERS TAB                                                     */
+/* ────────────────────────────────────────────────────────────── */
+
+function OrdersTab({ token, onToast }) {
+  const [orders,     setOrders]     = useState([]);
+  const [total,      setTotal]      = useState(0);
+  const [loading,    setLoading]    = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search,     setSearch]     = useState('');
+  const [expanded,   setExpanded]   = useState(null);
+  const [confirm,    setConfirm]    = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchOrdersAdmin(token, {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: search || undefined,
+        limit: 100,
+      });
+      setOrders(data.orders || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, statusFilter, search, onToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleStatusChange(orderId, status) {
+    try {
+      await updateOrder(token, orderId, { status });
+      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status } : o));
+      onToast(`Order status → ${status}`);
+    } catch (err) {
+      onToast(err.message, 'error');
+    }
+  }
+
+  async function handleDelete(order) {
+    try {
+      await deleteOrder(token, order._id);
+      setOrders(prev => prev.filter(o => o._id !== order._id));
+      setTotal(t => t - 1);
+      onToast(`Order ${order.ref} deleted`);
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setConfirm(null);
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+        <h2 style={sectionTitle}>Orders <span style={{ color: '#555', fontSize: '1rem' }}>({total})</span></h2>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <input
+          className="admin-field"
+          placeholder="Search by ref, name, email…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ maxWidth: '320px' }}
+        />
+        <select className="admin-field" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          style={{ maxWidth: '180px' }}>
+          <option value="all">All Statuses</option>
+          {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
+      </div>
+
+      {/* Status tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #1a1a1a', marginBottom: '24px', overflowX: 'auto' }}>
+        {['all', ...ORDER_STATUSES].map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)} style={{
+            background:    'none', border: 'none',
+            borderBottom:  statusFilter === s ? `2px solid ${STATUS_COLORS[s]?.color || '#d4a843'}` : '2px solid transparent',
+            color:         statusFilter === s ? (STATUS_COLORS[s]?.color || '#d4a843') : '#555',
+            fontFamily:    '"DM Mono",monospace', fontSize: '0.6rem',
+            letterSpacing: '0.15em', padding: '12px 18px',
+            textTransform: 'uppercase', whiteSpace: 'nowrap',
+            transition:    'color 0.2s ease',
+          }}>
+            {s === 'all' ? 'ALL' : s}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#555', padding: '40px 0' }}>
+          <Spinner /> Loading orders…
+        </div>
+      ) : orders.length === 0 ? (
+        <div style={{ padding: '60px 0', textAlign: 'center' }}>
+          <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', letterSpacing: '0.2em', color: '#555', textTransform: 'uppercase' }}>
+            No orders found
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {orders.map(order => {
+            const sc = STATUS_COLORS[order.status] || {};
+            const isOpen = expanded === order._id;
+            return (
+              <div key={order._id} style={{ background: '#0c0c0c', border: '1px solid #161616' }}>
+                {/* Row */}
+                <div style={{
+                  display:     'grid',
+                  gridTemplateColumns: '1fr auto',
+                  gap:         '16px',
+                  alignItems:  'center',
+                  padding:     '14px 16px',
+                  cursor:      'none',
+                }}
+                onClick={() => setExpanded(isOpen ? null : order._id)}
+                >
+                  <div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', color: '#d4a843', letterSpacing: '0.1em' }}>
+                        {order.ref}
+                      </span>
+                      <span style={{
+                        background:    sc.bg, color: sc.color,
+                        fontFamily:    '"DM Mono",monospace', fontSize: '0.55rem',
+                        letterSpacing: '0.15em', padding: '3px 8px',
+                        textTransform: 'uppercase',
+                      }}>
+                        {order.status}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                      <span style={metaStyle}>{order.customer.name}</span>
+                      <span style={metaStyle}>{order.customer.email}</span>
+                      {order.customer.phone && <span style={metaStyle}>{order.customer.phone}</span>}
+                      <span style={{ ...metaStyle, color: '#d4a843' }}>{order.total.toLocaleString()} DZD</span>
+                      <span style={metaStyle}>{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <span style={{ color: '#555', fontSize: '0.8rem', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s ease' }}>▶</span>
+                </div>
+
+                {/* Expanded detail */}
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #1a1a1a', padding: '20px 16px' }}>
+                    {/* Customer info */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                      {[
+                        ['Name',    order.customer.name],
+                        ['Email',   order.customer.email],
+                        ['Phone',   order.customer.phone  || '—'],
+                        ['Wilaya',  order.customer.wilaya  || '—'],
+                        ['Address', order.customer.address || '—'],
+                      ].map(([lbl, val]) => (
+                        <div key={lbl}>
+                          <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: '4px' }}>{lbl}</p>
+                          <p style={{ fontSize: '0.82rem', color: '#ccc' }}>{val}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Line items */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: '10px' }}>Items</p>
+                      {order.items.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #111' }}>
+                          {item.image && (
+                            <img src={item.image} alt={item.name} style={{ width: '44px', height: '55px', objectFit: 'cover', flexShrink: 0 }} />
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '0.82rem', color: '#ccc', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                            <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.65rem', color: '#888' }}>
+                              {item.size ? `Size: ${item.size} · ` : ''}Qty: {item.quantity} · {(item.price * item.quantity).toLocaleString()} DZD
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px' }}>
+                        <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.9rem', color: '#d4a843' }}>
+                          Total: {order.total.toLocaleString()} DZD
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status change */}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.6rem', letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase' }}>Change Status:</p>
+                      {ORDER_STATUSES.map(s => (
+                        <button key={s} onClick={(e) => { e.stopPropagation(); handleStatusChange(order._id, s); }}
+                          style={{
+                            background:    order.status === s ? (STATUS_COLORS[s]?.bg || 'transparent') : 'transparent',
+                            border:        `1px solid ${order.status === s ? (STATUS_COLORS[s]?.color || '#555') : '#333'}`,
+                            color:         order.status === s ? (STATUS_COLORS[s]?.color || '#ccc') : '#555',
+                            fontFamily:    '"DM Mono",monospace', fontSize: '0.6rem',
+                            letterSpacing: '0.1em', padding: '7px 14px',
+                            textTransform: 'uppercase', transition: 'all 0.2s ease',
+                          }}>
+                          {s}
+                        </button>
+                      ))}
+                      <button onClick={(e) => { e.stopPropagation(); setConfirm(order); }}
+                        style={{
+                          marginLeft:    'auto',
+                          background:    'rgba(224,85,85,0.08)', border: '1px solid rgba(224,85,85,0.25)',
+                          color:         '#e05555', fontFamily: '"DM Mono",monospace',
+                          fontSize:      '0.6rem', letterSpacing: '0.1em', padding: '7px 14px',
+                          textTransform: 'uppercase',
+                        }}>
+                        DELETE ORDER
+                      </button>
+                    </div>
+
+                    {order.notes && (
+                      <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid #1a1a1a' }}>
+                        <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: '6px' }}>Customer Note</p>
+                        <p style={{ fontSize: '0.82rem', color: '#888' }}>{order.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          message={`Delete order ${confirm.ref}? This cannot be undone.`}
+          onConfirm={() => handleDelete(confirm)}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  BACKGROUNDS TAB                                               */
+/* ────────────────────────────────────────────────────────────── */
+
+function BackgroundsTab({ token, onToast }) {
+  const [bgs,     setBgs]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [confirm, setConfirm] = useState(null);
+  const [newUrls, setNewUrls] = useState([]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAllBackgroundsAdmin(token);
+      setBgs(data.backgrounds || []);
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, onToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAdd() {
+    if (newUrls.length === 0) { onToast('Upload at least one image first', 'error'); return; }
+    try {
+      for (const { url, public_id } of newUrls) {
+        await createBackground(token, { url, public_id, order: bgs.length });
+      }
+      setNewUrls([]);
+      onToast(`${newUrls.length} background(s) added`);
+      load();
+    } catch (err) {
+      onToast(err.message, 'error');
+    }
+  }
+
+  async function handleToggle(bg) {
+    try {
+      await updateBackground(token, bg._id, { active: !bg.active });
+      setBgs(prev => prev.map(b => b._id === bg._id ? { ...b, active: !b.active } : b));
+      onToast(`Background ${!bg.active ? 'activated' : 'deactivated'}`);
+    } catch (err) {
+      onToast(err.message, 'error');
+    }
+  }
+
+  async function handleDelete(bg) {
+    try {
+      await deleteBackground(token, bg._id);
+      setBgs(prev => prev.filter(b => b._id !== bg._id));
+      onToast('Background deleted');
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setConfirm(null);
+    }
+  }
+
+  return (
+    <div>
+      <h2 style={sectionTitle}>Shop Backgrounds</h2>
+      <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', color: '#555', marginBottom: '28px', lineHeight: 1.7 }}>
+        These images cycle as the hero background on the homepage.
+        Upload via Cloudinary below, then click "Add to Site".
+      </p>
+
+      {/* Upload + Add */}
+      <div style={{ marginBottom: '32px', padding: '24px', background: '#080808', border: '1px solid #1a1a1a' }}>
+        <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.6rem', letterSpacing: '0.2em', color: '#d4a843', textTransform: 'uppercase', marginBottom: '16px' }}>
+          Upload New Backgrounds
+        </p>
+        <CloudinaryUploader
+          token={token}
+          folder="valio/backgrounds"
+          onUpload={(url, public_id) => setNewUrls(prev => [...prev, { url, public_id }])}
+          onError={msg => onToast(msg, 'error')}
+        />
+        {newUrls.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.65rem', color: '#888', marginBottom: '12px' }}>
+              {newUrls.length} image(s) ready to add:
+            </p>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {newUrls.map(({ url }, i) => (
+                <div key={i} style={{ width: '80px', height: '100px', overflow: 'hidden', flexShrink: 0 }}>
+                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn-gold" onClick={handleAdd}>
+                ADD {newUrls.length} TO SITE
+              </button>
+              <button className="btn-outline" onClick={() => setNewUrls([])}>
+                CLEAR
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Existing backgrounds */}
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#555' }}>
+          <Spinner /> Loading…
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '2px' }}>
+          {bgs.map(bg => (
+            <div key={bg._id} style={{ position: 'relative', background: '#0c0c0c', border: '1px solid #161616', overflow: 'hidden' }}>
+              <div style={{ aspectRatio: '9/16', overflow: 'hidden' }}>
+                <img src={bg.url} alt={bg.label || 'Background'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: bg.active ? 1 : 0.3, transition: 'opacity 0.3s' }} />
+              </div>
+              <div style={{ padding: '12px 14px' }}>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{
+                    background:    bg.active ? 'rgba(100,180,100,0.12)' : 'rgba(85,85,85,0.12)',
+                    color:         bg.active ? '#64b464' : '#555',
+                    border:        `1px solid ${bg.active ? 'rgba(100,180,100,0.3)' : '#2a2a2a'}`,
+                    fontFamily:    '"DM Mono",monospace', fontSize: '0.55rem',
+                    letterSpacing: '0.15em', padding: '3px 8px',
+                    textTransform: 'uppercase',
+                  }}>
+                    {bg.active ? 'Active' : 'Hidden'}
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <AdminBtn onClick={() => handleToggle(bg)} title={bg.active ? 'Deactivate' : 'Activate'}>
+                      {bg.active ? '🚫' : '✓'}
+                    </AdminBtn>
+                    <AdminBtn onClick={() => setConfirm(bg)} danger>DEL</AdminBtn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          message="Delete this background image from the site?"
+          onConfirm={() => handleDelete(confirm)}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  SETTINGS TAB                                                   */
+/* ────────────────────────────────────────────────────────────── */
+
+function SettingsTab({ token, onToast }) {
+  const [settings, setSettings] = useState({
+    siteName:            'VALIO',
+    tagline:             'Made for Legacy',
+    contactEmail:        '',
+    shippingNote:        '',
+    announcementBar:     '',
+    announcementEnabled: false,
+    maintenanceMode:     false,
+    introEnabled:        true,
+    introOpacity:        0.6,
+    introImgWidth:       '100%',
+    introImgHeight:      '100%',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving,  setSaving]  = useState(false);
+
+  useEffect(() => {
+    fetchSettings()
+      .then(data => setSettings(prev => ({ ...prev, ...data })))
+      .catch(err => onToast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, [onToast]);
+
+  const set = field => e => {
+    const val = e.target.type === 'checkbox' ? e.target.checked
+      : e.target.type === 'number' ? Number(e.target.value)
+      : e.target.value;
+    setSettings(prev => ({ ...prev, [field]: val }));
+  };
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateSettings(token, settings);
+      onToast('Settings saved!');
+    } catch (err) {
+      onToast(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#555', padding: '40px 0' }}>
+        <Spinner /> Loading settings…
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 style={sectionTitle}>Site Settings</h2>
+      <form onSubmit={handleSave} style={{ maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* General */}
+        <Section label="General">
+          <FieldRow label="Site Name">
+            <input className="admin-field" value={settings.siteName || ''} onChange={set('siteName')} />
+          </FieldRow>
+          <FieldRow label="Tagline">
+            <input className="admin-field" value={settings.tagline || ''} onChange={set('tagline')} />
+          </FieldRow>
+          <FieldRow label="Contact Email">
+            <input className="admin-field" type="email" value={settings.contactEmail || ''} onChange={set('contactEmail')} />
+          </FieldRow>
+          <FieldRow label="Shipping Note">
+            <input className="admin-field" value={settings.shippingNote || ''} onChange={set('shippingNote')} />
+          </FieldRow>
+        </Section>
+
+        {/* Announcement bar */}
+        <Section label="Announcement Bar">
+          <FieldRow label="Message">
+            <input className="admin-field" value={settings.announcementBar || ''} onChange={set('announcementBar')} />
+          </FieldRow>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input type="checkbox" checked={!!settings.announcementEnabled} onChange={set('announcementEnabled')}
+              style={{ width: '16px', height: '16px', accentColor: '#d4a843' }} />
+            <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase' }}>
+              Show Announcement Bar
+            </span>
+          </label>
+        </Section>
+
+        {/* Maintenance */}
+        <Section label="Site Status">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input type="checkbox" checked={!!settings.maintenanceMode} onChange={set('maintenanceMode')}
+              style={{ width: '16px', height: '16px', accentColor: '#e05555' }} />
+            <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase' }}>
+              Maintenance Mode (site hidden from visitors)
+            </span>
+          </label>
+        </Section>
+
+        {/* Hero intro */}
+        <Section label="Hero Image Settings">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <input type="checkbox" checked={!!settings.introEnabled} onChange={set('introEnabled')}
+              style={{ width: '16px', height: '16px', accentColor: '#d4a843' }} />
+            <span style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.7rem', letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase' }}>
+              Enable Hero Background Slider
+            </span>
+          </label>
+          <FieldRow label="Overlay Opacity (0–1)">
+            <input className="admin-field" type="number" step="0.05" min="0" max="1"
+              value={settings.introOpacity || 0.6} onChange={set('introOpacity')} />
+          </FieldRow>
+        </Section>
+
+        <button type="submit" className="btn-gold" disabled={saving} style={{ alignSelf: 'flex-start' }}>
+          {saving ? <><Spinner size={16} /> SAVING…</> : 'SAVE SETTINGS'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  SMALL SHARED COMPONENTS                                        */
+/* ────────────────────────────────────────────────────────────── */
+
+const labelStyle = {
+  display:       'block',
+  fontFamily:    '"DM Mono",monospace',
+  fontSize:      '0.6rem',
+  letterSpacing: '0.15em',
+  color:         '#555',
+  textTransform: 'uppercase',
+  marginBottom:  '8px',
+};
+
+const sectionTitle = {
+  fontFamily:    '"Bebas Neue",sans-serif',
+  fontSize:      '1.8rem',
+  color:         '#e8e8e8',
+  letterSpacing: '0.08em',
+  marginBottom:  '28px',
+};
+
+const metaStyle = {
+  fontFamily:    '"DM Mono",monospace',
+  fontSize:      '0.65rem',
+  color:         '#555',
+  letterSpacing: '0.1em',
+};
+
+function Badge({ color, children }) {
+  return (
+    <span style={{
+      background:    `${color}20`,
+      color,
+      border:        `1px solid ${color}50`,
+      fontFamily:    '"DM Mono",monospace',
+      fontSize:      '0.55rem',
+      letterSpacing: '0.12em',
+      padding:       '2px 7px',
+      textTransform: 'uppercase',
+      flexShrink:    0,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function AdminBtn({ onClick, children, danger = false, title }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        background:    danger ? 'rgba(224,85,85,0.08)' : 'rgba(255,255,255,0.04)',
+        border:        `1px solid ${danger ? 'rgba(224,85,85,0.2)' : '#2a2a2a'}`,
+        color:         danger ? '#e05555' : '#888',
+        fontFamily:    '"DM Mono",monospace',
+        fontSize:      '0.6rem',
+        letterSpacing: '0.1em',
+        padding:       '7px 12px',
+        textTransform: 'uppercase',
+        transition:    'all 0.2s ease',
+        whiteSpace:    'nowrap',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.color       = danger ? '#ff6666' : '#ccc';
+        e.currentTarget.style.borderColor = danger ? 'rgba(224,85,85,0.5)' : '#555';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.color       = danger ? '#e05555' : '#888';
+        e.currentTarget.style.borderColor = danger ? 'rgba(224,85,85,0.2)' : '#2a2a2a';
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Section({ label, children }) {
+  return (
+    <div style={{ background: '#080808', border: '1px solid #1a1a1a', padding: '24px' }}>
+      <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.6rem', letterSpacing: '0.25em', color: '#d4a843', textTransform: 'uppercase', marginBottom: '20px' }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldRow({ label, children }) {
+  return (
+    <div>
+      <label style={labelStyle}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  LOGIN SCREEN                                                   */
+/* ────────────────────────────────────────────────────────────── */
+
+function LoginScreen({ onLogin }) {
+  const [password, setPassword] = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!password.trim()) { setError('Password required'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const data = await login(password);
+      localStorage.setItem('valio_admin_token', data.token);
+      onLogin(data.token);
+    } catch (err) {
+      setError(err.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight:  '100vh',
+      background: '#000',
+      display:    'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding:    '24px',
+    }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
+        <h1 className="font-gothic" style={{
+          fontSize:      '3rem',
+          color:         '#d4a843',
+          textAlign:     'center',
+          marginBottom:  '8px',
+          textShadow:    '0 0 40px rgba(212,168,67,0.4)',
+        }}>
+          VALIO
+        </h1>
+        <p style={{
+          fontFamily:    '"DM Mono",monospace',
+          fontSize:      '0.6rem',
+          letterSpacing: '0.3em',
+          color:         '#555',
+          textAlign:     'center',
+          textTransform: 'uppercase',
+          marginBottom:  '48px',
+        }}>
+          Admin Panel
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={labelStyle}>Admin Password</label>
+            <input
+              type="password"
+              className="admin-field"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoFocus
+              placeholder="Enter password…"
+            />
+          </div>
+          {error && (
+            <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.75rem', color: '#e05555' }}>
+              {error}
+            </p>
+          )}
+          <button type="submit" className="btn-gold" style={{ justifyContent: 'center' }} disabled={loading}>
+            {loading ? <><Spinner size={16} /> AUTHENTICATING…</> : 'ENTER PANEL'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  MAIN ADMIN PAGE                                               */
+/* ────────────────────────────────────────────────────────────── */
+
+export default function AdminPage() {
+  const [token,   setToken]   = useState(null);
+  const [tab,     setTab]     = useState('overview');
+  const [toast,   setToast]   = useState(null);
+  const refreshTimer = useRef(null);
+
+  // On mount: check localStorage for token and verify it
+  useEffect(() => {
+    const saved = localStorage.getItem('valio_admin_token');
+    if (!saved) return;
+    verifyToken(saved)
+      .then(data => { if (data.valid) setToken(saved); })
+      .catch(() => localStorage.removeItem('valio_admin_token'));
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('valio_token');
+  // Auto-refresh token every 10 hours (before 12h expiry)
+  useEffect(() => {
+    if (!token) return;
+    refreshTimer.current = setInterval(async () => {
+      try {
+        const data = await refreshToken(token);
+        localStorage.setItem('valio_admin_token', data.token);
+        setToken(data.token);
+      } catch {
+        handleLogout();
+      }
+    }, 10 * 60 * 60 * 1000);
+    return () => clearInterval(refreshTimer.current);
+  }, [token]);
+
+  function handleLogout() {
+    localStorage.removeItem('valio_admin_token');
     setToken(null);
-  };
+    clearInterval(refreshTimer.current);
+  }
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type, id: Date.now() });
+  }, []);
+
+  if (!token) return <LoginScreen onLogin={setToken} />;
 
   return (
     <>
       <Head>
-        <title>Control Panel</title>
-        <meta name="robots" content="noindex,nofollow" />
+        <title>Admin — VALIO</title>
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
-      {token ? <Dashboard token={token} onLogout={logout} /> : <LoginScreen onAuth={setToken} />}
+
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex' }}>
+        {/* ── Sidebar ── */}
+        <aside className="admin-sidebar" style={{
+          width:       '220px',
+          flexShrink:  0,
+          background:  '#060606',
+          borderRight: '1px solid #111',
+          display:     'flex',
+          flexDirection: 'column',
+          position:    'sticky',
+          top:         0,
+          height:      '100vh',
+          overflowY:   'auto',
+        }}>
+          {/* Logo */}
+          <div style={{ padding: '32px 24px 24px', borderBottom: '1px solid #111' }}>
+            <h1 className="font-gothic" style={{ fontSize: '1.4rem', color: '#d4a843', marginBottom: '4px' }}>VALIO</h1>
+            <p style={{ fontFamily: '"DM Mono",monospace', fontSize: '0.55rem', letterSpacing: '0.2em', color: '#333', textTransform: 'uppercase' }}>
+              Admin Panel
+            </p>
+          </div>
+
+          {/* Nav */}
+          <nav style={{ flex: 1, padding: '20px 0' }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                display:       'flex',
+                alignItems:    'center',
+                gap:           '12px',
+                width:         '100%',
+                background:    tab === t.id ? 'rgba(212,168,67,0.07)' : 'none',
+                border:        'none',
+                borderLeft:    `3px solid ${tab === t.id ? '#d4a843' : 'transparent'}`,
+                color:         tab === t.id ? '#d4a843' : '#555',
+                fontFamily:    '"DM Mono",monospace',
+                fontSize:      '0.65rem',
+                letterSpacing: '0.15em',
+                padding:       '13px 24px',
+                textAlign:     'left',
+                textTransform: 'uppercase',
+                transition:    'all 0.2s ease',
+              }}
+              onMouseEnter={e => { if (tab !== t.id) { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; } }}
+              onMouseLeave={e => { if (tab !== t.id) { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'none'; } }}
+              >
+                <span style={{ fontSize: '0.9rem' }}>{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Logout */}
+          <div style={{ padding: '20px 24px', borderTop: '1px solid #111' }}>
+            <button onClick={handleLogout} style={{
+              background:    'none', border: '1px solid #1a1a1a',
+              color:         '#333', fontFamily: '"DM Mono",monospace',
+              fontSize:      '0.6rem', letterSpacing: '0.15em',
+              padding:       '10px 16px', width: '100%', textAlign: 'center',
+              textTransform: 'uppercase', transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#e05555'; e.currentTarget.style.borderColor = 'rgba(224,85,85,0.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#333';    e.currentTarget.style.borderColor = '#1a1a1a'; }}
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* ── Main content ── */}
+        <main style={{ flex: 1, overflowX: 'hidden', padding: 'clamp(28px,4vw,48px) clamp(20px,4vw,48px)' }}>
+          {/* Mobile header */}
+          <div style={{ display: 'none', marginBottom: '24px', justifyContent: 'space-between', alignItems: 'center' }} className="mobile-header">
+            <h1 className="font-gothic" style={{ fontSize: '1.2rem', color: '#d4a843' }}>VALIO Admin</h1>
+            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#555', fontFamily: '"DM Mono",monospace', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
+              LOGOUT
+            </button>
+          </div>
+
+          {/* Mobile tab selector */}
+          <div style={{ marginBottom: '24px', overflowX: 'auto' }} className="mobile-tabs">
+            <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #1a1a1a' }}>
+              {TABS.map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{
+                  background:    'none', border: 'none',
+                  borderBottom:  tab === t.id ? '2px solid #d4a843' : '2px solid transparent',
+                  color:         tab === t.id ? '#d4a843' : '#555',
+                  fontFamily:    '"DM Mono",monospace', fontSize: '0.55rem',
+                  letterSpacing: '0.1em', padding: '10px 14px',
+                  textTransform: 'uppercase', whiteSpace: 'nowrap',
+                }}>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab content */}
+          {tab === 'overview'    && <OverviewTab    token={token} onToast={showToast} />}
+          {tab === 'products'    && <ProductsTab    token={token} onToast={showToast} />}
+          {tab === 'orders'      && <OrdersTab      token={token} onToast={showToast} />}
+          {tab === 'backgrounds' && <BackgroundsTab token={token} onToast={showToast} />}
+          {tab === 'settings'    && <SettingsTab    token={token} onToast={showToast} />}
+        </main>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <Toast key={toast.id} message={toast.message} type={toast.type} onDone={() => setToast(null)} />
+      )}
+
+      <style jsx global>{`
+        @media (max-width: 900px) {
+          .admin-sidebar  { display: none !important; }
+          .mobile-header  { display: flex !important; }
+          .mobile-tabs    { display: block !important; }
+        }
+        @media (min-width: 901px) {
+          .mobile-header  { display: none !important; }
+          .mobile-tabs    { display: none !important; }
+        }
+      `}</style>
     </>
   );
 }

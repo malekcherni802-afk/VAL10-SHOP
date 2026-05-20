@@ -1,147 +1,101 @@
 /**
- * VALIO — Secure Cloudinary Upload Route
- * POST /api/upload  →  { url, public_id }
- * Credentials 100% server-side via process.env.
+ * VALIO v4 — /api/upload
+ *
+ * Server-side Next.js API route that:
+ *  1. Verifies the admin JWT (passed as Authorization header)
+ *  2. Receives a file as base64 encoded JSON body (avoids multipart complexity in serverless)
+ *  3. Uploads to Cloudinary using the REST Upload API (no SDK dependency in frontend)
+ *  4. Returns { secure_url, public_id }
+ *
+ * The Cloudinary API secret NEVER reaches the browser.
  */
 
-export const config = { api: { bodyParser: false } };
+import { verifyToken } from '../../lib/api';
+
+export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
+
+const CLOUD_NAME  = process.env.CLOUDINARY_CLOUD_NAME;
+const API_KEY     = process.env.CLOUDINARY_API_KEY;
+const API_SECRET  = process.env.CLOUDINARY_API_SECRET;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  /* ── Auth ── */
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const token  = authHeader.split(' ')[1];
+  const verify = await verifyToken(token).catch(() => ({ valid: false }));
+  if (!verify.valid) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 
-  // Verbose env check so you can debug in Vercel logs
-  console.log('[upload] env check:', {
-    cloudName: cloudName || 'MISSING',
-    apiKey:    apiKey    ? apiKey.slice(0, 6) + '...' : 'MISSING',
-    apiSecret: apiSecret ? 'SET' : 'MISSING',
+  /* ── Cloudinary config check ── */
+  if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+    return res.status(500).json({
+      error: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in .env.local',
+    });
+  }
+
+  /* ── Parse body ── */
+  const { data: base64Data, folder = 'valio', resource_type = 'image' } = req.body;
+  if (!base64Data) {
+    return res.status(400).json({ error: 'No file data provided (expected { data: "base64..." })' });
+  }
+
+  /* ── Build signature ── */
+  const timestamp = Math.floor(Date.now() / 1000);
+  const params    = { folder, timestamp };
+
+  // Deterministic param string for signature
+  const paramStr  = Object.keys(params)
+    .sort()
+    .map(k => `${k}=${params[k]}`)
+    .join('&');
+
+  // SHA-1 HMAC via Node crypto (built-in, no extra dep)
+  const crypto    = await import('crypto');
+  const signature = crypto
+    .createHash('sha1')
+    .update(paramStr + API_SECRET)
+    .digest('hex');
+
+  /* ── Upload to Cloudinary ── */
+  const formBody = new URLSearchParams({
+    file:       base64Data,
+    api_key:    API_KEY,
+    timestamp:  String(timestamp),
+    folder,
+    signature,
   });
 
-  if (!cloudName || !apiKey || !apiSecret) {
-    const missing = [
-      !cloudName && 'CLOUDINARY_CLOUD_NAME',
-      !apiKey    && 'CLOUDINARY_API_KEY',
-      !apiSecret && 'CLOUDINARY_API_SECRET',
-    ].filter(Boolean).join(', ');
-    return res.status(500).json({ error: 'Missing env: ' + missing });
+  const cloudRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resource_type}/upload`,
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    formBody.toString(),
+    }
+  );
+
+  const cloudData = await cloudRes.json();
+
+  if (!cloudRes.ok) {
+    console.error('[upload] Cloudinary error:', cloudData);
+    return res.status(cloudRes.status).json({
+      error: cloudData?.error?.message || 'Cloudinary upload failed',
+    });
   }
 
-  try {
-    // 1. Collect raw request body
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const rawBody = Buffer.concat(chunks);
-    console.log('[upload] raw body size:', rawBody.length);
-
-    // 2. Extract boundary
-    const ct = req.headers['content-type'] || '';
-    const bm = ct.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
-    if (!bm) return res.status(400).json({ error: 'No multipart boundary' });
-    const boundary = bm[1] || bm[2];
-
-    // 3. Parse parts (binary-safe via Buffer)
-    let fileBuffer = null;
-    let fileName   = 'upload.jpg';
-    let fileMime   = 'image/jpeg';
-
-    const delimFirst = Buffer.from('--' + boundary);
-    const delimNext  = Buffer.from('\r\n--' + boundary);
-
-    let pos = rawBody.indexOf(delimFirst);
-    while (pos !== -1) {
-      const hdrStart = pos + delimFirst.length + 2;          // skip \r\n
-      const hdrEnd   = rawBody.indexOf(Buffer.from('\r\n\r\n'), hdrStart);
-      if (hdrEnd === -1) break;
-
-      const hdr      = rawBody.slice(hdrStart, hdrEnd).toString('utf8');
-      const dataStart = hdrEnd + 4;
-      const nextBound = rawBody.indexOf(delimNext, dataStart);
-      const dataEnd   = nextBound !== -1 ? nextBound : rawBody.length;
-
-      if (hdr.includes('filename=')) {
-        const nm = hdr.match(/filename="([^"]+)"/);
-        if (nm) fileName = nm[1];
-        const mm = hdr.match(/Content-Type:\s*([^\r\n]+)/i);
-        if (mm) fileMime = mm[1].trim();
-        fileBuffer = rawBody.slice(dataStart, dataEnd);
-        console.log('[upload] file part:', fileName, fileMime, fileBuffer.length, 'bytes');
-      }
-
-      pos = nextBound !== -1
-        ? rawBody.indexOf(delimFirst, nextBound + delimNext.length)
-        : -1;
-    }
-
-    if (!fileBuffer || fileBuffer.length === 0) {
-      return res.status(400).json({ error: 'No file data in request' });
-    }
-
-    // 4. Build Cloudinary signed signature
-    const crypto    = (await import('crypto')).default;
-    const timestamp = Math.round(Date.now() / 1000);
-    const folder    = 'valio';
-    const sigString = `folder=${folder}&timestamp=${timestamp}` + apiSecret;
-    const signature = crypto.createHash('sha1').update(sigString).digest('hex');
-    console.log('[upload] signature ready');
-
-    // 5. Build raw multipart body for Cloudinary
-    const b2   = `----ValioCloudinary${Date.now()}`;
-    const CRLF = '\r\n';
-
-    const field = (name, value) =>
-      `--${b2}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
-
-    const textPart = Buffer.from(
-      field('api_key', apiKey) +
-      field('timestamp', String(timestamp)) +
-      field('signature', signature) +
-      field('folder', folder),
-      'utf8'
-    );
-
-    const filePart = Buffer.from(
-      `--${b2}${CRLF}` +
-      `Content-Disposition: form-data; name="file"; filename="${fileName}"${CRLF}` +
-      `Content-Type: ${fileMime}${CRLF}${CRLF}`,
-      'utf8'
-    );
-
-    const footerPart = Buffer.from(`${CRLF}--${b2}--${CRLF}`, 'utf8');
-    const body = Buffer.concat([textPart, filePart, fileBuffer, footerPart]);
-
-    console.log('[upload] sending to Cloudinary, body size:', body.length);
-
-    // 6. POST to Cloudinary
-    const cloudRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': `multipart/form-data; boundary=${b2}` },
-        body,
-      }
-    );
-
-    const responseText = await cloudRes.text();
-    console.log('[upload] Cloudinary status:', cloudRes.status, '| body:', responseText.slice(0, 400));
-
-    if (!cloudRes.ok) {
-      return res.status(500).json({
-        error:   'Cloudinary rejected the upload',
-        status:  cloudRes.status,
-        details: responseText,
-      });
-    }
-
-    const result = JSON.parse(responseText);
-    return res.status(200).json({ url: result.secure_url, public_id: result.public_id });
-
-  } catch (err) {
-    console.error('[upload] unexpected error:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
-  }
+  return res.status(200).json({
+    secure_url: cloudData.secure_url,
+    public_id:  cloudData.public_id,
+    width:      cloudData.width,
+    height:     cloudData.height,
+    format:     cloudData.format,
+  });
 }

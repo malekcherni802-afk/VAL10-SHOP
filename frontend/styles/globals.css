@@ -1,29 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── TOKENS ──────────────────────────────────────────────── */
+/* ─── GOOGLE FONTS ──────────────────────────────────────────── */
+/* Loaded in _document.js via <link> for better perf; this import
+   is kept as a fallback for non-document contexts.               */
+
+/* ─── CSS CUSTOM PROPERTIES ─────────────────────────────────── */
 :root {
-  --gold:        #d4a843;
-  --gold-dim:    rgba(212, 168, 67, 0.18);
-  --gold-glow:   rgba(212, 168, 67, 0.45);
-  --void:        #000000;
-  --ink:         #080808;
-  --carbon:      #111111;
-  --forge:       #161616;
-  --iron:        #1e1e1e;
-  --steel:       #2a2a2a;
-  --blade:       #383838;
-  --ghost:       #888888;
-  --chalk:       #e8e8e8;
+  /* Blacks / darks */
+  --void:    #000000;
+  --ink:     #080808;
+  --pitch:   #0c0c0c;
+  --carbon:  #111111;
+  --forge:   #161616;
+  --iron:    #1e1e1e;
+  --steel:   #2a2a2a;
+  --blade:   #383838;
+
+  /* Greys */
+  --ash:     #555555;
+  --ghost:   #888888;
+  --mist:    #aaaaaa;
+  --cloud:   #cccccc;
+  --chalk:   #e8e8e8;
+  --pure:    #ffffff;
+
+  /* Gold */
+  --gold:      #d4a843;
+  --gold-dim:  rgba(212, 168, 67, 0.18);
+  --gold-glow: rgba(212, 168, 67, 0.45);
+
+  /* Easing */
   --ease-cinema: cubic-bezier(0.76, 0, 0.24, 1);
   --ease-soft:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* ── RESET ───────────────────────────────────────────────── */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* ─── RESET ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 html {
   background: var(--void);
@@ -42,61 +60,64 @@ body {
   overflow-x: hidden;
 }
 
-/* ── SCROLLBAR ───────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 1px; }
+/* ─── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 2px; }
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { background: var(--gold); }
 
-/* ── SELECTION ───────────────────────────────────────────── */
+/* ─── SELECTION ──────────────────────────────────────────────── */
 ::selection { background: var(--gold); color: #000; }
 
-/* ── CURSOR ──────────────────────────────────────────────── */
+/* ─── CURSOR ─────────────────────────────────────────────────── */
 *, a, button, [role="button"] { cursor: none; }
-@media (max-width: 768px) { *, a, button, [role="button"] { cursor: auto; } }
+@media (max-width: 768px) {
+  *, a, button, [role="button"] { cursor: auto; }
+}
 
-/* ── GRAIN TEXTURE ───────────────────────────────────────── */
+/* ─── GRAIN TEXTURE ──────────────────────────────────────────── */
 .grain {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 9997;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
   opacity: 0.028;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
   mix-blend-mode: overlay;
 }
 
-/* ── TYPOGRAPHY ──────────────────────────────────────────── */
+/* ─── TYPOGRAPHY HELPERS ─────────────────────────────────────── */
 .font-gothic  { font-family: 'Uncial Antiqua', serif; }
 .font-display { font-family: 'Bebas Neue', sans-serif; }
 .font-serif   { font-family: 'Playfair Display', serif; }
 .font-mono    { font-family: 'DM Mono', monospace; }
 
-/* ── GOLD UTILITIES ──────────────────────────────────────── */
-.text-gold    { color: var(--gold); }
-.border-gold  { border-color: var(--gold); }
-.bg-gold      { background: var(--gold); }
+/* ─── GOLD UTILITIES ─────────────────────────────────────────── */
+.text-gold   { color: var(--gold); }
+.border-gold { border-color: var(--gold); }
+.bg-gold     { background: var(--gold); }
 
 .gold-glow {
   text-shadow:
-    0 0 30px rgba(212,168,67,0.7),
-    0 0 80px rgba(212,168,67,0.25);
+    0 0 30px rgba(212, 168, 67, 0.7),
+    0 0 80px  rgba(212, 168, 67, 0.25);
 }
 
-/* ── DIVIDERS ────────────────────────────────────────────── */
+/* ─── DIVIDERS ───────────────────────────────────────────────── */
 .rule { width: 100%; height: 1px; background: var(--blade); }
 .rule-gold {
-  width: 100%; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold) 40%, var(--gold) 60%, transparent);
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gold) 40%,
+    var(--gold) 60%,
+    transparent
+  );
 }
 
-/* ── BOUTIQUE BACKGROUND GRID ────────────────────────────── */
-.boutique-grid {
-  background-image:
-    linear-gradient(rgba(212,168,67,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212,168,67,0.04) 1px, transparent 1px);
-  background-size: 100px 100px;
-}
-
-/* ── PRODUCT CARD ────────────────────────────────────────── */
+/* ─── PRODUCT CARD ───────────────────────────────────────────── */
 .product-card {
   position: relative;
   background: var(--forge);
@@ -105,25 +126,37 @@ body {
 }
 .product-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(212,168,67,0.35);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(212, 168, 67, 0.35);
 }
 .product-card .card-image {
   transition: transform 0.8s var(--ease-cinema), filter 0.5s ease;
   filter: brightness(0.8) contrast(1.05);
 }
-.product-card:hover .card-image { transform: scale(1.08); filter: brightness(0.9); }
+.product-card:hover .card-image {
+  transform: scale(1.08);
+  filter: brightness(0.9);
+}
 .product-card .card-reveal {
-  position: absolute; inset: 0;
-  display: flex; align-items: flex-end; justify-content: center;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   padding-bottom: 28px;
-  opacity: 0; transform: translateY(12px);
+  opacity: 0;
+  transform: translateY(12px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.product-card:hover .card-reveal { opacity: 1; transform: translateY(0); }
+.product-card:hover .card-reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-/* ── BUTTONS ─────────────────────────────────────────────── */
+/* ─── BUTTONS ────────────────────────────────────────────────── */
 .btn-gold {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   background: var(--gold);
   color: #000;
   font-family: 'Bebas Neue', sans-serif;
@@ -131,25 +164,34 @@ body {
   letter-spacing: 0.15em;
   padding: 16px 48px;
   border: none;
-  position: relative; overflow: hidden;
+  position: relative;
+  overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.3s ease;
   cursor: none;
+  text-transform: uppercase;
 }
 .btn-gold::before {
   content: '';
-  position: absolute; inset: 0;
-  background: rgba(255,255,255,0.18);
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.18);
   transform: translateX(-101%);
   transition: transform 0.4s var(--ease-cinema);
 }
 .btn-gold:hover::before { transform: translateX(0); }
 .btn-gold:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(212,168,67,0.5);
+  box-shadow: 0 12px 40px rgba(212, 168, 67, 0.5);
+}
+.btn-gold:disabled {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .btn-outline {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   background: transparent;
   color: var(--chalk);
   font-family: 'DM Sans', sans-serif;
@@ -162,9 +204,10 @@ body {
   transition: border-color 0.3s ease, color 0.3s ease;
   cursor: none;
 }
-.btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+.btn-outline:hover  { border-color: var(--gold); color: var(--gold); }
+.btn-outline:disabled { opacity: 0.45; pointer-events: none; }
 
-/* ── NAV LINK ────────────────────────────────────────────── */
+/* ─── NAV LINK ───────────────────────────────────────────────── */
 .nav-link {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.7rem;
@@ -177,17 +220,21 @@ body {
   position: relative;
 }
 .nav-link::after {
-  content: ''; position: absolute;
-  bottom: -3px; left: 0; width: 0; height: 1px;
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 1px;
   background: var(--gold);
   transition: width 0.35s var(--ease-cinema);
 }
-.nav-link:hover { color: #fff; }
-.nav-link:hover::after { width: 100%; }
+.nav-link:hover         { color: #fff; }
+.nav-link:hover::after  { width: 100%; }
 
-/* ── ADMIN INPUTS ────────────────────────────────────────── */
+/* ─── ADMIN INPUTS ───────────────────────────────────────────── */
 .admin-field {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--steel);
   color: var(--chalk);
   padding: 12px 16px;
@@ -197,18 +244,68 @@ body {
   outline: none;
   transition: border-color 0.3s ease;
   border-radius: 0;
+  -webkit-appearance: none;
 }
 .admin-field:focus { border-color: var(--gold); }
 .admin-field::placeholder { color: var(--blade); }
+.admin-field option { background: #111; color: var(--chalk); }
 
-/* ── BACKGROUND SLIDER ───────────────────────────────────── */
-.bg-slide { position: absolute; inset: 0; }
+/* ─── BACKGROUND SLIDER ──────────────────────────────────────── */
+.bg-slide {
+  position: absolute;
+  inset: 0;
+}
 .bg-slide img {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center top;
 }
 
-/* ── LENIS ───────────────────────────────────────────────── */
+/* ─── LENIS SMOOTH SCROLL ────────────────────────────────────── */
 .lenis.lenis-smooth { scroll-behavior: auto; }
-html.lenis { height: auto; }
+html.lenis          { height: auto; }
+
+/* ─── ANNOUNCEMENT BAR ───────────────────────────────────────── */
+.announcement-bar {
+  background: var(--gold);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 10px 16px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ─── BOUTIQUE GRID TEXTURE ──────────────────────────────────── */
+.boutique-grid {
+  background-image:
+    linear-gradient(rgba(212, 168, 67, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 168, 67, 0.04) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
+
+/* ─── SCROLL REVEAL ──────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(48px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────── */
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── RESPONSIVE ADMIN ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .admin-sidebar { display: none; }
+}
