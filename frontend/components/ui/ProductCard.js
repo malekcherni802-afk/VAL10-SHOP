@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useCart } from '../../lib/CartContext';
+import { useCart } from '../../pages/_app';
 
 export default function ProductCard({ product, priority = false }) {
   const { addItem } = useCart();
