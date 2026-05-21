@@ -51,6 +51,7 @@
                             <div><label class="text-[10px]">L</label><input type="number" id="stock_l" class="size-stock-input w-full" value="0" min="0"></div>
                             <div><label class="text-[10px]">XL</label><input type="number" id="stock_xl" class="size-stock-input w-full" value="0" min="0"></div>
                         </div>
+                        <button type="button" onclick="markCurrentAsSoldOut()" class="mt-2 text-[10px] bg-red-600/30 text-red-300 px-3 py-1 rounded hover:bg-red-600 hover:text-white transition">Mark as Sold Out (set all stocks to 0)</button>
                     </div>
 
                     <!-- Multi image gallery -->
@@ -191,6 +192,15 @@
             return sizesMap;
         }
 
+        // ---------- Mark current edited product as sold out ----------
+        function markCurrentAsSoldOut() {
+            document.getElementById('stock_s').value = 0;
+            document.getElementById('stock_m').value = 0;
+            document.getElementById('stock_l').value = 0;
+            document.getElementById('stock_xl').value = 0;
+            showToast('All stocks set to 0. Save the product to mark as Sold Out.', 'info');
+        }
+
         // ---------- Save / Update Product ----------
         async function saveProduct() {
             const name = document.getElementById('name').value.trim();
@@ -260,6 +270,33 @@
             }
         }
 
+        // ---------- Mark any product as sold out via API (set all stocks to 0) ----------
+        async function markProductSoldOut(productId) {
+            if (!confirm('Set all sizes stock to 0? This will mark the product as Sold Out.')) return;
+            try {
+                // Fetch current product
+                const res = await fetch(`/api/products/${productId}`);
+                if (!res.ok) throw new Error('Product not found');
+                const product = await res.json();
+                // Set all stocks to 0
+                const newSizes = product.sizes.map(s => ({ ...s, stock: 0 }));
+                const updateRes = await fetch(`/api/products/${productId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...product, sizes: newSizes })
+                });
+                if (!updateRes.ok) throw new Error('Update failed');
+                showToast('Product marked as Sold Out', 'success');
+                fetchProducts();
+                // If this product is currently being edited, refresh the form
+                if (document.getElementById('productId').value === productId) {
+                    editProduct({ ...product, sizes: newSizes });
+                }
+            } catch (err) {
+                showToast(`Error: ${err.message}`, 'error');
+            }
+        }
+
         function resetForm() {
             document.getElementById('formTitle').innerText = 'Add New Product';
             document.getElementById('productId').value = '';
@@ -300,9 +337,10 @@
                                 <p class="text-[10px] text-gray-400 mt-1">Sizes: ${sizesStock}</p>
                                 ${isSoldOut ? '<span class="text-red-400 text-[10px] font-bold">SOLD OUT</span>' : ''}
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 flex-wrap">
                                 <button onclick='editProduct(${JSON.stringify(p)})' class="bg-blue-600/30 text-blue-300 px-3 py-1 rounded text-xs">Edit</button>
-                                <button onclick='deleteProduct("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Delete</button>
+                                <button onclick='markProductSoldOut("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Sold Out</button>
+                                <button onclick='deleteProduct("${p._id}")' class="bg-gray-600/30 text-gray-300 px-3 py-1 rounded text-xs">Delete</button>
                             </div>
                         </div>
                     `;

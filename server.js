@@ -51,7 +51,7 @@ const Product = mongoose.model('Product', productSchema);
 // Homepage Banner schema (single document)
 const bannerSchema = new mongoose.Schema({
   title: { type: String, default: 'VAL10 Collection' },
-  heroImages: [{ type: String }],      // array of image URLs (or Base64)
+  heroImages: [{ type: String }],      // array of image URLs (Base64)
   updatedAt: { type: Date, default: Date.now }
 });
 const Banner = mongoose.model('Banner', bannerSchema);
