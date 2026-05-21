@@ -8,7 +8,7 @@ const multer = require('multer');
 
 const app = express();
 
-// Middleware
+// Middleware with increased payload limits
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -25,18 +25,26 @@ mongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('✅ MongoDB Atlas connected'))
     .catch(err => { console.error('MongoDB connection error:', err); process.exit(1); });
 
-// Cloudinary config (add your credentials in .env)
+// Cloudinary configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
+// Multer storage for product images
+const productStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: { folder: 'val10_products', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
 });
-const upload = multer({ storage: storage });
+const productUpload = multer({ storage: productStorage, limits: { fileSize: 50 * 1024 * 1024 } });
+
+// Multer storage for hero images
+const heroStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: { folder: 'val10_hero', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
+});
+const heroUpload = multer({ storage: heroStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 // ==================== MODELS ====================
 const productSchema = new mongoose.Schema({
@@ -46,19 +54,23 @@ const productSchema = new mongoose.Schema({
     colors: [{ type: String }],
     description: { type: String, default: '' },
     sizes: [{ type: String }],
-    images: [{ type: String }], // Cloudinary URLs
+    images: [{ type: String }],
     createdAt: { type: Date, default: Date.now }
 });
 
 const homepageBannerSchema = new mongoose.Schema({
     title: { type: String, default: 'Define Your Ego' },
-    heroImages: [{ type: String }], // array of Cloudinary URLs for hero slider
+    heroImages: [{ type: String }],
     updatedAt: { type: Date, default: Date.now }
 });
 
 const orderSchema = new mongoose.Schema({
-    customerName: String, customerPhone: String, customerAddress: String,
-    productName: String, size: String, totalPrice: Number,
+    customerName: String,
+    customerPhone: String,
+    customerAddress: String,
+    productName: String,
+    size: String,
+    totalPrice: Number,
     status: { type: String, default: 'Pending' },
     createdAt: { type: Date, default: Date.now }
 });
@@ -67,7 +79,7 @@ const Product = mongoose.model('Product', productSchema);
 const HomepageBanner = mongoose.model('HomepageBanner', homepageBannerSchema);
 const Order = mongoose.model('Order', orderSchema);
 
-// Init default banner with two hero images
+// Initialize default banner
 (async () => {
     const count = await HomepageBanner.countDocuments();
     if (count === 0) {
@@ -94,7 +106,7 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/products/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).json({ error: 'Not found' });
+        if (!product) return res.status(404).json({ error: 'Product not found' });
         res.json(product);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -104,41 +116,59 @@ app.post('/api/products', async (req, res) => {
         const product = new Product(req.body);
         await product.save();
         res.status(201).json(product);
-    } catch (error) { res.status(400).json({ error: error.message }); }
+    } catch (error) {
+        // Send detailed validation errors
+        res.status(400).json({ error: error.message });
+    }
 });
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!product) return res.status(404).json({ error: 'Not found' });
+        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        if (!product) return res.status(404).json({ error: 'Product not found' });
         res.json(product);
-    } catch (error) { res.status(400).json({ error: error.message }); }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Deleted' });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+        res.json({ message: 'Product deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Cloudinary multi‑image upload for products
-app.post('/api/upload-images', upload.array('productImages', 20), async (req, res) => {
+// Image upload endpoints (with compression already done client-side)
+app.post('/api/upload-images', productUpload.array('productImages', 20), async (req, res) => {
     try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
         const urls = req.files.map(file => file.path);
         res.json({ urls });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Cloudinary upload for hero images
-app.post('/api/upload-hero-images', upload.array('heroImages', 10), async (req, res) => {
+app.post('/api/upload-hero-images', heroUpload.array('heroImages', 10), async (req, res) => {
     try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
         const urls = req.files.map(file => file.path);
         res.json({ urls });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        console.error('Hero upload error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Homepage banner (hero slider)
+// Homepage banner
 app.get('/api/homepage-hero', async (req, res) => {
     try {
         let banner = await HomepageBanner.findOne();
@@ -160,7 +190,9 @@ app.post('/api/homepage-hero', async (req, res) => {
             banner = await HomepageBanner.create({ title, heroImages: heroImages || [] });
         }
         res.json(banner);
-    } catch (error) { res.status(400).json({ error: error.message }); }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // Orders
@@ -176,21 +208,28 @@ app.post('/api/orders', async (req, res) => {
         const order = new Order(req.body);
         await order.save();
         res.status(201).json(order);
-    } catch (error) { res.status(400).json({ error: error.message }); }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
 app.put('/api/orders/:id', async (req, res) => {
     try {
         const order = await Order.findByIdAndUpdate(req.params.id, { status: 'Completed' }, { new: true });
+        if (!order) return res.status(404).json({ error: 'Order not found' });
         res.json(order);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.delete('/api/orders/:id', async (req, res) => {
     try {
         await Order.findByIdAndDelete(req.params.id);
         res.json({ message: 'Order deleted' });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Frontend routes
