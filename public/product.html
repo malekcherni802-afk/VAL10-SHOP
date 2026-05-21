@@ -37,9 +37,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div class="space-y-4 fade-in">
                 <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden">
-                    <div class="swiper-wrapper" id="image-wrapper">
-                        <!-- Images will be loaded here -->
-                    </div>
+                    <div class="swiper-wrapper" id="image-wrapper"></div>
                     <div class="swiper-pagination"></div>
                 </div>
                 <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic">Swipe to view details</p>
@@ -53,27 +51,21 @@
                         <span class="text-[10px] px-2 py-1 border border-white/10 text-gray-500 uppercase">In Stock</span>
                     </div>
                 </header>
-
                 <div class="space-y-4">
                     <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">The Narrative</h4>
                     <p id="p-desc" class="text-sm text-gray-400 leading-relaxed max-w-md italic"></p>
                 </div>
-
                 <div class="space-y-6">
                     <div class="flex justify-between items-center max-w-sm">
                         <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Dimensions</h4>
                         <button class="text-[9px] text-gray-600 underline uppercase tracking-widest">Size Guide</button>
                     </div>
-                    <div id="size-container" class="flex flex-wrap gap-3">
-                        <!-- Sizes will be loaded here -->
-                    </div>
+                    <div id="size-container" class="flex flex-wrap gap-3"></div>
                 </div>
-
                 <button onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
                     <span class="relative z-10">Acquire Piece</span>
                     <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
                 </button>
-
                 <div class="pt-10 border-t border-white/5 space-y-4">
                     <details class="group cursor-pointer">
                         <summary class="text-[10px] uppercase tracking-widest list-none flex justify-between text-gray-500 group-open:text-white">Shipping & Returns <span>+</span></summary>
@@ -108,58 +100,51 @@
 
         async function loadProduct() {
             try {
-                if (!productId) throw new Error('No product ID provided');
+                if (!productId) throw new Error('No product ID');
                 const res = await fetch(`/api/products/${productId}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 currentProduct = await res.json();
                 document.title = `VAL10 | ${currentProduct.name}`;
                 document.getElementById('p-name').innerText = currentProduct.name;
                 document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
-                document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED FOR THIS PIECE.";
-                
+                document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED.";
+
                 const wrapper = document.getElementById('image-wrapper');
                 let imgs = (currentProduct.images && currentProduct.images.length) ? currentProduct.images : ['https://via.placeholder.com/800/111/333?text=VAL10'];
                 wrapper.innerHTML = imgs.map(img => `<div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500" alt="${currentProduct.name}"></div>`).join('');
-                
-                new Swiper(".mySwiper", { 
-                    pagination: { el: ".swiper-pagination", clickable: true },
-                    loop: imgs.length > 1,
-                    autoplay: imgs.length > 1 ? { delay: 3000, disableOnInteraction: false } : false
-                });
-                
+                new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true }, loop: imgs.length > 1, autoplay: imgs.length > 1 ? { delay: 3000, disableOnInteraction: false } : false });
+
                 const sizeContainer = document.getElementById('size-container');
                 if (currentProduct.sizes && currentProduct.sizes.length) {
-                    sizeContainer.innerHTML = currentProduct.sizes.map(s => `<button onclick="selectSize(this, '${s}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s}</button>`).join('');
-                    setTimeout(() => { const firstBtn = sizeContainer.querySelector('.size-btn'); if (firstBtn) selectSize(firstBtn, currentProduct.sizes[0]); }, 100);
+                    sizeContainer.innerHTML = currentProduct.sizes.map(s => `<button onclick="selectSize(this, '${s.size}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s.size}</button>`).join('');
+                    if (currentProduct.sizes[0]) selectedSize = currentProduct.sizes[0].size;
                 } else {
                     sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
                     selectedSize = 'One Size';
                 }
             } catch (error) {
-                console.error(error);
                 document.getElementById('p-name').innerText = 'Product Not Found';
-                document.getElementById('p-desc').innerText = 'This product may have been removed or does not exist.';
+                document.getElementById('p-desc').innerText = 'This product may have been removed.';
             }
         }
-        
+
         function selectSize(btn, size) {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedSize = size;
         }
-        
+
         function openModal() {
-            if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT DIMENSIONS FIRST."); return; }
+            if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT SIZE FIRST."); return; }
             document.getElementById('modal').classList.remove('hidden');
         }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-        
+
         async function submitOrder() {
             const name = document.getElementById('cust-name').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
             const addr = document.getElementById('cust-addr').value.trim();
             if (!name || !phone || !addr) { alert("COMPLETE ALL FIELDS."); return; }
-            if (!currentProduct) { alert("PRODUCT NOT LOADED. TRY AGAIN."); return; }
             try {
                 const res = await fetch('/api/orders', {
                     method: 'POST',
@@ -169,11 +154,9 @@
                 if (!res.ok) throw new Error(await res.text());
                 alert("ARCHIVE SECURED. WE WILL CONTACT YOU SOON.");
                 window.location.href = "/";
-            } catch (error) {
-                alert(`SYSTEM ERROR: ${error.message}`);
-            }
+            } catch (error) { alert(`ERROR: ${error.message}`); }
         }
-        
+
         window.onload = loadProduct;
     </script>
 </body>

@@ -9,52 +9,26 @@
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <style>
-        body {
-            background-color: #050505;
-            color: #ffffff;
-            font-family: 'Syne', sans-serif;
-            overflow-x: hidden;
-        }
-        .gothic-text {
-            font-family: 'Pirata One', cursive;
-            letter-spacing: 0.1em;
-        }
-        .fade-in {
-            animation: fadeIn 1.2s ease-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .product-card {
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .product-card:hover {
-            transform: translateY(-10px);
-        }
-        .product-card img {
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .product-card:hover img {
-            transform: scale(1.1);
-        }
+        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; overflow-x: hidden; }
+        .gothic-text { font-family: 'Pirata One', cursive; letter-spacing: 0.1em; }
+        .fade-in { animation: fadeIn 1.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .product-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .product-card:hover { transform: translateY(-10px); }
+        .product-card img { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .product-card:hover img { transform: scale(1.1); }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #050505; }
         ::-webkit-scrollbar-thumb { background: #333; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
     <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">
-                VAL10
-            </h1>
+            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">VAL10</h1>
             <div class="flex items-center gap-8">
                 <button class="hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-500 hover:text-white transition">Archive</button>
-                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
-                    COLLECTION 2026
-                </button>
+                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">COLLECTION 2026</button>
             </div>
         </div>
     </nav>
@@ -70,7 +44,6 @@
             <div class="swiper-button-prev !text-white"></div>
         </div>
 
-        <!-- Static overlay text (centered) -->
         <div class="absolute inset-0 z-20 flex flex-col justify-center items-center text-center px-4 bg-black/40">
             <span class="text-[10px] tracking-[0.8em] uppercase text-gray-200 mb-4 block">Est. MMXXIV</span>
             <h2 id="hero-title" class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
@@ -89,18 +62,12 @@
 
     <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-4">
-            <div>
-                <h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3>
-                <p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p>
-            </div>
+            <div><h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3><p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p></div>
             <div class="h-[1px] flex-1 bg-white/10 mx-10 hidden md:block mb-4"></div>
             <span class="text-[10px] text-gray-400 tracking-widest uppercase italic">Drop 1.0</span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
-            <div class="col-span-full flex flex-col items-center py-20">
-                <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-                <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
-            </div>
+            <div class="col-span-full flex flex-col items-center py-20"><div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div><p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p></div>
         </div>
     </main>
 
@@ -119,27 +86,18 @@
     <script>
         let heroSwiper = null;
 
-        // Fetch homepage banner (title + hero images)
         async function loadHomepageHero() {
             try {
-                const response = await fetch('/api/homepage-hero', { cache: 'no-store' });
-                const data = await response.json();
-                // Update the static title overlay
-                if (data.title) {
-                    document.getElementById('hero-title').innerHTML = data.title;
-                }
+                const res = await fetch('/api/homepage-hero', { cache: 'no-store' });
+                const data = await res.json();
+                if (data.title) document.getElementById('hero-title').innerHTML = data.title;
                 const heroImages = data.heroImages || [];
-                const swiperWrapper = document.getElementById('hero-swiper-wrapper');
-                if (!heroImages.length) {
-                    swiperWrapper.innerHTML = `<div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">No hero images</span></div></div>`;
+                const wrapper = document.getElementById('hero-swiper-wrapper');
+                if (heroImages.length) {
+                    wrapper.innerHTML = heroImages.map(url => `<div class="swiper-slide"><img src="${url}" class="w-full h-full object-cover grayscale" alt="Hero"></div>`).join('');
                 } else {
-                    swiperWrapper.innerHTML = heroImages.map(url => `
-                        <div class="swiper-slide">
-                            <img src="${url}" class="w-full h-full object-cover grayscale" alt="Hero">
-                        </div>
-                    `).join('');
+                    wrapper.innerHTML = '<div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">No hero images</span></div></div>';
                 }
-                // Initialize or reinitialize Swiper
                 if (heroSwiper) heroSwiper.destroy(true, true);
                 heroSwiper = new Swiper('.hero-swiper', {
                     loop: heroImages.length > 1,
@@ -149,75 +107,50 @@
                     effect: 'fade',
                     fadeEffect: { crossFade: true }
                 });
-            } catch (error) {
-                console.error('Hero load error:', error);
-            }
+            } catch (err) { console.error(err); }
         }
 
-        // Fetch and display products
         async function fetchProducts() {
             const grid = document.getElementById('product-grid');
             try {
-                const response = await fetch('/api/products');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const products = await response.json();
+                const res = await fetch('/api/products');
+                if (!res.ok) throw new Error();
+                const products = await res.json();
                 grid.innerHTML = '';
-                if (!products.length) {
-                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-20 uppercase tracking-[0.5em] text-xs">Archive Empty</p>';
-                    return;
-                }
-                products.forEach(product => {
-                    let imgUrl = product.images?.[0] || "https://via.placeholder.com/600x800/111/333?text=VAL10";
-                    const isSoldOut = product.isSoldOut === true;   // auto-calculated by backend
+                if (!products.length) { grid.innerHTML = '<p class="text-gray-500 text-center col-span-full py-20">Archive Empty</p>'; return; }
+                products.forEach(p => {
+                    const imgUrl = p.images?.[0] || "https://via.placeholder.com/600x800/111/333?text=VAL10";
+                    const isSoldOut = p.isSoldOut;
                     const card = document.createElement('div');
                     card.className = `group cursor-pointer fade-in product-card ${isSoldOut ? 'opacity-80' : ''}`;
-                    card.onclick = () => window.location.href = `/product?id=${product._id}`;
+                    card.onclick = () => window.location.href = `/product?id=${p._id}`;
                     card.innerHTML = `
                         <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5">
-                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" loading="lazy" alt="${product.name}">
+                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" loading="lazy" alt="${p.name}">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                                 <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                                     <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
                                 </div>
                             </div>
-                            ${isSoldOut ? '<div class="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black px-2 py-1 uppercase tracking-wider">Sold Out</div>' : ''}
+                            ${isSoldOut ? '<div class="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black px-2 py-1 uppercase">Sold Out</div>' : ''}
                         </div>
                         <div class="px-2">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${escapeHtml(product.name)}</h3>
-                                <span class="font-mono text-gray-400">${product.price} DT</span>
+                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${escapeHtml(p.name)}</h3>
+                                <span class="font-mono text-gray-400">${p.price} DT</span>
                             </div>
                             <p class="text-[9px] tracking-[0.2em] text-gray-600 uppercase">Limited Edition Drop</p>
-                            ${product.sizes && product.sizes.length ? `<p class="text-[8px] text-yellow-600 mt-2">Sizes: ${product.sizes.map(s => s.size).join(', ')}</p>` : ''}
+                            ${p.sizes && p.sizes.length ? `<p class="text-[8px] text-yellow-600 mt-2">Sizes: ${p.sizes.map(s => s.size).join(', ')}</p>` : ''}
                         </div>
                     `;
                     grid.appendChild(card);
                 });
-            } catch (error) {
-                console.error("Products error:", error);
-                grid.innerHTML = `<div class="col-span-full text-center py-20">
-                    <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
-                    <p class="text-gray-600 text-[9px]">${error.message}</p>
-                    <button onclick="fetchProducts()" class="mt-4 text-[10px] text-gray-500 hover:text-white uppercase tracking-widest">Retry</button>
-                </div>`;
-            }
+            } catch (err) { grid.innerHTML = `<div class="col-span-full text-center py-20 text-red-500">Error loading products</div>`; }
         }
 
-        // Simple XSS protection
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
+        function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
 
-        window.onload = () => {
-            loadHomepageHero();
-            fetchProducts();
-        };
+        window.onload = () => { loadHomepageHero(); fetchProducts(); };
     </script>
 </body>
 </html>

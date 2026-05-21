@@ -1,7 +1,7 @@
 {
-  "name": "val10-ecommerce",
+  "name": "val10-store",
   "version": "1.0.0",
-  "description": "Professional MERN E‑commerce Admin Panel",
+  "description": "VAL10 Underground Luxury E‑commerce Store",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

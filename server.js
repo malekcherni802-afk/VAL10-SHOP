@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-const Product = require('./models/Product');
 
 const app = express();
 
@@ -23,7 +22,41 @@ mongoose.connect(DB_URL)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => { console.error('MongoDB error:', err); process.exit(1); });
 
-// ========== API Routes ==========
+// ==================== MODELS (inline) ====================
+
+// Product schema with size‑stock array
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true, min: 0 },
+  description: { type: String, default: '' },
+  colors: [{ type: String }],
+  sizes: [{
+    size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
+    stock: { type: Number, default: 0, min: 0 }
+  }],
+  images: [{ type: String }],          // Base64 strings (compressed)
+  isSoldOut: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Auto‑compute isSoldOut before saving
+productSchema.pre('save', function(next) {
+  const allZero = this.sizes.every(s => s.stock === 0);
+  this.isSoldOut = allZero;
+  next();
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+// Homepage Banner schema (single document)
+const bannerSchema = new mongoose.Schema({
+  title: { type: String, default: 'VAL10 Collection' },
+  heroImages: [{ type: String }],      // array of image URLs (or Base64)
+  updatedAt: { type: Date, default: Date.now }
+});
+const Banner = mongoose.model('Banner', bannerSchema);
+
+// ==================== API ROUTES ====================
 
 // GET all products
 app.get('/api/products', async (req, res) => {
@@ -90,14 +123,7 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// Homepage Banner (single document)
-const bannerSchema = new mongoose.Schema({
-  title: { type: String, default: 'VAL10 Collection' },
-  heroImage: { type: String, default: '' },
-  secondaryImage: { type: String, default: '' }
-});
-const Banner = mongoose.model('Banner', bannerSchema);
-
+// Homepage Banner routes
 app.get('/api/homepage-hero', async (req, res) => {
   try {
     let banner = await Banner.findOne();
@@ -113,8 +139,8 @@ app.post('/api/homepage-hero', async (req, res) => {
     let banner = await Banner.findOne();
     if (banner) {
       banner.title = req.body.title ?? banner.title;
-      banner.heroImage = req.body.heroImage ?? banner.heroImage;
-      banner.secondaryImage = req.body.secondaryImage ?? banner.secondaryImage;
+      banner.heroImages = req.body.heroImages ?? banner.heroImages;
+      banner.updatedAt = Date.now();
       await banner.save();
     } else {
       banner = await Banner.create(req.body);
@@ -125,7 +151,7 @@ app.post('/api/homepage-hero', async (req, res) => {
   }
 });
 
-// Serve frontend
+// ==================== FRONTEND ROUTES ====================
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
