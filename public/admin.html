@@ -5,304 +5,310 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VAL10 | CONTROL PANEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        body { 
-            background: #050505; 
-            color: white; 
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-        }
-        .glass { 
-            background: rgba(255, 255, 255, 0.02); 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            backdrop-filter: blur(10px); 
-        }
-        input, textarea, select { 
-            background: #000 !important; 
-            border: 1px solid #1a1a1a !important; 
-            color: white !important; 
-            transition: all 0.3s ease;
-        }
-        input:focus, textarea:focus, select:focus { 
-            border-color: #eab308 !important; 
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.1);
-        }
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+        input, textarea, select { background: #000 !important; border: 1px solid #1a1a1a !important; color: white !important; }
+        input:focus, textarea:focus, select:focus { border-color: #eab308 !important; outline: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { 
-            background: #333; 
-            border-radius: 10px; 
-        }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #111; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        
-        .size-btn.active {
-            background: #eab308;
-            color: black;
-            border-color: #eab308;
-            font-weight: bold;
-        }
-        
-        .status-badge {
-            font-size: 8px;
-            padding: 2px 6px;
-            border-radius: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .status-pending { background: rgba(234, 179, 8, 0.2); color: #eab308; }
-        .status-completed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
-        
-        .image-preview {
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .image-preview:hover { border-color: rgba(234, 179, 8, 0.3); }
-        
-        .loading-spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #eab308;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-            max-width: 300px;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .status-badge { font-size: 8px; padding: 2px 6px; border-radius: 12px; font-weight: bold; text-transform: uppercase; }
+        .status-pending { background: rgba(234,179,8,0.2); color: #eab308; }
+        .status-completed { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; font-size: 12px; font-weight: bold; z-index: 1000; animation: slideIn 0.3s ease-out; max-width: 300px; }
         .toast-success { background: #10b981; color: white; }
         .toast-error { background: #ef4444; color: white; }
-        .toast-warning { background: #f59e0b; color: white; }
-        
-        .sold-out-item {
-            border-left: 3px solid #ef4444 !important;
-            background: rgba(239, 68, 68, 0.05) !important;
-        }
+        .toast-info { background: #3b82f6; color: white; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .loading-spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #eab308; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .sold-out-item { border-left: 3px solid #ef4444 !important; background: rgba(239,68,68,0.05) !important; }
+        .reorder-btn { cursor: move; }
     </style>
 </head>
 <body class="p-4 md:p-6 lg:p-8">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 border-b border-white/5 pb-6 md:pb-8 gap-4">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-white/5 pb-6 gap-4">
             <div>
                 <div class="flex items-center gap-3">
                     <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <h1 class="text-2xl md:text-3xl font-black italic tracking-tighter text-yellow-500 uppercase">VAL10 ADMIN</h1>
+                    <h1 class="text-2xl md:text-3xl font-black italic text-yellow-500 uppercase">VAL10 ADMIN</h1>
                 </div>
                 <p class="text-[9px] text-gray-500 tracking-[0.3em] uppercase mt-1">Underground Luxury Management</p>
                 <div class="flex items-center gap-2 mt-2">
                     <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[8px] text-green-500 font-bold uppercase tracking-widest" id="connection-status">Connected</span>
+                    <span class="text-[8px] text-green-500 font-bold uppercase" id="connection-status">Connected</span>
                 </div>
             </div>
             <div class="flex flex-wrap gap-3">
-                <a href="/" class="text-[9px] font-bold border border-white/10 px-4 md:px-6 py-2 md:py-3 hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-widest rounded-lg flex items-center gap-2">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    Live Site
-                </a>
-                <button onclick="refreshAllData()" class="text-[9px] font-bold bg-white text-black px-4 md:px-6 py-2 md:py-3 uppercase tracking-widest hover:bg-yellow-500 transition-all duration-300 rounded-lg flex items-center gap-2">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Sync
-                </button>
+                <a href="/" class="text-[9px] font-bold border border-white/10 px-4 py-2 hover:bg-white hover:text-black transition rounded-lg flex items-center gap-2">Live Site</a>
+                <button onclick="refreshAllData()" class="text-[9px] font-bold bg-white text-black px-4 py-2 uppercase hover:bg-yellow-500 transition rounded-lg flex items-center gap-2">Sync Data</button>
             </div>
         </header>
 
-        <!-- Stats Bar -->
+        <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="glass p-4 rounded-xl border border-white/5"><div class="flex justify-between items-center"><div><p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Total Products</p><p class="text-xl font-bold mt-1" id="total-products">0</p></div><div class="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div></div></div>
-            <div class="glass p-4 rounded-xl border border-white/5"><div class="flex justify-between items-center"><div><p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Pending Orders</p><p class="text-xl font-bold mt-1" id="pending-orders">0</p></div><div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></div></div></div>
-            <div class="glass p-4 rounded-xl border border-white/5"><div class="flex justify-between items-center"><div><p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Total Revenue</p><p class="text-xl font-bold mt-1" id="total-revenue">0 DT</p></div><div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div></div></div>
+            <div class="glass p-4 rounded-xl"><div class="flex justify-between"><div><p class="text-[8px] text-gray-500 uppercase">Total Products</p><p class="text-xl font-bold mt-1" id="total-products">0</p></div><div class="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div></div></div>
+            <div class="glass p-4 rounded-xl"><div class="flex justify-between"><div><p class="text-[8px] text-gray-500 uppercase">Pending Orders</p><p class="text-xl font-bold mt-1" id="pending-orders">0</p></div><div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></div></div></div>
+            <div class="glass p-4 rounded-xl"><div class="flex justify-between"><div><p class="text-[8px] text-gray-500 uppercase">Total Revenue</p><p class="text-xl font-bold mt-1" id="total-revenue">0 DT</p></div><div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center"><svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div></div></div>
         </div>
 
-        <!-- Main Grid: Product Form & Homepage Customization -->
+        <!-- Product Form + Homepage Customization -->
         <div class="grid lg:grid-cols-2 gap-6 mb-8">
-            <!-- Product Form Card -->
+            <!-- Product Form with Gallery -->
             <div class="glass p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex justify-between mb-6">
                     <h2 id="form-title" class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em]">Release New Piece</h2>
-                    <div class="flex gap-2">
-                        <button onclick="resetProductForm()" class="text-[8px] font-bold text-gray-500 hover:text-white transition uppercase px-3 py-1 border border-white/5 rounded-lg">
-                            Clear
-                        </button>
-                    </div>
+                    <button onclick="resetProductForm()" class="text-[8px] font-bold text-gray-500 hover:text-white transition px-3 py-1 border border-white/5 rounded-lg">Clear</button>
                 </div>
                 <div class="space-y-4">
                     <input type="hidden" id="p-id">
+                    <div><label class="text-[9px] uppercase text-gray-500">Product Name *</label><input type="text" id="p-name" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="e.g., Limited Edition Hoodie"></div>
+                    <div><label class="text-[9px] uppercase text-gray-500">Price (DT) *</label><input type="number" id="p-price" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="0.00"></div>
+                    <div><label class="text-[9px] uppercase text-gray-500">Availability</label><select id="p-availability" class="w-full p-3 mt-1 rounded-xl text-sm"><option value="In-Stock">In-Stock</option><option value="Sold-Out">Sold-Out</option></select></div>
+                    <div><label class="text-[9px] uppercase text-gray-500">Colors (comma separated)</label><input type="text" id="p-colors" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="Black, White, Red"></div>
+                    <div><label class="text-[9px] uppercase text-gray-500">Description</label><textarea id="p-desc" class="w-full p-3 mt-1 rounded-xl text-sm h-24" placeholder="Describe this exclusive piece..."></textarea><p class="text-[8px] text-gray-600 mt-1 text-right" id="char-count">0/500</p></div>
+                    <div><label class="text-[9px] uppercase text-gray-500">Sizes</label><div class="grid grid-cols-4 gap-2 mt-1"><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="S" class="size-cb"> S</label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="M" class="size-cb"> M</label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="L" class="size-cb"> L</label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="XL" class="size-cb"> XL</label></div></div>
                     
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Product Name *</label><input type="text" id="p-name" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="e.g., Limited Edition Hoodie"></div>
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Price (DT) *</label><div class="relative"><input type="number" id="p-price" class="w-full p-3 mt-1 rounded-xl text-sm pl-10" placeholder="0.00"><span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold">DT</span></div></div>
+                    <!-- Product Gallery Upload -->
+                    <div><label class="text-[9px] uppercase text-gray-500 mb-2 block">Product Gallery (max 20 images)</label>
+                    <input type="file" id="gallery-input" multiple accept="image/*" class="hidden" onchange="handleGalleryFiles(this.files)">
+                    <button type="button" onclick="document.getElementById('gallery-input').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">+ Select Images</button>
+                    <div id="gallery-preview" class="grid grid-cols-3 gap-3 mt-4"></div></div>
                     
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Availability</label><select id="p-availability" class="w-full p-3 mt-1 rounded-xl text-sm"><option value="In-Stock">In-Stock</option><option value="Sold-Out">Sold-Out</option></select></div>
+                    <!-- Shared Cropper Modal -->
+                    <div id="cropper-modal" class="fixed inset-0 z-[200] hidden bg-black/90 items-center justify-center p-4"><div class="bg-black border border-white/10 p-4 rounded-2xl max-w-3xl w-full"><div class="flex justify-between mb-4"><h3 class="text-xs font-bold uppercase">Crop Image (4:5)</h3><button onclick="closeCropper()" class="text-gray-400">&times;</button></div><div class="relative"><img id="cropper-image" src="" class="max-w-full"></div><div class="flex gap-3 mt-4"><button onclick="applyCrop()" class="flex-1 bg-yellow-500 text-black py-2 rounded-lg text-xs font-bold">Apply</button><button onclick="closeCropper()" class="flex-1 border border-white/10 py-2 rounded-lg text-xs">Skip</button></div></div></div>
                     
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Colors (comma separated)</label><input type="text" id="p-colors" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="Black, White, Red"></div>
-                    
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Description</label><textarea id="p-desc" class="w-full p-3 mt-1 rounded-xl text-sm h-24" placeholder="Describe this exclusive piece..."></textarea><p class="text-[8px] text-gray-600 mt-1 text-right" id="char-count">0/500</p></div>
-                    
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1 mb-2 block">Sizes</label><div class="grid grid-cols-4 gap-2"><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="S" class="size-cb"> <span>S</span></label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="M" class="size-cb"> <span>M</span></label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="L" class="size-cb"> <span>L</span></label><label class="flex items-center justify-center gap-2 text-xs cursor-pointer p-2 rounded-lg border border-white/5"><input type="checkbox" value="XL" class="size-cb"> <span>XL</span></label></div></div>
-                    
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1 mb-2 block">Product Images (Front / Back)</label><div class="grid grid-cols-2 gap-3"><div><button type="button" onclick="document.getElementById('f1').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition flex flex-col items-center gap-2 h-24"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span>Front Image</span></button><input type="file" id="f1" class="hidden" accept="image/*" onchange="previewImage(this, 'f1-preview')"><div id="f1-preview" class="mt-2"></div></div><div><button type="button" onclick="document.getElementById('f2').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition flex flex-col items-center gap-2 h-24"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span>Back Image</span></button><input type="file" id="f2" class="hidden" accept="image/*" onchange="previewImage(this, 'f2-preview')"><div id="f2-preview" class="mt-2"></div></div></div></div>
-                    
-                    <div class="space-y-3">
-                        <button onclick="saveProduct()" id="submit-btn" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] shadow-lg shadow-yellow-500/10 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Confirm Release</span></button>
-                        <button type="button" onclick="resetProductForm()" id="cancel-btn" class="hidden w-full text-[9px] uppercase font-bold text-gray-500 hover:text-white transition py-3 border border-white/5 rounded-xl">Cancel Edit</button>
-                    </div>
+                    <button onclick="saveProduct()" id="submit-btn" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] shadow-lg shadow-yellow-500/10 hover:scale-[1.02] transition flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Confirm Release</span></button>
+                    <button type="button" onclick="resetProductForm()" id="cancel-btn" class="hidden w-full text-[9px] uppercase font-bold text-gray-500 hover:text-white transition py-3 border border-white/5 rounded-xl">Cancel Edit</button>
                 </div>
             </div>
 
-            <!-- Homepage Customization Card -->
+            <!-- Homepage Customization with Hero Slider Gallery -->
             <div class="glass p-6 rounded-2xl">
                 <h2 class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em] mb-6">Homepage Customization</h2>
                 <div class="space-y-4">
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Collection Title</label><input type="text" id="hero-title" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="Define Your Ego"></div>
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Hero Main Image</label><button type="button" onclick="document.getElementById('hero-main-input').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Upload Main Image</button><input type="file" id="hero-main-input" class="hidden" accept="image/*" onchange="previewHeroImage(this, 'hero-main-preview')"><div id="hero-main-preview" class="mt-2"></div></div>
-                    <div><label class="text-[9px] uppercase text-gray-500 ml-1">Hero Secondary Image</label><button type="button" onclick="document.getElementById('hero-secondary-input').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">Upload Secondary Image</button><input type="file" id="hero-secondary-input" class="hidden" accept="image/*" onchange="previewHeroImage(this, 'hero-secondary-preview')"><div id="hero-secondary-preview" class="mt-2"></div></div>
-                    <button onclick="saveHomepageSettings()" class="w-full bg-white/10 hover:bg-white hover:text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] transition-all">Update Homepage</button>
+                    <div><label class="text-[9px] uppercase text-gray-500">Collection Title</label><input type="text" id="hero-title" class="w-full p-3 mt-1 rounded-xl text-sm" placeholder="Define Your Ego"></div>
+                    
+                    <!-- Hero Images Gallery (Slider) -->
+                    <div>
+                        <label class="text-[9px] uppercase text-gray-500 mb-2 block">Hero Slideshow Images (reorder with arrows)</label>
+                        <input type="file" id="hero-gallery-input" multiple accept="image/*" class="hidden" onchange="handleHeroGalleryFiles(this.files)">
+                        <button type="button" onclick="document.getElementById('hero-gallery-input').click()" class="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-[9px] uppercase hover:bg-zinc-800 transition">+ Add Hero Images</button>
+                        <div id="hero-gallery-preview" class="space-y-3 mt-4"></div>
+                    </div>
+                    
+                    <button onclick="saveHomepageSettings()" class="w-full bg-white/10 hover:bg-white hover:text-black font-black py-4 rounded-xl uppercase text-xs tracking-[0.2em] transition">Update Homepage</button>
                 </div>
             </div>
         </div>
 
-        <!-- Inventory & Orders Section -->
+        <!-- Inventory & Orders -->
         <div class="grid lg:grid-cols-2 gap-6">
-            <!-- Inventory List -->
-            <div class="glass p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-6"><h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Stock Inventory</h2><div class="text-[9px] text-gray-600" id="inventory-count">0 items</div></div>
-                <div id="inventory-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"><div class="text-center py-16"><div class="loading-spinner w-12 h-12 mx-auto mb-4"></div><p class="text-[10px] text-gray-500 uppercase tracking-widest">Loading inventory...</p></div></div>
-            </div>
-
-            <!-- Orders List -->
-            <div class="glass p-6 rounded-2xl border border-yellow-500/5">
-                <div class="flex items-center justify-between mb-6"><h2 class="text-[10px] font-bold text-yellow-500 uppercase tracking-[0.2em]">Incoming Orders</h2><div class="flex gap-2"><span class="status-badge status-pending" id="pending-count">0 Pending</span><span class="status-badge status-completed" id="completed-count">0 Completed</span></div></div>
-                <div id="orders-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"><div class="text-center py-16"><div class="loading-spinner w-12 h-12 mx-auto mb-4"></div><p class="text-[10px] text-gray-500 uppercase tracking-widest">Loading orders...</p></div></div>
-            </div>
+            <div class="glass p-6 rounded-2xl"><div class="flex justify-between mb-6"><h2 class="text-[10px] font-bold text-gray-500 uppercase">Stock Inventory</h2><div class="text-[9px] text-gray-600" id="inventory-count">0 items</div></div><div id="inventory-list" class="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar"><div class="text-center py-16"><div class="loading-spinner mx-auto mb-4"></div><p class="text-[10px] text-gray-500">Loading...</p></div></div></div>
+            <div class="glass p-6 rounded-2xl border border-yellow-500/5"><div class="flex justify-between mb-6"><h2 class="text-[10px] font-bold text-yellow-500 uppercase">Incoming Orders</h2><div class="flex gap-2"><span class="status-badge status-pending" id="pending-count">0 Pending</span><span class="status-badge status-completed" id="completed-count">0 Completed</span></div></div><div id="orders-list" class="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar"><div class="text-center py-16"><div class="loading-spinner mx-auto mb-4"></div><p class="text-[10px] text-gray-500">Loading...</p></div></div></div>
         </div>
-
-        <footer class="mt-8 pt-6 border-t border-white/5"><div class="flex flex-col md:flex-row justify-between items-center text-[9px] text-gray-600"><p>VAL10 ADMIN PANEL v3.0 • Connected to MongoDB Atlas</p><p class="mt-2 md:mt-0">Last sync: <span id="last-sync">Just now</span></p></div></footer>
+        <footer class="mt-8 pt-6 border-t border-white/5 text-[9px] text-gray-600 text-center">VAL10 ADMIN PANEL • Connected to MongoDB Atlas</footer>
     </div>
-
     <div id="toast-container"></div>
 
     <script>
         // ==================== STATE ====================
-        let editMode = false;
-        let editingProductId = null;
-        let existingImages = [];
-        let lastSyncTime = new Date();
-        let products = [];
-        let orders = [];
+        let editMode = false, editingProductId = null, existingImages = [];
+        let products = [], orders = [];
+        let uploadedImageUrls = [];      // Cloudinary URLs for current product
+        let pendingFiles = [];           // raw files waiting for crop
+        let currentFileIndex = 0;
+        let cropperInstance = null;
+        let heroImages = [];             // hero image URLs for slider
 
         // ==================== INIT ====================
-        window.onload = () => {
-            refreshAllData();
-            loadHomepageData();
-            setupEventListeners();
-            setInterval(updateLastSyncDisplay, 60000);
-            setInterval(refreshAllData, 30000);
-        };
-
+        window.onload = () => { refreshAllData(); loadHomepageData(); setupEventListeners(); setInterval(refreshAllData, 30000); };
         function setupEventListeners() {
             document.getElementById('p-desc').addEventListener('input', function() { document.getElementById('char-count').textContent = `${this.value.length}/500`; });
-            document.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveProduct(); }
-                if (e.key === 'Escape') resetProductForm();
-                if (e.key === 'F5') { e.preventDefault(); refreshAllData(); }
+            document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveProduct(); } if (e.key === 'Escape') resetProductForm(); });
+        }
+        function showToast(msg, type) { let toast = document.createElement('div'); toast.className = `toast toast-${type}`; toast.innerHTML = `<div class="flex items-center gap-2"><span>${msg}</span></div>`; document.getElementById('toast-container').appendChild(toast); setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease-out reverse'; setTimeout(() => toast.remove(), 300); }, 3000); }
+
+        // ==================== PRODUCT GALLERY & CROPPER ====================
+        function handleGalleryFiles(files) {
+            pendingFiles.push(...Array.from(files));
+            processNextFileForCropping();
+        }
+        function processNextFileForCropping() {
+            if (currentFileIndex >= pendingFiles.length) { uploadAllImages(); return; }
+            const file = pendingFiles[currentFileIndex];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('cropper-image');
+                img.src = e.target.result;
+                const modal = document.getElementById('cropper-modal');
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                if (cropperInstance) cropperInstance.destroy();
+                cropperInstance = new Cropper(img, { aspectRatio: 4/5, viewMode: 1, autoCropArea: 1, background: false });
+            };
+            reader.readAsDataURL(file);
+        }
+        function applyCrop() {
+            if (!cropperInstance) return;
+            const canvas = cropperInstance.getCroppedCanvas();
+            canvas.toBlob(async (blob) => {
+                const croppedFile = new File([blob], pendingFiles[currentFileIndex].name, { type: 'image/jpeg' });
+                pendingFiles[currentFileIndex] = croppedFile;
+                closeCropper();
+                currentFileIndex++;
+                processNextFileForCropping();
+            }, 'image/jpeg', 0.9);
+        }
+        function closeCropper() { document.getElementById('cropper-modal').classList.add('hidden'); if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; } }
+        async function uploadAllImages() {
+            if (pendingFiles.length === 0) return;
+            const formData = new FormData();
+            for (let file of pendingFiles) formData.append('productImages', file);
+            showToast('Uploading images...', 'info');
+            try {
+                const res = await fetch('/api/upload-images', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                uploadedImageUrls.push(...data.urls);
+                updateGalleryPreview();
+                pendingFiles = []; currentFileIndex = 0;
+                showToast(`${data.urls.length} images uploaded`, 'success');
+            } catch (err) { showToast('Upload error', 'error'); }
+        }
+        function updateGalleryPreview() {
+            const container = document.getElementById('gallery-preview');
+            if (!container) return;
+            container.innerHTML = '';
+            uploadedImageUrls.forEach((url, idx) => {
+                const div = document.createElement('div');
+                div.className = 'relative group border border-white/10 rounded-lg overflow-hidden';
+                div.innerHTML = `<img src="${url}" class="w-full aspect-[4/5] object-cover"><button onclick="removeGalleryImage(${idx})" class="absolute top-1 right-1 bg-black/70 text-white text-[8px] p-1 rounded-full hover:bg-red-500 transition opacity-0 group-hover:opacity-100">✕</button>`;
+                container.appendChild(div);
             });
+            if (uploadedImageUrls.length === 0) container.innerHTML = '<p class="col-span-3 text-center text-gray-500 text-[9px] py-4">No images selected</p>';
         }
+        function removeGalleryImage(index) { uploadedImageUrls.splice(index, 1); updateGalleryPreview(); }
+        function resetGallery() { uploadedImageUrls = []; pendingFiles = []; currentFileIndex = 0; updateGalleryPreview(); document.getElementById('gallery-input').value = ''; }
 
-        // ==================== TOAST ====================
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `<div class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' : type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}</svg><span>${message}</span></div>`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease-out reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
-        }
+        // ==================== HERO GALLERY (SLIDER) ====================
+        let heroPendingFiles = [];
+        let heroCurrentIndex = 0;
+        let heroCropperInstance = null;
 
-        // ==================== IMAGE HELPERS ====================
-        function previewImage(input, previewId) {
-            const preview = document.getElementById(previewId);
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => { preview.innerHTML = `<div class="image-preview"><div class="relative"><img src="${e.target.result}" class="w-full h-20 object-cover rounded"><div class="absolute bottom-0 left-0 right-0 bg-black/80 p-1"><p class="text-[8px] text-center">Selected</p></div></div></div>`; };
-                reader.readAsDataURL(input.files[0]);
-            }
+        function handleHeroGalleryFiles(files) {
+            heroPendingFiles.push(...Array.from(files));
+            processNextHeroFileForCropping();
         }
-        function previewHeroImage(input, previewId) {
-            const preview = document.getElementById(previewId);
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => { preview.innerHTML = `<div class="image-preview"><img src="${e.target.result}" class="w-full h-20 object-cover rounded"></div>`; };
-                reader.readAsDataURL(input.files[0]);
-            }
+        function processNextHeroFileForCropping() {
+            if (heroCurrentIndex >= heroPendingFiles.length) { uploadAllHeroImages(); return; }
+            const file = heroPendingFiles[heroCurrentIndex];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('cropper-image');
+                img.src = e.target.result;
+                const modal = document.getElementById('cropper-modal');
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                if (heroCropperInstance) heroCropperInstance.destroy();
+                heroCropperInstance = new Cropper(img, { aspectRatio: 16/9, viewMode: 1, autoCropArea: 1, background: false });
+                // Override applyCrop temporarily
+                window.originalApplyCrop = window.applyCrop;
+                window.applyCrop = () => {
+                    if (!heroCropperInstance) return;
+                    const canvas = heroCropperInstance.getCroppedCanvas();
+                    canvas.toBlob(async (blob) => {
+                        const croppedFile = new File([blob], heroPendingFiles[heroCurrentIndex].name, { type: 'image/jpeg' });
+                        heroPendingFiles[heroCurrentIndex] = croppedFile;
+                        closeCropper();
+                        heroCurrentIndex++;
+                        processNextHeroFileForCropping();
+                        window.applyCrop = window.originalApplyCrop;
+                    }, 'image/jpeg', 0.9);
+                };
+            };
+            reader.readAsDataURL(file);
         }
-        function fileToBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = reject; }); }
+        async function uploadAllHeroImages() {
+            if (heroPendingFiles.length === 0) return;
+            const formData = new FormData();
+            for (let file of heroPendingFiles) formData.append('heroImages', file);
+            showToast('Uploading hero images...', 'info');
+            try {
+                const res = await fetch('/api/upload-hero-images', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                heroImages.push(...data.urls);
+                updateHeroGalleryPreview();
+                heroPendingFiles = []; heroCurrentIndex = 0;
+                showToast(`${data.urls.length} hero images uploaded`, 'success');
+            } catch (err) { showToast('Hero upload error', 'error'); }
+        }
+        function updateHeroGalleryPreview() {
+            const container = document.getElementById('hero-gallery-preview');
+            if (!container) return;
+            container.innerHTML = '';
+            heroImages.forEach((url, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/10';
+                div.innerHTML = `
+                    <img src="${url}" class="w-20 h-20 object-cover rounded-lg">
+                    <div class="flex-1 text-left">
+                        <p class="text-[9px] text-gray-400">Slide ${idx+1}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="moveHeroImage(${idx}, 'up')" class="text-white/60 hover:text-white px-2 ${idx===0?'opacity-30 cursor-not-allowed':''}" ${idx===0?'disabled':''}>↑</button>
+                        <button onclick="moveHeroImage(${idx}, 'down')" class="text-white/60 hover:text-white px-2 ${idx===heroImages.length-1?'opacity-30 cursor-not-allowed':''}" ${idx===heroImages.length-1?'disabled':''}>↓</button>
+                        <button onclick="removeHeroImage(${idx})" class="text-red-400 hover:text-red-500 px-2">✕</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            if (heroImages.length === 0) container.innerHTML = '<p class="text-center text-gray-500 text-[9px] py-4">No hero images. Add some to create a slider.</p>';
+        }
+        function moveHeroImage(index, direction) {
+            if (direction === 'up' && index > 0) {
+                [heroImages[index-1], heroImages[index]] = [heroImages[index], heroImages[index-1]];
+            } else if (direction === 'down' && index < heroImages.length-1) {
+                [heroImages[index+1], heroImages[index]] = [heroImages[index], heroImages[index+1]];
+            }
+            updateHeroGalleryPreview();
+        }
+        function removeHeroImage(index) { heroImages.splice(index, 1); updateHeroGalleryPreview(); }
 
         // ==================== PRODUCT CRUD ====================
         async function saveProduct() {
             const name = document.getElementById('p-name').value.trim();
             const price = document.getElementById('p-price').value;
             if (!name || !price || parseFloat(price) <= 0) { showToast('Name and valid price required', 'error'); return; }
-            const btn = document.getElementById('submit-btn');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<div class="flex items-center gap-2"><div class="loading-spinner w-4 h-4 border-2"></div><span>${editMode ? 'Updating...' : 'Saving...'}</span></div>`;
-            btn.disabled = true;
+            const colorsRaw = document.getElementById('p-colors').value;
+            const colorsArray = colorsRaw ? colorsRaw.split(',').map(c => c.trim()).filter(c => c) : [];
+            const sizes = Array.from(document.querySelectorAll('.size-cb:checked')).map(cb => cb.value);
+            const payload = {
+                name, price: parseFloat(price), availability: document.getElementById('p-availability').value,
+                colors: colorsArray, description: document.getElementById('p-desc').value || "",
+                sizes: sizes.length ? sizes : ['One Size'], images: uploadedImageUrls
+            };
+            const url = editMode ? `/api/products/${editingProductId}` : '/api/products';
+            const method = editMode ? 'PUT' : 'POST';
             try {
-                const f1 = document.getElementById('f1').files[0];
-                const f2 = document.getElementById('f2').files[0];
-                let newImages = [];
-                if (f1) newImages.push(await fileToBase64(f1));
-                if (f2) newImages.push(await fileToBase64(f2));
-                if (!editMode && newImages.length === 0) newImages = ['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDgwMCA4MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSI4MDAiIGZpbGw9IiMxMTExMTEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VkFMMTA8L3RleHQ+PC9zdmc+'];
-                
-                const colorsRaw = document.getElementById('p-colors').value;
-                const colorsArray = colorsRaw ? colorsRaw.split(',').map(c => c.trim()).filter(c => c) : [];
-                const sizes = Array.from(document.querySelectorAll('.size-cb:checked')).map(cb => cb.value);
-                const payload = {
-                    name, price: parseFloat(price), availability: document.getElementById('p-availability').value,
-                    colors: colorsArray, description: document.getElementById('p-desc').value || "",
-                    sizes: sizes.length ? sizes : ['One Size'], images: newImages.length ? newImages : existingImages
-                };
-                const url = editMode ? `/api/products/${editingProductId}` : '/api/products';
-                const method = editMode ? 'PUT' : 'POST';
                 const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
+                if (!res.ok) throw new Error();
                 showToast(editMode ? 'Product updated' : 'Product added', 'success');
                 resetProductForm();
                 await refreshAllData();
-            } catch (err) { showToast(`Error: ${err.message}`, 'error'); } 
-            finally { btn.innerHTML = originalHTML; btn.disabled = false; }
+            } catch (err) { showToast('Save failed', 'error'); }
         }
-
         async function editProduct(id) {
             try {
                 const res = await fetch(`/api/products/${id}`);
                 if (!res.ok) throw new Error();
                 const p = await res.json();
                 editMode = true; editingProductId = id; existingImages = p.images || [];
+                uploadedImageUrls = [...p.images];
+                updateGalleryPreview();
                 document.getElementById('form-title').textContent = 'Edit Product';
                 document.getElementById('submit-btn').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><span>Update Product</span>';
                 document.getElementById('cancel-btn').classList.remove('hidden');
@@ -314,154 +320,43 @@
                 document.getElementById('p-desc').value = p.description || '';
                 document.getElementById('char-count').textContent = `${p.description?.length || 0}/500`;
                 document.querySelectorAll('.size-cb').forEach(cb => cb.checked = p.sizes?.includes(cb.value));
-                if (p.images && p.images[0]) document.getElementById('f1-preview').innerHTML = `<div class="image-preview"><img src="${p.images[0]}" class="w-full h-20 object-cover rounded"></div>`;
-                if (p.images && p.images[1]) document.getElementById('f2-preview').innerHTML = `<div class="image-preview"><img src="${p.images[1]}" class="w-full h-20 object-cover rounded"></div>`;
                 document.querySelector('.glass').scrollIntoView({ behavior: 'smooth' });
                 showToast('Product loaded for editing', 'success');
             } catch (err) { showToast('Failed to load product', 'error'); }
         }
+        async function deleteProduct(id) { if (!confirm('Delete product?')) return; try { await fetch(`/api/products/${id}`, { method: 'DELETE' }); showToast('Deleted', 'success'); await refreshAllData(); if (editMode && editingProductId === id) resetProductForm(); } catch (err) { showToast('Delete failed', 'error'); } }
+        function resetProductForm() { editMode = false; editingProductId = null; resetGallery(); existingImages = []; document.getElementById('form-title').textContent = 'Release New Piece'; document.getElementById('submit-btn').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Confirm Release</span>'; document.getElementById('cancel-btn').classList.add('hidden'); document.getElementById('p-id').value = ''; document.getElementById('p-name').value = ''; document.getElementById('p-price').value = ''; document.getElementById('p-availability').value = 'In-Stock'; document.getElementById('p-colors').value = ''; document.getElementById('p-desc').value = ''; document.getElementById('char-count').textContent = '0/500'; document.querySelectorAll('.size-cb').forEach(cb => cb.checked = false); showToast('Form reset', 'success'); }
 
-        async function deleteProduct(id) {
-            if (!confirm('Delete this product permanently?')) return;
-            try {
-                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error();
-                showToast('Product deleted', 'success');
-                await refreshAllData();
-                if (editMode && editingProductId === id) resetProductForm();
-            } catch (err) { showToast('Delete failed', 'error'); }
-        }
-
-        function resetProductForm() {
-            editMode = false; editingProductId = null; existingImages = [];
-            document.getElementById('form-title').textContent = 'Release New Piece';
-            document.getElementById('submit-btn').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Confirm Release</span>';
-            document.getElementById('cancel-btn').classList.add('hidden');
-            document.getElementById('p-id').value = '';
-            document.getElementById('p-name').value = '';
-            document.getElementById('p-price').value = '';
-            document.getElementById('p-availability').value = 'In-Stock';
-            document.getElementById('p-colors').value = '';
-            document.getElementById('p-desc').value = '';
-            document.getElementById('char-count').textContent = '0/500';
-            document.querySelectorAll('.size-cb').forEach(cb => cb.checked = false);
-            document.getElementById('f1').value = ''; document.getElementById('f2').value = '';
-            document.getElementById('f1-preview').innerHTML = ''; document.getElementById('f2-preview').innerHTML = '';
-            showToast('Form reset', 'success');
-        }
-
-        // ==================== INVENTORY UI ====================
-        async function loadInventory() {
-            const container = document.getElementById('inventory-list');
-            try {
-                const res = await fetch('/api/products');
-                if (!res.ok) throw new Error();
-                products = await res.json();
-                document.getElementById('total-products').textContent = products.length;
-                document.getElementById('inventory-count').textContent = `${products.length} items`;
-                if (!products.length) { container.innerHTML = '<div class="text-center py-20 text-gray-500">No products</div>'; return; }
-                container.innerHTML = '';
-                products.forEach(p => {
-                    const isSoldOut = p.availability === 'Sold-Out';
-                    const imgUrl = p.images?.[0] || '';
-                    const card = document.createElement('div');
-                    card.className = `bg-white/5 p-4 rounded-2xl border ${isSoldOut ? 'border-red-500/30 sold-out-item' : 'border-white/5'} hover:border-white/10 transition-all group`;
-                    card.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <div class="relative"><img src="${imgUrl}" class="w-16 h-16 object-cover rounded-lg grayscale group-hover:grayscale-0 transition" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMxMTExMTEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjMzMzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+VkFMMTA8L3RleHQ+PC9zdmc+'"></div>
-                            <div class="flex-1"><h4 class="text-[11px] font-black uppercase truncate">${p.name}</h4><p class="text-yellow-500 text-[10px] font-bold mt-1">${p.price} DT</p>${isSoldOut ? '<span class="inline-block mt-1 text-[8px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded">SOLD OUT</span>' : '<span class="inline-block mt-1 text-[8px] text-green-500/70">In Stock</span>'}</div>
-                            <div class="flex flex-col gap-2"><button onclick='editProduct("${p._id}")' class="text-[8px] font-bold bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition px-3 py-1 rounded-lg">Edit</button><button onclick='deleteProduct("${p._id}")' class="text-[8px] font-bold bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition px-3 py-1 rounded-lg">Delete</button></div>
-                        </div>`;
-                    container.appendChild(card);
-                });
-            } catch (err) { container.innerHTML = '<div class="text-center py-10 text-red-500">Failed to load</div>'; }
-        }
+        // ==================== INVENTORY ====================
+        async function loadInventory() { const container = document.getElementById('inventory-list'); try { const res = await fetch('/api/products'); if (!res.ok) throw new Error(); products = await res.json(); document.getElementById('total-products').textContent = products.length; document.getElementById('inventory-count').textContent = `${products.length} items`; if (!products.length) { container.innerHTML = '<div class="text-center py-20 text-gray-500">No products</div>'; return; } container.innerHTML = ''; products.forEach(p => { const isSoldOut = p.availability === 'Sold-Out'; const img = p.images?.[0] || ''; container.innerHTML += `<div class="bg-white/5 p-4 rounded-2xl border ${isSoldOut ? 'border-red-500/30 sold-out-item' : 'border-white/5'} group"><div class="flex items-center gap-4"><div><img src="${img}" class="w-16 h-16 object-cover rounded-lg grayscale group-hover:grayscale-0 transition" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23111%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%23333%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3EVAL10%3C%2Ftext%3E%3C%2Fsvg%3E'"><%2Fdiv><div class="flex-1"><h4 class="text-[11px] font-black uppercase truncate">${p.name}</h4><p class="text-yellow-500 text-[10px] font-bold mt-1">${p.price} DT</p>${isSoldOut ? '<span class="inline-block mt-1 text-[8px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded">SOLD OUT</span>' : '<span class="inline-block mt-1 text-[8px] text-green-500/70">In Stock</span>'}</div><div class="flex flex-col gap-2"><button onclick="editProduct(\'${p._id}\')" class="text-[8px] font-bold bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition px-3 py-1 rounded-lg">Edit</button><button onclick="deleteProduct(\'${p._id}\')" class="text-[8px] font-bold bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition px-3 py-1 rounded-lg">Delete</button></div></div></div>`; }); } catch (err) { container.innerHTML = '<div class="text-center py-10 text-red-500">Failed to load</div>'; } }
 
         // ==================== ORDERS ====================
-        async function loadOrders() {
-            const container = document.getElementById('orders-list');
-            try {
-                const res = await fetch('/api/orders');
-                if (!res.ok) throw new Error();
-                orders = await res.json();
-                const pending = orders.filter(o => o.status === 'Pending').length;
-                const completed = orders.filter(o => o.status === 'Completed').length;
-                const revenue = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-                document.getElementById('pending-orders').textContent = pending;
-                document.getElementById('pending-count').textContent = `${pending} Pending`;
-                document.getElementById('completed-count').textContent = `${completed} Completed`;
-                document.getElementById('total-revenue').textContent = `${revenue} DT`;
-                if (!orders.length) { container.innerHTML = '<div class="text-center py-20 text-gray-500">No orders</div>'; return; }
-                container.innerHTML = '';
-                orders.forEach(o => {
-                    const isPending = o.status === 'Pending';
-                    const div = document.createElement('div');
-                    div.className = `bg-white/5 p-5 rounded-2xl border ${isPending ? 'border-yellow-500/10' : 'border-green-500/5'}`;
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start mb-3"><div><div class="flex items-center gap-2"><h4 class="text-xs font-black uppercase">${o.customerName}</h4><span class="status-badge ${isPending ? 'status-pending' : 'status-completed'}">${o.status}</span></div><p class="text-[9px] text-gray-500 mt-1">📞 ${o.customerPhone}</p><p class="text-[8px] text-yellow-500/70 mt-1">${new Date(o.createdAt).toLocaleString()}</p></div><span class="bg-yellow-500 text-black text-[9px] font-black px-3 py-1 rounded-lg">${o.totalPrice} DT</span></div>
-                        <div class="text-[10px] text-gray-400 border-t border-white/5 pt-3"><p><span class="text-white">${o.productName}</span> • Size: ${o.size}</p><p class="mt-1 text-[9px]">📍 ${o.customerAddress}</p></div>
-                        <div class="flex gap-2 mt-4"><button onclick="markOrderCompleted('${o._id}')" class="flex-1 py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase hover:bg-green-500 hover:text-white transition">✓ Mark Completed</button><button onclick="deleteOrder('${o._id}')" class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-[8px] font-black hover:bg-red-500 hover:text-white transition">✕</button></div>`;
-                    container.appendChild(div);
-                });
-            } catch (err) { container.innerHTML = '<div class="text-center py-10 text-red-500">Failed to load orders</div>'; }
-        }
+        async function loadOrders() { const container = document.getElementById('orders-list'); try { const res = await fetch('/api/orders'); if (!res.ok) throw new Error(); orders = await res.json(); const pending = orders.filter(o => o.status === 'Pending').length; const completed = orders.filter(o => o.status === 'Completed').length; const revenue = orders.reduce((s,o) => s + (o.totalPrice||0),0); document.getElementById('pending-orders').textContent = pending; document.getElementById('pending-count').textContent = `${pending} Pending`; document.getElementById('completed-count').textContent = `${completed} Completed`; document.getElementById('total-revenue').textContent = `${revenue} DT`; if (!orders.length) { container.innerHTML = '<div class="text-center py-20 text-gray-500">No orders</div>'; return; } container.innerHTML = ''; orders.forEach(o => { const isPending = o.status === 'Pending'; container.innerHTML += `<div class="bg-white/5 p-5 rounded-2xl border ${isPending ? 'border-yellow-500/10' : 'border-green-500/5'}"><div class="flex justify-between items-start mb-3"><div><div class="flex items-center gap-2"><h4 class="text-xs font-black uppercase">${o.customerName}</h4><span class="status-badge ${isPending ? 'status-pending' : 'status-completed'}">${o.status}</span></div><p class="text-[9px] text-gray-500 mt-1">📞 ${o.customerPhone}</p><p class="text-[8px] text-yellow-500/70 mt-1">${new Date(o.createdAt).toLocaleString()}</p></div><span class="bg-yellow-500 text-black text-[9px] font-black px-3 py-1 rounded-lg">${o.totalPrice} DT</span></div><div class="text-[10px] text-gray-400 border-t border-white/5 pt-3"><p><span class="text-white">${o.productName}</span> • Size: ${o.size}</p><p class="mt-1 text-[9px]">📍 ${o.customerAddress}</p></div><div class="flex gap-2 mt-4"><button onclick="markOrderCompleted('${o._id}')" class="flex-1 py-2 bg-zinc-900 rounded-lg text-[8px] font-black uppercase hover:bg-green-500 hover:text-white transition">✓ Mark Completed</button><button onclick="deleteOrder('${o._id}')" class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-[8px] font-black hover:bg-red-500 hover:text-white transition">✕</button></div></div>`; }); } catch (err) { container.innerHTML = '<div class="text-center py-10 text-red-500">Failed to load orders</div>'; } }
+        async function markOrderCompleted(id) { try { await fetch(`/api/orders/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Completed' }) }); showToast('Order completed', 'success'); await loadOrders(); } catch (err) { showToast('Update failed', 'error'); } }
+        async function deleteOrder(id) { if (!confirm('Delete order?')) return; try { await fetch(`/api/orders/${id}`, { method: 'DELETE' }); showToast('Order deleted', 'success'); await loadOrders(); } catch (err) { showToast('Delete failed', 'error'); } }
 
-        async function markOrderCompleted(id) {
-            try {
-                const res = await fetch(`/api/orders/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Completed' }) });
-                if (!res.ok) throw new Error();
-                showToast('Order marked completed', 'success');
-                await loadOrders();
-            } catch (err) { showToast('Update failed', 'error'); }
-        }
-
-        async function deleteOrder(id) {
-            if (!confirm('Delete this order?')) return;
-            try {
-                const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error();
-                showToast('Order deleted', 'success');
-                await loadOrders();
-            } catch (err) { showToast('Delete failed', 'error'); }
-        }
-
-        // ==================== HOMEPAGE CUSTOMIZATION ====================
+        // ==================== HOMEPAGE SAVE ====================
         async function loadHomepageData() {
             try {
-                const res = await fetch('/api/homepage-hero');
-                if (!res.ok) throw new Error();
+                const res = await fetch('/api/homepage-hero', { cache: 'no-store' });
                 const data = await res.json();
                 document.getElementById('hero-title').value = data.title || '';
-                if (data.heroMain) document.getElementById('hero-main-preview').innerHTML = `<div class="image-preview"><img src="${data.heroMain}" class="w-full h-20 object-cover rounded"></div>`;
-                if (data.heroSecondary) document.getElementById('hero-secondary-preview').innerHTML = `<div class="image-preview"><img src="${data.heroSecondary}" class="w-full h-20 object-cover rounded"></div>`;
-            } catch (err) { console.error('Homepage load error'); }
+                heroImages = data.heroImages || [];
+                updateHeroGalleryPreview();
+            } catch (err) { console.error(err); }
         }
-
         async function saveHomepageSettings() {
             const title = document.getElementById('hero-title').value;
-            let heroMain = '', heroSecondary = '';
-            const mainFile = document.getElementById('hero-main-input').files[0];
-            const secondFile = document.getElementById('hero-secondary-input').files[0];
-            if (mainFile) heroMain = await fileToBase64(mainFile);
-            if (secondFile) heroSecondary = await fileToBase64(secondFile);
+            const payload = { title, heroImages };
             try {
-                const res = await fetch('/api/homepage-hero', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, heroMain, heroSecondary }) });
+                const res = await fetch('/api/homepage-hero', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!res.ok) throw new Error();
                 showToast('Homepage updated', 'success');
-                loadHomepageData();
-                document.getElementById('hero-main-input').value = '';
-                document.getElementById('hero-secondary-input').value = '';
+                loadHomepageData(); // refresh
             } catch (err) { showToast('Update failed', 'error'); }
         }
 
-        // ==================== REFRESH ====================
-        async function refreshAllData() {
-            await Promise.all([loadInventory(), loadOrders(), loadHomepageData()]);
-            lastSyncTime = new Date();
-            updateLastSyncDisplay();
-            showToast('Data synced', 'success');
-        }
-        function updateLastSyncDisplay() { const diff = Math.floor((new Date() - lastSyncTime) / 1000); document.getElementById('last-sync').textContent = diff < 60 ? 'Just now' : `${Math.floor(diff/60)} min ago`; }
+        async function refreshAllData() { await Promise.all([loadInventory(), loadOrders(), loadHomepageData()]); showToast('Data synced', 'success'); }
     </script>
 </body>
 </html>
