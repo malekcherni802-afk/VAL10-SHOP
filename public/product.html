@@ -12,7 +12,23 @@
         body { background: #050505; color: white; font-family: 'Syne'; }
         .gothic-text { font-family: 'Pirata One'; letter-spacing: 0.2em; }
         .swiper-pagination-bullet { background: #fff !important; }
+        .size-btn {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-radius: 8px;
+        }
         .size-btn.active { background: white; color: black; border-color: white; }
+        .size-btn.disabled {
+            opacity: 0.4;
+            filter: grayscale(0.5);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
         .color-swatch {
             width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
             border: 2px solid transparent; transition: all 0.2s;
@@ -23,6 +39,11 @@
         .color-swatch.sold-out { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
         .fade-in { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -74,10 +95,11 @@
                     <div id="size-container" class="flex flex-wrap gap-3"></div>
                 </div>
 
-                <button onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
+                <button id="acquire-btn" onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
                     <span class="relative z-10">Acquire Piece</span>
                     <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
                 </button>
+                <p id="soldout-message" class="text-red-400 text-[10px] uppercase tracking-widest hidden text-center">This product is sold out and cannot be ordered.</p>
             </div>
         </div>
     </main>
@@ -116,15 +138,27 @@
                 document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
                 document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED.";
 
-                // Overall stock status (colors + sizes)
+                // Check if product is fully sold out (all colors and sizes have zero stock)
                 const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
                 const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
-                const inStock = anyColorStock || anySizeStock;
-                const stockSpan = document.getElementById('stock-status');
-                stockSpan.innerText = inStock ? "In Stock" : "Sold Out";
-                stockSpan.className = inStock ? "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase" : "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
+                const isFullySoldOut = !anyColorStock && !anySizeStock;
 
-                // Render color swatches
+                // Update stock status badge
+                const stockSpan = document.getElementById('stock-status');
+                if (isFullySoldOut) {
+                    stockSpan.innerText = "Sold Out";
+                    stockSpan.className = "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
+                    // Disable the Acquire button and show message
+                    const acquireBtn = document.getElementById('acquire-btn');
+                    acquireBtn.classList.add('btn-disabled');
+                    acquireBtn.onclick = () => alert("This product is sold out and cannot be ordered.");
+                    document.getElementById('soldout-message').classList.remove('hidden');
+                } else {
+                    stockSpan.innerText = "In Stock";
+                    stockSpan.className = "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase";
+                }
+
+                // Render color swatches (already handles zero-stock disabling)
                 if (currentProduct.colors && currentProduct.colors.length > 0) {
                     document.getElementById('color-section').style.display = 'block';
                     renderColorSwatches();
@@ -134,15 +168,8 @@
                     updateMainImages();
                 }
 
-                // Render sizes
-                const sizeContainer = document.getElementById('size-container');
-                if (currentProduct.sizes && currentProduct.sizes.length) {
-                    sizeContainer.innerHTML = currentProduct.sizes.map(s => `<button onclick="selectSize(this, '${s.size}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s.size}</button>`).join('');
-                    if (currentProduct.sizes[0]) selectSize(document.querySelector('.size-btn'), currentProduct.sizes[0].size);
-                } else {
-                    sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
-                    selectedSize = 'One Size';
-                }
+                // Render sizes with disabled state for zero stock
+                renderSizes();
 
                 // If no swatches, still show images
                 if (!currentProduct.colors || currentProduct.colors.length === 0) {
@@ -154,6 +181,34 @@
             }
         }
 
+        function renderSizes() {
+            const sizeContainer = document.getElementById('size-container');
+            if (!currentProduct.sizes || currentProduct.sizes.length === 0) {
+                sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
+                selectedSize = 'One Size';
+                return;
+            }
+            sizeContainer.innerHTML = '';
+            currentProduct.sizes.forEach(s => {
+                const isOutOfStock = s.stock === 0;
+                const btn = document.createElement('button');
+                btn.innerText = s.size;
+                btn.className = `size-btn ${isOutOfStock ? 'disabled' : ''} ${selectedSize === s.size ? 'active' : ''}`;
+                if (!isOutOfStock) {
+                    btn.onclick = () => selectSize(btn, s.size);
+                }
+                sizeContainer.appendChild(btn);
+            });
+            // Auto-select first in-stock size
+            const firstInStock = currentProduct.sizes.find(s => s.stock > 0);
+            if (firstInStock) {
+                const firstBtn = sizeContainer.querySelector('.size-btn:not(.disabled)');
+                if (firstBtn) selectSize(firstBtn, firstInStock.size);
+            } else {
+                selectedSize = '';
+            }
+        }
+
         function renderColorSwatches() {
             const container = document.getElementById('color-swatches-container');
             if (!currentProduct.colors || currentProduct.colors.length === 0) {
@@ -162,11 +217,11 @@
             }
             container.innerHTML = '';
             currentProduct.colors.forEach((color, idx) => {
-                const isSoldOut = color.stock === 0;
+                const isOutOfStock = color.stock === 0;
                 const swatch = document.createElement('div');
-                swatch.className = `color-swatch ${isSoldOut ? 'sold-out' : ''} ${selectedColor === color ? 'active' : ''}`;
+                swatch.className = `color-swatch ${isOutOfStock ? 'sold-out' : ''} ${selectedColor === color ? 'active' : ''}`;
                 swatch.style.backgroundImage = `url(${color.image})`;
-                if (!isSoldOut) {
+                if (!isOutOfStock) {
                     swatch.onclick = () => {
                         selectedColor = color;
                         renderColorSwatches();
@@ -182,6 +237,12 @@
                 renderColorSwatches();
                 updateMainImages();
             }
+        }
+
+        function selectSize(btn, size) {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedSize = size;
         }
 
         function updateMainImages() {
@@ -203,17 +264,19 @@
             });
         }
 
-        function selectSize(btn, size) {
-            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedSize = size;
-        }
-
         function openModal() {
+            // Prevent opening if product is fully sold out
+            const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
+            const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
+            if (!anyColorStock && !anySizeStock) {
+                alert("This product is sold out and cannot be ordered.");
+                return;
+            }
             if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT SIZE FIRST."); return; }
             if (currentProduct.colors && currentProduct.colors.length && !selectedColor) { alert("SELECT COLOR."); return; }
             document.getElementById('modal').classList.remove('hidden');
         }
+
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
         async function submitOrder() {
@@ -221,6 +284,16 @@
             const phone = document.getElementById('cust-phone').value.trim();
             const addr = document.getElementById('cust-addr').value.trim();
             if (!name || !phone || !addr) { alert("COMPLETE ALL FIELDS."); return; }
+            
+            // Double-check stock again before submitting (prevent race conditions)
+            const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
+            const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
+            if (!anyColorStock && !anySizeStock) {
+                alert("Sorry, this product is now sold out.");
+                closeModal();
+                return;
+            }
+            
             const orderData = {
                 customerName: name, customerPhone: phone, customerAddress: addr,
                 productName: currentProduct.name,
@@ -233,7 +306,10 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)
                 });
-                if (!res.ok) throw new Error(await res.text());
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.error || 'Order failed');
+                }
                 alert("ARCHIVE SECURED. WE WILL CONTACT YOU SOON.");
                 window.location.href = "/";
             } catch (error) { alert(`ERROR: ${error.message}`); }

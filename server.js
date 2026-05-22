@@ -36,7 +36,7 @@ const productSchema = new mongoose.Schema({
     size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
-  images: [{ type: String }],
+  images: [{ type: String }], // fallback gallery
   isSoldOut: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
@@ -59,14 +59,20 @@ const bannerSchema = new mongoose.Schema({
 const Banner = mongoose.model('Banner', bannerSchema);
 
 const orderSchema = new mongoose.Schema({
-  customerName: String, customerPhone: String, customerAddress: String,
-  productName: String, color: String, size: String, totalPrice: Number,
+  customerName: String,
+  customerPhone: String,
+  customerAddress: String,
+  productName: String,
+  color: String,
+  size: String,
+  totalPrice: Number,
   status: { type: String, default: 'Pending' },
   createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
 
 // ==================== API ROUTES ====================
+// Products
 app.get('/api/products', async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
@@ -107,6 +113,7 @@ app.delete('/api/products/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Homepage banner
 app.get('/api/homepage-hero', async (req, res) => {
   try {
     let banner = await Banner.findOne();
@@ -130,18 +137,57 @@ app.post('/api/homepage-hero', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Orders with stock validation
 app.post('/api/orders', async (req, res) => {
   try {
-    const order = new Order(req.body);
+    const { productName, color, size, customerName, customerPhone, customerAddress, totalPrice } = req.body;
+    
+    // Find the product
+    const product = await Product.findOne({ name: productName });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // Check if product is fully sold out
+    if (product.isSoldOut) {
+      return res.status(400).json({ error: 'Product is sold out' });
+    }
+    
+    // Validate color stock if color is provided
+    if (color) {
+      const colorObj = product.colors.find(c => c.name === color);
+      if (!colorObj || colorObj.stock <= 0) {
+        return res.status(400).json({ error: `Selected color "${color}" is out of stock` });
+      }
+    }
+    
+    // Validate size stock if size is provided
+    if (size && size !== 'One Size') {
+      const sizeObj = product.sizes.find(s => s.size === size);
+      if (!sizeObj || sizeObj.stock <= 0) {
+        return res.status(400).json({ error: `Selected size "${size}" is out of stock` });
+      }
+    }
+    
+    // All validations passed – create order
+    const order = new Order({ customerName, customerPhone, customerAddress, productName, color, size, totalPrice });
     await order.save();
     res.status(201).json(order);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Frontend routes
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: err.message });
+});
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
