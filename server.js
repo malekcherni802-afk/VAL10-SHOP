@@ -29,14 +29,14 @@ const productSchema = new mongoose.Schema({
   colors: [{
     name: { type: String, required: true },
     hex: { type: String, default: '#000000' },
-    image: { type: String, required: true },   // Base64 compressed image
+    image: { type: String, required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
   sizes: [{
     size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
-  images: [{ type: String }],   // fallback gallery (optional)
+  images: [{ type: String }],
   isSoldOut: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
@@ -51,7 +51,6 @@ productSchema.pre('save', function(next) {
 
 const Product = mongoose.model('Product', productSchema);
 
-// Homepage banner schema (unchanged)
 const bannerSchema = new mongoose.Schema({
   title: { type: String, default: 'VAL10 Collection' },
   heroImages: [{ type: String }],
@@ -59,7 +58,6 @@ const bannerSchema = new mongoose.Schema({
 });
 const Banner = mongoose.model('Banner', bannerSchema);
 
-// Order schema (simplified for demo)
 const orderSchema = new mongoose.Schema({
   customerName: String, customerPhone: String, customerAddress: String,
   productName: String, color: String, size: String, totalPrice: Number,
@@ -109,7 +107,6 @@ app.delete('/api/products/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Homepage banner endpoints
 app.get('/api/homepage-hero', async (req, res) => {
   try {
     let banner = await Banner.findOne();
@@ -133,7 +130,6 @@ app.post('/api/homepage-hero', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Order endpoint
 app.post('/api/orders', async (req, res) => {
   try {
     const order = new Order(req.body);

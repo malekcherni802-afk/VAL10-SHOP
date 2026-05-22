@@ -31,6 +31,11 @@
         .product-card:hover img {
             transform: scale(1.05);
         }
+        .sold-out-border {
+            border: 2px solid #ef4444 !important;
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+            border-radius: 0.75rem;
+        }
         ::-webkit-scrollbar {
             width: 5px;
         }
@@ -196,7 +201,7 @@
                     card.className = `group cursor-pointer product-card ${isSoldOut ? 'opacity-80' : ''}`;
                     card.onclick = () => window.location.href = `/product?id=${product._id}`;
                     card.innerHTML = `
-                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5 rounded-xl">
+                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5 rounded-xl ${isSoldOut ? 'sold-out-border' : ''}">
                             <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" loading="lazy" alt="${escapeHtml(product.name)}">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                                 <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
