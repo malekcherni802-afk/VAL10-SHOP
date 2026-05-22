@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,188 +5,267 @@ const path = require('path');
 
 const app = express();
 
-// Middleware – large payload for Base64 images
+// ─── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── MongoDB Connection ────────────────────────────────────────────────────────
 const DB_URL = process.env.MONGODB_URI;
-if (!DB_URL) {
-  console.error('❌ MONGODB_URI environment variable is required');
-  process.exit(1);
-}
-mongoose.connect(DB_URL)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => { console.error('MongoDB error:', err); process.exit(1); });
 
-// ==================== MODELS ====================
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  price: { type: Number, required: true, min: 0 },
-  description: { type: String, default: '' },
-  colors: [{
-    name: { type: String, required: true },
-    hex: { type: String, default: '#000000' },
-    image: { type: String, required: true },
-    stock: { type: Number, default: 0, min: 0 }
-  }],
-  sizes: [{
-    size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
-    stock: { type: Number, default: 0, min: 0 }
-  }],
-  images: [{ type: String }], // fallback gallery
-  isSoldOut: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+if (!DB_URL) {
+    console.error('❌ ERROR: MONGODB_URI is not defined!');
+    console.log('💡 TIP: Add MONGODB_URI in Render Environment Variables');
+    process.exit(1);
+}
+
+console.log('🔗 Connecting to MongoDB Atlas...');
+
+mongoose.connect(DB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log('✅ MongoDB Atlas: CONNECTED SUCCESSFULLY');
+    console.log(`📊 Database: ${mongoose.connection.name}`);
+})
+.catch(err => {
+    console.error('❌ MongoDB Connection Failed:', err.message);
+    process.exit(1);
 });
 
-// Auto‑compute isSoldOut: true if all color stocks === 0 AND all size stocks === 0
-productSchema.pre('save', function(next) {
-  const allColorsZero = this.colors.every(c => c.stock === 0);
-  const allSizesZero = this.sizes.every(s => s.stock === 0);
-  this.isSoldOut = allColorsZero && allSizesZero;
-  next();
+// ─── Schemas ───────────────────────────────────────────────────────────────────
+
+/**
+ * ColorVariant sub-document
+ * Each color holds its own image and live stock count.
+ */
+const colorVariantSchema = new mongoose.Schema({
+    name:  { type: String, required: true, trim: true },
+    hex:   { type: String, required: true, trim: true },
+    image: { type: String, default: '' },   // base64 or URL
+    stock: { type: Number, required: true, min: 0, default: 0 }
+}, { _id: false });
+
+const productSchema = new mongoose.Schema({
+    name:        { type: String, required: true, trim: true },
+    price:       { type: Number, required: true, min: 0 },
+    description: { type: String, default: '' },
+    sizes:       { type: [String], default: [] },
+    category:    { type: String, default: 'Underground' },
+    /**
+     * colors replaces the old flat `images` array.
+     * Each entry is a ColorVariant with its own image + stock.
+     */
+    colors:      { type: [colorVariantSchema], default: [] },
+    /**
+     * Legacy field kept for backwards-compat with old products.
+     * New products use colors[n].image instead.
+     */
+    images:      { type: [String], default: [] },
+    createdAt:   { type: Date, default: Date.now }
+});
+
+const orderSchema = new mongoose.Schema({
+    customerName:    { type: String, required: true },
+    customerPhone:   { type: String, required: true },
+    customerAddress: { type: String, required: true },
+    productName:     { type: String, required: true },
+    size:            { type: String, required: true },
+    colorName:       { type: String, default: '' },
+    totalPrice:      { type: Number, required: true },
+    status:          { type: String, default: 'Pending' },
+    createdAt:       { type: Date, default: Date.now }
 });
 
 const Product = mongoose.model('Product', productSchema);
+const Order   = mongoose.model('Order',   orderSchema);
 
-const bannerSchema = new mongoose.Schema({
-  title: { type: String, default: 'VAL10 Collection' },
-  heroImages: [{ type: String }],
-  updatedAt: { type: Date, default: Date.now }
-});
-const Banner = mongoose.model('Banner', bannerSchema);
+// ─── Business Logic ────────────────────────────────────────────────────────────
 
-const orderSchema = new mongoose.Schema({
-  customerName: String,
-  customerPhone: String,
-  customerAddress: String,
-  productName: String,
-  color: String,
-  size: String,
-  totalPrice: Number,
-  status: { type: String, default: 'Pending' },
-  createdAt: { type: Date, default: Date.now }
-});
-const Order = mongoose.model('Order', orderSchema);
+/**
+ * checkStockStatus(product)
+ *
+ * Decorates each color variant with a computed `availability` field:
+ *   - 'In Stock'   if stock > 0
+ *   - 'Sold Out'   if stock === 0
+ *
+ * Returns a plain object (not a Mongoose document) so it can be
+ * safely serialised and sent to the client.
+ */
+function checkStockStatus(product) {
+    const obj = product.toObject ? product.toObject() : { ...product };
 
-// ==================== API ROUTES ====================
-// Products
+    if (Array.isArray(obj.colors)) {
+        obj.colors = obj.colors.map(color => ({
+            ...color,
+            availability: color.stock > 0 ? 'In Stock' : 'Sold Out'
+        }));
+    }
+
+    // Convenience top-level flag: product is available if any color has stock
+    obj.hasStock = Array.isArray(obj.colors)
+        ? obj.colors.some(c => c.stock > 0)
+        : true;
+
+    return obj;
+}
+
+// ─── Product Routes ────────────────────────────────────────────────────────────
+
+// GET /api/products — returns all products with computed availability per color
 app.get('/api/products', async (req, res) => {
-  try {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.json(products);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        const products = await Product.find().sort({ createdAt: -1 });
+        // Decorate every product with live stock status before sending
+        const decorated = products.map(checkStockStatus);
+        res.json(decorated);
+    } catch (error) {
+        console.error('GET /api/products error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
+// GET /api/products/:id — single product with availability
 app.get('/api/products/:id', async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        res.json(checkStockStatus(product));
+    } catch (error) {
+        console.error('GET /api/products/:id error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
+// POST /api/products — create a new product (colors array in body)
 app.post('/api/products', async (req, res) => {
-  try {
-    const { name, price, description, colors, sizes, images } = req.body;
-    if (!name || price === undefined) return res.status(400).json({ error: 'Name and price required' });
-    const product = new Product({ name, price, description, colors, sizes, images });
-    await product.save();
-    res.status(201).json(product);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        const product = new Product(req.body);
+        await product.save();
+        res.status(201).json(checkStockStatus(product));
+    } catch (error) {
+        console.error('POST /api/products error:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
+// PUT /api/products/:id — full update
 app.put('/api/products/:id', async (req, res) => {
-  try {
-    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!updated) return res.status(404).json({ error: 'Product not found' });
-    res.json(updated);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        const product = await Product.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        res.json(checkStockStatus(product));
+    } catch (error) {
+        console.error('PUT /api/products/:id error:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
+// PATCH /api/products/:id/stock — atomic stock update for a single color
+// Body: { colorIndex: 0, stock: 5 }
+app.patch('/api/products/:id/stock', async (req, res) => {
+    try {
+        const { colorIndex, stock } = req.body;
+        if (typeof colorIndex !== 'number' || typeof stock !== 'number') {
+            return res.status(400).json({ error: 'colorIndex and stock are required numbers' });
+        }
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+        if (!product.colors[colorIndex]) {
+            return res.status(400).json({ error: 'Color index out of range' });
+        }
+        product.colors[colorIndex].stock = Math.max(0, stock);
+        await product.save();
+        res.json(checkStockStatus(product));
+    } catch (error) {
+        console.error('PATCH /api/products/:id/stock error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE /api/products/:id
 app.delete('/api/products/:id', async (req, res) => {
-  try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Product deleted' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Homepage banner
-app.get('/api/homepage-hero', async (req, res) => {
-  try {
-    let banner = await Banner.findOne();
-    if (!banner) banner = await Banner.create({});
-    res.json(banner);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.post('/api/homepage-hero', async (req, res) => {
-  try {
-    let banner = await Banner.findOne();
-    if (banner) {
-      banner.title = req.body.title ?? banner.title;
-      banner.heroImages = req.body.heroImages ?? banner.heroImages;
-      banner.updatedAt = Date.now();
-      await banner.save();
-    } else {
-      banner = await Banner.create(req.body);
+    try {
+        await Product.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Product deleted' });
+    } catch (error) {
+        console.error('DELETE /api/products/:id error:', error);
+        res.status(500).json({ error: error.message });
     }
-    res.json(banner);
-  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Orders with stock validation
+// ─── Order Routes ──────────────────────────────────────────────────────────────
+
+app.get('/api/orders', async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/orders', async (req, res) => {
-  try {
-    const { productName, color, size, customerName, customerPhone, customerAddress, totalPrice } = req.body;
-    
-    // Find the product
-    const product = await Product.findOne({ name: productName });
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+    try {
+        const order = new Order(req.body);
+        await order.save();
+        res.status(201).json(order);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
     }
-    
-    // Check if product is fully sold out
-    if (product.isSoldOut) {
-      return res.status(400).json({ error: 'Product is sold out' });
-    }
-    
-    // Validate color stock if color is provided
-    if (color) {
-      const colorObj = product.colors.find(c => c.name === color);
-      if (!colorObj || colorObj.stock <= 0) {
-        return res.status(400).json({ error: `Selected color "${color}" is out of stock` });
-      }
-    }
-    
-    // Validate size stock if size is provided
-    if (size && size !== 'One Size') {
-      const sizeObj = product.sizes.find(s => s.size === size);
-      if (!sizeObj || sizeObj.stock <= 0) {
-        return res.status(400).json({ error: `Selected size "${size}" is out of stock` });
-      }
-    }
-    
-    // All validations passed – create order
-    const order = new Order({ customerName, customerPhone, customerAddress, productName, color, size, totalPrice });
-    await order.save();
-    res.status(201).json(order);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
-// Frontend routes
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: err.message });
+app.put('/api/orders/:id', async (req, res) => {
+    try {
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        res.json(order);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
+
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        await Order.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Order deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── HTML Routes ───────────────────────────────────────────────────────────────
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/product', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'product.html'));
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ─── Start Server ──────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log('='.repeat(50));
+    console.log(`🚀 VAL10 STORE DEPLOYED SUCCESSFULLY`);
+    console.log(`👉 PORT: ${PORT}`);
+    console.log(`👉 URL: https://val10-store.onrender.com`);
+    console.log(`👉 Admin Panel: /admin`);
+    console.log('='.repeat(50));
+});

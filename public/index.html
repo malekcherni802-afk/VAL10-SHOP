@@ -6,8 +6,6 @@
     <title>VAL10 | Underground Luxury</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <style>
         body {
             background-color: #050505;
@@ -19,86 +17,184 @@
             font-family: 'Pirata One', cursive;
             letter-spacing: 0.1em;
         }
+        .fade-in {
+            animation: fadeIn 1.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         .product-card {
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .product-card:hover {
-            transform: translateY(-10px);
+        .product-card:hover { transform: translateY(-10px); }
+        .product-card img   { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .product-card:hover img { transform: scale(1.1); }
+
+        ::-webkit-scrollbar       { width: 5px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* ── Color Swatch System ───────────────────────────────── */
+
+        .swatch-strip {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
         }
-        .product-card img {
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* Base circle */
+        .color-swatch {
+            position: relative;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            flex-shrink: 0;
         }
-        .product-card:hover img {
-            transform: scale(1.05);
+
+        /* Hover — non-sold-out */
+        .color-swatch:not(.sold-out):hover {
+            transform: scale(1.25);
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
         }
-        .sold-out-border {
-            border: 2px solid #ef4444 !important;
-            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
-            border-radius: 0.75rem;
+
+        /* Active / selected swatch */
+        .color-swatch.active {
+            border-color: #eab308;
+            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
+            transform: scale(1.2);
         }
-        ::-webkit-scrollbar {
-            width: 5px;
+
+        /* Sold-out state */
+        .color-swatch.sold-out {
+            filter: grayscale(1) brightness(0.45);
+            cursor: not-allowed;
+            opacity: 0.5;
+            pointer-events: none; /* unclickable */
         }
-        ::-webkit-scrollbar-track {
-            background: #050505;
+
+        /* Diagonal slash overlay for sold-out */
+        .color-swatch.sold-out::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(
+                135deg,
+                transparent 42%,
+                rgba(255, 60, 60, 0.85) 42%,
+                rgba(255, 60, 60, 0.85) 58%,
+                transparent 58%
+            );
         }
-        ::-webkit-scrollbar-thumb {
-            background: #333;
+
+        /* Tooltip label on hover */
+        .color-swatch[data-label]::before {
+            content: attr(data-label);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 3px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            border: 1px solid rgba(255,255,255,0.08);
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+        .color-swatch:not(.sold-out):hover::before,
+        .color-swatch.sold-out:hover::before {
+            opacity: 1;
+            pointer-events: none;
         }
+        /* Re-enable hover just for tooltip display on sold-out */
+        .color-swatch.sold-out { pointer-events: all; }
+        .color-swatch.sold-out:hover { transform: none; cursor: not-allowed; }
+
+        /* Sold-out badge on the label */
+        .sold-out-label {
+            font-size: 8px;
+            color: #ef4444;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Toast ─────────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+        .toast-success { background: #10b981; color: white; }
+        .toast-error   { background: #ef4444; color: white; }
+        .toast-info    { background: #3b82f6; color: white; }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
-    <!-- Navigation -->
+
+    <!-- Nav -->
     <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">
-                VAL10
-            </h1>
+            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors"
+                onclick="window.location.href='/'">VAL10</h1>
             <div class="flex items-center gap-8">
                 <button class="hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-500 hover:text-white transition">Archive</button>
-                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
+                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase"
+                        onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">
                     COLLECTION 2026
                 </button>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Swiper Slider -->
-    <header class="h-screen relative overflow-hidden">
-        <div class="swiper hero-swiper h-full">
-            <div class="swiper-wrapper" id="hero-swiper-wrapper">
-                <div class="swiper-slide">
-                    <div class="w-full h-full bg-black flex items-center justify-center">
-                        <span class="text-gray-600">Loading hero images...</span>
-                    </div>
-                </div>
-            </div>
-            <div class="swiper-pagination"></div>
-            <div class="swiper-button-next !text-white"></div>
-            <div class="swiper-button-prev !text-white"></div>
+    <!-- Hero -->
+    <header class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-black/60 z-10"></div>
+            <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop"
+                 class="w-full h-full object-cover grayscale scale-110" alt="VAL10 Hero">
         </div>
-
-        <!-- Overlay text (centered) -->
-        <div class="absolute inset-0 z-20 flex flex-col justify-center items-center text-center px-4 bg-black/40">
-            <span class="text-[10px] tracking-[0.8em] uppercase text-gray-200 mb-4 block">Est. MMXXIV</span>
-            <h2 id="hero-title" class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
+        <div class="z-20 fade-in px-4">
+            <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
+            <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
                 Define <br>
-                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-300">Your Ego</span>
+                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800">Your Ego</span>
             </h2>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="#shop" class="bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">Explore Drop</a>
-            </div>
+            <a href="#shop" class="inline-block bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">
+                Explore Drop
+            </a>
         </div>
-
         <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce">
             <div class="w-[1px] h-12 bg-gradient-to-b from-white to-transparent"></div>
         </div>
     </header>
 
-    <!-- Products Section -->
+    <!-- Shop Grid -->
     <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-4">
             <div>
@@ -108,7 +204,9 @@
             <div class="h-[1px] flex-1 bg-white/10 mx-10 hidden md:block mb-4"></div>
             <span class="text-[10px] text-gray-400 tracking-widest uppercase italic">Drop 1.0</span>
         </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
+            <!-- Loading state -->
             <div class="col-span-full flex flex-col items-center py-20">
                 <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
                 <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
@@ -129,124 +227,229 @@
         </div>
     </footer>
 
-    <script>
-        let heroSwiper = null;
+<!-- ═══════════════════════════════════════════════════════════════ SCRIPTS -->
+<script>
+'use strict';
 
-        // Load homepage hero (title + slider images)
-        async function loadHomepageHero() {
-            try {
-                const response = await fetch('/api/homepage-hero', { cache: 'no-store' });
-                if (!response.ok) throw new Error('Failed to fetch hero');
-                const data = await response.json();
-                
-                // Update title
-                if (data.title) {
-                    document.getElementById('hero-title').innerHTML = data.title;
-                }
-                
-                // Update hero slider images
-                const heroImages = data.heroImages || [];
-                const swiperWrapper = document.getElementById('hero-swiper-wrapper');
-                
-                if (heroImages.length === 0) {
-                    swiperWrapper.innerHTML = `<div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">No hero images</span></div></div>`;
-                } else {
-                    swiperWrapper.innerHTML = heroImages.map(url => `
-                        <div class="swiper-slide">
-                            <img src="${url}" class="w-full h-full object-cover grayscale" alt="Hero">
-                        </div>
-                    `).join('');
-                }
-                
-                // Initialize or reinitialize Swiper
-                if (heroSwiper) heroSwiper.destroy(true, true);
-                heroSwiper = new Swiper('.hero-swiper', {
-                    loop: heroImages.length > 1,
-                    autoplay: heroImages.length > 1 ? { delay: 4000, disableOnInteraction: false } : false,
-                    pagination: { el: '.swiper-pagination', clickable: true },
-                    navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
-                    effect: 'fade',
-                    fadeEffect: { crossFade: true }
-                });
-            } catch (error) {
-                console.error('Hero load error:', error);
-            }
-        }
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
 
-        // Fetch and display products
-        async function fetchProducts() {
-            const grid = document.getElementById('product-grid');
-            try {
-                const response = await fetch('/api/products');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const products = await response.json();
-                
-                grid.innerHTML = '';
-                if (!products.length) {
-                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-20 uppercase tracking-[0.5em] text-xs">Archive Empty</p>';
-                    return;
-                }
-                
-                products.forEach(product => {
-                    // Get primary image: first color swatch image, then first gallery image, then fallback
-                    let imgUrl = 'https://via.placeholder.com/600x800/111/333?text=VAL10';
-                    if (product.colors && product.colors.length > 0 && product.colors[0].image) {
-                        imgUrl = product.colors[0].image;
-                    } else if (product.images && product.images.length > 0) {
-                        imgUrl = product.images[0];
-                    }
-                    
-                    const isSoldOut = product.isSoldOut === true;
-                    const card = document.createElement('div');
-                    card.className = `group cursor-pointer product-card ${isSoldOut ? 'opacity-80' : ''}`;
-                    card.onclick = () => window.location.href = `/product?id=${product._id}`;
-                    card.innerHTML = `
-                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5 rounded-xl ${isSoldOut ? 'sold-out-border' : ''}">
-                            <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" loading="lazy" alt="${escapeHtml(product.name)}">
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                                <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                    <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase rounded-full">View Piece</span>
-                                </div>
-                            </div>
-                            ${isSoldOut ? '<div class="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black px-3 py-1.5 uppercase rounded-full tracking-wider shadow-lg">Sold Out</div>' : ''}
-                        </div>
-                        <div class="px-2">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${escapeHtml(product.name)}</h3>
-                                <span class="font-mono text-gray-400">${product.price} DT</span>
-                            </div>
-                            <p class="text-[9px] tracking-[0.2em] text-gray-600 uppercase">Limited Edition Drop</p>
-                            ${product.colors && product.colors.length ? `<p class="text-[8px] text-yellow-600 mt-2">Colors: ${product.colors.map(c => c.name).join(', ')}</p>` : ''}
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            } catch (error) {
-                console.error('Products error:', error);
-                grid.innerHTML = `<div class="col-span-full text-center py-20">
-                    <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
-                    <p class="text-gray-600 text-[9px]">${error.message}</p>
-                    <button onclick="fetchProducts()" class="mt-4 text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border border-white/20 px-4 py-2 rounded">Retry</button>
-                </div>`;
-            }
-        }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
 
-        // Simple XSS prevention
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
+// ── Color Swatch Renderer ──────────────────────────────────────────────────
+/**
+ * buildSwatchStrip(colors, onSelect)
+ *
+ * Returns a <div class="swatch-strip"> containing one circle per color.
+ *
+ * Rules:
+ *  - stock === 0  → swatch gets .sold-out  (grayscale + slash + unclickable)
+ *  - stock  > 0  → normal, clickable
+ *  - On click     → calls onSelect(colorIndex, colorObject)
+ *  - Tooltip      → color name + "(Sold Out)" when applicable
+ */
+function buildSwatchStrip(colors, onSelect) {
+    const strip = document.createElement('div');
+    strip.className = 'swatch-strip';
+
+    colors.forEach((color, idx) => {
+        const isSoldOut = color.stock === 0 ||
+                          color.availability === 'Sold Out';
+
+        const swatch = document.createElement('span');
+        swatch.className    = 'color-swatch' + (isSoldOut ? ' sold-out' : '');
+        swatch.style.background = color.hex || '#888';
+        swatch.dataset.label = color.name + (isSoldOut ? ' — Sold Out' : '');
+        swatch.dataset.index = idx;
+        swatch.title         = color.name + (isSoldOut ? ' (Sold Out)' : '');
+
+        if (!isSoldOut) {
+            swatch.addEventListener('click', (e) => {
+                e.stopPropagation(); // don't bubble up to card → navigate
+                // Remove active from siblings
+                strip.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                onSelect(idx, color);
             });
         }
 
-        // Initialize everything
-        window.onload = () => {
-            loadHomepageHero();
-            fetchProducts();
-        };
-    </script>
+        strip.appendChild(swatch);
+    });
+
+    return strip;
+}
+
+// ── Product Card Builder ───────────────────────────────────────────────────
+/**
+ * buildProductCard(product)
+ *
+ * Creates a full product card DOM element with:
+ *  - Main image that swaps when a color swatch is clicked
+ *  - Color swatch strip with live sold-out state
+ *  - Sold-out overlay when ALL colors are sold out
+ */
+function buildProductCard(product) {
+    const colors = Array.isArray(product.colors) ? product.colors : [];
+
+    // Determine initial image: first in-stock color, else first color, else legacy images[0]
+    const firstAvailable = colors.find(c => c.stock > 0) || colors[0];
+    let initialImg = firstAvailable?.image ||
+                     (product.images?.length ? product.images[0] : null) ||
+                     'https://via.placeholder.com/600x800/111/333?text=VAL10';
+
+    const allSoldOut = colors.length > 0 && colors.every(c => c.stock === 0);
+
+    // ── Card shell
+    const card = document.createElement('div');
+    card.className = 'group cursor-pointer fade-in product-card';
+
+    // ── Image container
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-5 border border-white/5';
+
+    const img = document.createElement('img');
+    img.src       = initialImg;
+    img.alt       = product.name;
+    img.loading   = 'lazy';
+    img.className = 'w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500';
+
+    // "View Piece" hover overlay
+    const hoverOverlay = document.createElement('div');
+    hoverOverlay.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center pointer-events-none';
+    hoverOverlay.innerHTML = `
+        <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+            <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
+        </div>`;
+
+    // "Sold Out" full overlay when every variant is gone
+    if (allSoldOut) {
+        const soldOutOverlay = document.createElement('div');
+        soldOutOverlay.className = 'absolute inset-0 bg-black/60 flex items-center justify-center z-10';
+        soldOutOverlay.innerHTML = `<span class="text-[10px] font-black uppercase tracking-[0.4em] text-red-400 border border-red-400/30 px-4 py-2">Sold Out</span>`;
+        imgWrap.appendChild(soldOutOverlay);
+    }
+
+    imgWrap.appendChild(img);
+    imgWrap.appendChild(hoverOverlay);
+
+    // ── Navigate on card click (but NOT when clicking a swatch)
+    card.addEventListener('click', () => {
+        window.location.href = `/product?id=${product._id}`;
+    });
+
+    // ── Info section
+    const info = document.createElement('div');
+    info.className = 'px-1';
+
+    const topRow = document.createElement('div');
+    topRow.className = 'flex justify-between items-start mb-2';
+    topRow.innerHTML = `
+        <h3 class="text-base font-bold uppercase tracking-tighter text-gray-100 truncate pr-2">${product.name}</h3>
+        <span class="font-mono text-gray-400 flex-shrink-0">${product.price} DT</span>`;
+
+    const subLine = document.createElement('p');
+    subLine.className = 'text-[9px] tracking-[0.2em] text-gray-600 uppercase mb-3';
+    subLine.textContent = product.category || 'Limited Edition Drop';
+
+    // Sizes
+    let sizesEl = null;
+    if (product.sizes?.length) {
+        sizesEl = document.createElement('p');
+        sizesEl.className = 'text-[8px] text-yellow-600 mb-3 font-mono';
+        sizesEl.textContent = 'Sizes: ' + product.sizes.join('  ');
+    }
+
+    // ── Swatch strip (only if colors exist)
+    let swatchSection = null;
+    if (colors.length > 0) {
+        swatchSection = document.createElement('div');
+        swatchSection.className = 'flex items-center gap-3 mt-2';
+
+        const strip = buildSwatchStrip(colors, (idx, color) => {
+            // Swap main image to the selected color's image
+            if (color.image) {
+                img.src = color.image;
+            }
+            // Update color name label
+            colorLabel.textContent = color.name;
+        });
+
+        // Active-select the first in-stock swatch by default
+        const firstInStockSwatch = strip.querySelector('.color-swatch:not(.sold-out)');
+        if (firstInStockSwatch) firstInStockSwatch.classList.add('active');
+
+        const colorLabel = document.createElement('span');
+        colorLabel.className = 'text-[8px] text-gray-500 uppercase tracking-widest transition-all';
+        colorLabel.textContent = firstAvailable?.name || '';
+
+        swatchSection.appendChild(strip);
+        swatchSection.appendChild(colorLabel);
+    }
+
+    info.appendChild(topRow);
+    info.appendChild(subLine);
+    if (sizesEl)      info.appendChild(sizesEl);
+    if (swatchSection) info.appendChild(swatchSection);
+
+    card.appendChild(imgWrap);
+    card.appendChild(info);
+
+    return card;
+}
+
+// ── Fetch & Render Products ────────────────────────────────────────────────
+async function fetchProducts() {
+    const grid = document.getElementById('product-grid');
+
+    try {
+        const res = await fetch('/api/products');
+
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+        const products = await res.json();
+
+        grid.innerHTML = '';
+
+        if (!products?.length) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <p class="text-[10px] uppercase tracking-[0.5em] text-gray-600">Archive Empty</p>
+                </div>`;
+            return;
+        }
+
+        // The GET /api/products route already calls checkStockStatus on the
+        // backend, so every color already has an `availability` field.
+        // We just render — no manual stock calculation needed here.
+        products.forEach(product => {
+            const card = buildProductCard(product);
+            grid.appendChild(card);
+        });
+
+    } catch (err) {
+        console.error('fetchProducts error:', err);
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-20">
+                <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
+                <p class="text-gray-600 text-[9px] mb-4">${err.message}</p>
+                <button onclick="fetchProducts()"
+                        class="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border border-white/10 px-4 py-2 rounded transition">
+                    Retry
+                </button>
+            </div>`;
+        showToast('Failed to load products', 'error');
+    }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', fetchProducts);
+</script>
 </body>
 </html>
