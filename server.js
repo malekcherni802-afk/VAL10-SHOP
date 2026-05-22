@@ -25,26 +25,26 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },
   description: { type: String, default: '' },
-  colors: [{
+  colors: [{ type: String }],                 // legacy simple color names
+  colorSwatches: [{
     name: { type: String, required: true },
-    image: { type: String, required: true },   // Base64 image for this color
+    image: { type: String, required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
   sizes: [{
     size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
-  // Legacy images array kept for backward compatibility (if any)
   images: [{ type: String }],
   isSoldOut: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
-// Auto‑compute isSoldOut (if all sizes stock = 0 AND all colors stock = 0)
+// Auto‑compute isSoldOut
 productSchema.pre('save', function(next) {
   const allSizesZero = this.sizes.every(s => s.stock === 0);
-  const allColorsZero = this.colors.every(c => c.stock === 0);
-  this.isSoldOut = allSizesZero && allColorsZero;
+  const allSwatchesZero = (this.colorSwatches || []).every(c => c.stock === 0);
+  this.isSoldOut = allSizesZero && allSwatchesZero;
   next();
 });
 
@@ -56,6 +56,14 @@ const bannerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 const Banner = mongoose.model('Banner', bannerSchema);
+
+const orderSchema = new mongoose.Schema({
+  customerName: String, customerPhone: String, customerAddress: String,
+  productName: String, size: String, color: String, totalPrice: Number,
+  status: { type: String, default: 'Pending' },
+  createdAt: { type: Date, default: Date.now }
+});
+const Order = mongoose.model('Order', orderSchema);
 
 // ==================== API ROUTES ====================
 app.get('/api/products', async (req, res) => {
@@ -75,9 +83,9 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, price, description, colors, sizes, images } = req.body;
+    const { name, price, description, colors, colorSwatches, sizes, images } = req.body;
     if (!name || price === undefined) return res.status(400).json({ error: 'Name and price required' });
-    const product = new Product({ name, price, description, colors, sizes, images });
+    const product = new Product({ name, price, description, colors, colorSwatches, sizes, images });
     await product.save();
     res.status(201).json(product);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -121,14 +129,6 @@ app.post('/api/homepage-hero', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Order routes (simple)
-const orderSchema = new mongoose.Schema({
-  customerName: String, customerPhone: String, customerAddress: String,
-  productName: String, size: String, color: String, totalPrice: Number,
-  status: { type: String, default: 'Pending' },
-  createdAt: { type: Date, default: Date.now }
-});
-const Order = mongoose.model('Order', orderSchema);
 app.post('/api/orders', async (req, res) => {
   try {
     const order = new Order(req.body);

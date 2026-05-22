@@ -62,6 +62,7 @@
                             <div><label>L</label><input type="number" id="stock_l" class="size-stock-input w-full" value="0" min="0"></div>
                             <div><label>XL</label><input type="number" id="stock_xl" class="size-stock-input w-full" value="0" min="0"></div>
                         </div>
+                        <button type="button" onclick="markCurrentAsSoldOut()" class="mt-2 text-[10px] bg-red-600/30 text-red-300 px-3 py-1 rounded hover:bg-red-600 hover:text-white transition">Mark as Sold Out (set all stocks to 0)</button>
                     </div>
 
                     <!-- Additional Images -->
@@ -247,13 +248,23 @@
             ];
         }
 
+        function markCurrentAsSoldOut() {
+            document.getElementById('stock_s').value = 0;
+            document.getElementById('stock_m').value = 0;
+            document.getElementById('stock_l').value = 0;
+            document.getElementById('stock_xl').value = 0;
+            colorSwatches.forEach((_, idx) => { colorSwatches[idx].stock = 0; });
+            renderColorSwatches();
+            showToast('All stocks set to 0. Save the product to apply.', 'info');
+        }
+
         // ========== Save Product ==========
         async function saveProduct() {
             const name = document.getElementById('name').value.trim();
             const price = parseFloat(document.getElementById('price').value);
             if (!name || isNaN(price)) { showToast('Name and valid price required', 'error'); return; }
 
-            // Legacy colors
+            // Legacy colors: ensure it's an array of strings
             const colorsLegacyRaw = document.getElementById('colorsLegacy').value;
             const colorsLegacy = colorsLegacyRaw ? colorsLegacyRaw.split(',').map(c => c.trim()).filter(c => c) : [];
 
@@ -264,12 +275,14 @@
                 return;
             }
 
+            const sizes = getSizesWithStock();
+
             const payload = {
                 name, price,
                 description: document.getElementById('desc').value,
                 colors: colorsLegacy,
                 colorSwatches: validSwatches,
-                sizes: getSizesWithStock(),
+                sizes: sizes,
                 images: selectedImagesBase64
             };
             const productId = document.getElementById('productId').value;
@@ -277,7 +290,10 @@
             const method = productId ? 'PUT' : 'POST';
             try {
                 const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || 'Save failed');
+                }
                 showToast(productId ? 'Product updated' : 'Product created', 'success');
                 resetForm();
                 fetchProducts();
@@ -308,6 +324,31 @@
                 fetchProducts();
                 if (document.getElementById('productId').value === id) resetForm();
             } catch (err) { showToast('Delete failed', 'error'); }
+        }
+
+        // Mark any product as sold out via API
+        async function markProductSoldOut(productId) {
+            if (!confirm('Set all stocks to zero? This will mark the product as Sold Out.')) return;
+            try {
+                const res = await fetch(`/api/products/${productId}`);
+                if (!res.ok) throw new Error('Product not found');
+                const product = await res.json();
+                // Set all size stocks to 0
+                const newSizes = product.sizes.map(s => ({ ...s, stock: 0 }));
+                // Set all color swatch stocks to 0
+                const newSwatches = (product.colorSwatches || []).map(c => ({ ...c, stock: 0 }));
+                const updateRes = await fetch(`/api/products/${productId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...product, sizes: newSizes, colorSwatches: newSwatches })
+                });
+                if (!updateRes.ok) throw new Error('Update failed');
+                showToast('Product marked as Sold Out', 'success');
+                fetchProducts();
+                if (document.getElementById('productId').value === productId) {
+                    editProduct({ ...product, sizes: newSizes, colorSwatches: newSwatches });
+                }
+            } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
         }
 
         function resetForm() {
@@ -347,9 +388,10 @@
                                 <p class="text-yellow-500">${p.price} DT</p>
                                 <p class="text-[10px] text-gray-400">Swatches: ${swatchNames || 'none'}</p>
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 flex-wrap">
                                 <button onclick='editProduct(${JSON.stringify(p)})' class="bg-blue-600/30 text-blue-300 px-3 py-1 rounded text-xs">Edit</button>
-                                <button onclick='deleteProduct("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Delete</button>
+                                <button onclick='markProductSoldOut("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Sold Out</button>
+                                <button onclick='deleteProduct("${p._id}")' class="bg-gray-600/30 text-gray-300 px-3 py-1 rounded text-xs">Delete</button>
                             </div>
                         </div>`;
                     container.appendChild(card);
