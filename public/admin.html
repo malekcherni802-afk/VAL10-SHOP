@@ -15,7 +15,7 @@
         .toast-error { background: #ef4444; }
         .toast-info { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .color-swatch-item { background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .color-row { background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
         .swatch-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-top: 8px; }
         .size-stock-input { width: 70px; background: #000; border: 1px solid #333; padding: 6px; border-radius: 6px; text-align: center; }
         .image-preview { position: relative; display: inline-block; margin: 4px; }
@@ -44,14 +44,12 @@
                     <div><label class="text-xs uppercase">Price (DT) *</label><input type="number" id="price" class="w-full p-2 rounded"></div>
                     <div><label class="text-xs uppercase">Description</label><textarea id="desc" rows="3" class="w-full p-2 rounded"></textarea></div>
                     
-                    <!-- Legacy Colors (optional) -->
-                    <div><label class="text-xs uppercase">Colors (legacy, comma separated)</label><input type="text" id="colorsLegacy" class="w-full p-2 rounded" placeholder="Black, White, Red"></div>
-
-                    <!-- Color Swatches Section -->
+                    <!-- Dynamic Color Swatches Table -->
                     <div>
-                        <label class="text-xs uppercase block mb-2">Color Swatches (with image & stock)</label>
-                        <div id="colorSwatchesContainer"></div>
-                        <button type="button" onclick="addColorSwatch()" class="mt-2 bg-zinc-800 text-white px-3 py-1 rounded text-sm">+ Add Color Swatch</button>
+                        <label class="text-xs uppercase block mb-2">Color Swatches (name, hex, image, stock)</label>
+                        <div id="colorsContainer"></div>
+                        <button type="button" onclick="addColorRow()" class="mt-2 bg-zinc-800 text-white px-3 py-1 rounded text-sm">+ Add Color</button>
+                        <button type="button" onclick="markAllColorsSoldOut()" class="mt-2 ml-2 bg-red-800/50 text-red-300 px-3 py-1 rounded text-sm">Mark All Colors Sold Out (stock=0)</button>
                     </div>
 
                     <!-- Sizes with stock inputs -->
@@ -62,10 +60,9 @@
                             <div><label>L</label><input type="number" id="stock_l" class="size-stock-input w-full" value="0" min="0"></div>
                             <div><label>XL</label><input type="number" id="stock_xl" class="size-stock-input w-full" value="0" min="0"></div>
                         </div>
-                        <button type="button" onclick="markCurrentAsSoldOut()" class="mt-2 text-[10px] bg-red-600/30 text-red-300 px-3 py-1 rounded hover:bg-red-600 hover:text-white transition">Mark as Sold Out (set all stocks to 0)</button>
                     </div>
 
-                    <!-- Additional Images -->
+                    <!-- Additional Images (fallback) -->
                     <div><label class="text-xs uppercase block mb-2">Additional Images (optional)</label>
                         <input type="file" id="galleryInput" multiple accept="image/*" class="hidden" onchange="handleImageFiles(this.files)">
                         <button type="button" onclick="document.getElementById('galleryInput').click()" class="bg-zinc-800 w-full py-2 rounded text-sm">+ Select Images</button>
@@ -138,42 +135,40 @@
             });
         }
 
-        // ========== Color Swatches State ==========
-        let colorSwatches = []; // each: { name, imageBase64, stock }
+        // ========== Color Rows State ==========
+        let colorRows = []; // each: { name, hex, imageBase64, stock }
 
-        function renderColorSwatches() {
-            const container = document.getElementById('colorSwatchesContainer');
+        function renderColorRows() {
+            const container = document.getElementById('colorsContainer');
             container.innerHTML = '';
-            colorSwatches.forEach((swatch, idx) => {
+            colorRows.forEach((row, idx) => {
                 const div = document.createElement('div');
-                div.className = 'color-swatch-item';
+                div.className = 'color-row';
                 div.innerHTML = `
-                    <input type="text" placeholder="Color name (e.g. Black)" value="${escapeHtml(swatch.name)}" data-idx="${idx}" class="swatch-name w-full p-1 rounded text-sm">
-                    <div class="flex gap-2 mt-2">
-                        <input type="number" placeholder="Stock" value="${swatch.stock}" data-idx="${idx}" class="swatch-stock w-24 p-1 rounded text-sm">
-                        <button type="button" data-idx="${idx}" class="upload-swatch-img bg-blue-600/50 text-white px-2 py-1 rounded text-xs">Upload Image</button>
-                        <button type="button" data-idx="${idx}" class="remove-swatch bg-red-600/50 text-white px-2 py-1 rounded text-xs">Remove</button>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
+                        <div><label class="text-[9px]">Name</label><input type="text" data-idx="${idx}" class="color-name w-full p-1 rounded text-sm" value="${escapeHtml(row.name)}" placeholder="e.g. Black"></div>
+                        <div><label class="text-[9px]">Hex</label><input type="color" data-idx="${idx}" class="color-hex w-full p-1 rounded" value="${row.hex || '#000000'}"></div>
+                        <div><label class="text-[9px]">Stock</label><input type="number" data-idx="${idx}" class="color-stock w-full p-1 rounded text-sm" value="${row.stock}" min="0"></div>
+                        <div><label class="text-[9px]">Image</label><button type="button" data-idx="${idx}" class="upload-color-img bg-blue-600/50 text-white px-2 py-1 rounded text-xs">Upload</button></div>
+                        <div><button type="button" data-idx="${idx}" class="remove-color bg-red-600/50 text-white px-2 py-1 rounded text-xs">Remove</button></div>
                     </div>
-                    <div class="swatch-preview-container mt-2">
-                        ${swatch.imageBase64 ? `<img src="${swatch.imageBase64}" class="swatch-preview">` : '<span class="text-gray-500 text-[10px]">No image (required)</span>'}
+                    <div class="mt-2">
+                        ${row.imageBase64 ? `<img src="${row.imageBase64}" class="swatch-preview">` : '<span class="text-gray-500 text-[10px]">No image (required)</span>'}
                     </div>
                 `;
                 container.appendChild(div);
             });
             // attach events
-            document.querySelectorAll('.swatch-name').forEach(inp => {
-                inp.addEventListener('change', (e) => {
-                    const idx = parseInt(inp.dataset.idx);
-                    colorSwatches[idx].name = inp.value;
-                });
+            document.querySelectorAll('.color-name').forEach(inp => {
+                inp.addEventListener('change', (e) => { colorRows[parseInt(inp.dataset.idx)].name = inp.value; });
             });
-            document.querySelectorAll('.swatch-stock').forEach(inp => {
-                inp.addEventListener('change', (e) => {
-                    const idx = parseInt(inp.dataset.idx);
-                    colorSwatches[idx].stock = parseInt(inp.value) || 0;
-                });
+            document.querySelectorAll('.color-hex').forEach(inp => {
+                inp.addEventListener('change', (e) => { colorRows[parseInt(inp.dataset.idx)].hex = inp.value; });
             });
-            document.querySelectorAll('.upload-swatch-img').forEach(btn => {
+            document.querySelectorAll('.color-stock').forEach(inp => {
+                inp.addEventListener('change', (e) => { colorRows[parseInt(inp.dataset.idx)].stock = parseInt(inp.value) || 0; });
+            });
+            document.querySelectorAll('.upload-color-img').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const idx = parseInt(btn.dataset.idx);
                     const fileInput = document.createElement('input');
@@ -184,29 +179,35 @@
                         if (file) {
                             try {
                                 const base64 = await compressImageToBase64(file, 800, 0.6);
-                                colorSwatches[idx].imageBase64 = base64;
-                                renderColorSwatches();
+                                colorRows[idx].imageBase64 = base64;
+                                renderColorRows();
                             } catch (err) { showToast('Image compression failed', 'error'); }
                         }
                     };
                     fileInput.click();
                 });
             });
-            document.querySelectorAll('.remove-swatch').forEach(btn => {
+            document.querySelectorAll('.remove-color').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const idx = parseInt(btn.dataset.idx);
-                    colorSwatches.splice(idx, 1);
-                    renderColorSwatches();
+                    colorRows.splice(idx, 1);
+                    renderColorRows();
                 });
             });
         }
 
-        function addColorSwatch() {
-            colorSwatches.push({ name: '', imageBase64: '', stock: 0 });
-            renderColorSwatches();
+        function addColorRow() {
+            colorRows.push({ name: '', hex: '#000000', imageBase64: '', stock: 0 });
+            renderColorRows();
         }
 
-        // ========== Product Gallery (legacy) ==========
+        function markAllColorsSoldOut() {
+            colorRows.forEach(row => row.stock = 0);
+            renderColorRows();
+            showToast('All color stocks set to 0', 'info');
+        }
+
+        // ========== Additional Gallery (optional) ==========
         let selectedImagesBase64 = [];
         function updateGalleryPreview() {
             const container = document.getElementById('galleryPreview');
@@ -248,41 +249,31 @@
             ];
         }
 
-        function markCurrentAsSoldOut() {
-            document.getElementById('stock_s').value = 0;
-            document.getElementById('stock_m').value = 0;
-            document.getElementById('stock_l').value = 0;
-            document.getElementById('stock_xl').value = 0;
-            colorSwatches.forEach((_, idx) => { colorSwatches[idx].stock = 0; });
-            renderColorSwatches();
-            showToast('All stocks set to 0. Save the product to apply.', 'info');
-        }
-
         // ========== Save Product ==========
         async function saveProduct() {
             const name = document.getElementById('name').value.trim();
             const price = parseFloat(document.getElementById('price').value);
             if (!name || isNaN(price)) { showToast('Name and valid price required', 'error'); return; }
 
-            // Legacy colors: ensure it's an array of strings
-            const colorsLegacyRaw = document.getElementById('colorsLegacy').value;
-            const colorsLegacy = colorsLegacyRaw ? colorsLegacyRaw.split(',').map(c => c.trim()).filter(c => c) : [];
-
-            // Valid color swatches: must have name AND imageBase64
-            const validSwatches = colorSwatches.filter(c => c.name.trim() !== '' && c.imageBase64);
-            if (colorSwatches.length > 0 && validSwatches.length !== colorSwatches.length) {
-                showToast('Each color swatch must have a name and an image', 'error');
+            // Validate color rows: each must have name and image
+            const validColors = colorRows.filter(c => c.name.trim() !== '' && c.imageBase64);
+            if (colorRows.length > 0 && validColors.length !== colorRows.length) {
+                showToast('Each color must have a name and an image', 'error');
                 return;
             }
-
-            const sizes = getSizesWithStock();
+            // Map to the structure expected by the schema
+            const colorsForDB = validColors.map(c => ({
+                name: c.name,
+                hex: c.hex || '#000000',
+                image: c.imageBase64,
+                stock: c.stock
+            }));
 
             const payload = {
                 name, price,
                 description: document.getElementById('desc').value,
-                colors: colorsLegacy,
-                colorSwatches: validSwatches,
-                sizes: sizes,
+                colors: colorsForDB,
+                sizes: getSizesWithStock(),
                 images: selectedImagesBase64
             };
             const productId = document.getElementById('productId').value;
@@ -290,10 +281,7 @@
             const method = productId ? 'PUT' : 'POST';
             try {
                 const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error || 'Save failed');
-                }
+                if (!res.ok) throw new Error((await res.json()).error || 'Save failed');
                 showToast(productId ? 'Product updated' : 'Product created', 'success');
                 resetForm();
                 fetchProducts();
@@ -307,9 +295,8 @@
             document.getElementById('name').value = product.name;
             document.getElementById('price').value = product.price;
             document.getElementById('desc').value = product.description || '';
-            document.getElementById('colorsLegacy').value = (product.colors || []).join(', ');
-            colorSwatches = (product.colorSwatches || []).map(c => ({ name: c.name, imageBase64: c.image, stock: c.stock }));
-            renderColorSwatches();
+            colorRows = (product.colors || []).map(c => ({ name: c.name, hex: c.hex || '#000000', imageBase64: c.image, stock: c.stock }));
+            renderColorRows();
             const sizeMap = { S: 's', M: 'm', L: 'l', XL: 'xl' };
             product.sizes.forEach(s => { document.getElementById(`stock_${sizeMap[s.size]}`).value = s.stock; });
             selectedImagesBase64 = [...(product.images || [])];
@@ -326,40 +313,14 @@
             } catch (err) { showToast('Delete failed', 'error'); }
         }
 
-        // Mark any product as sold out via API
-        async function markProductSoldOut(productId) {
-            if (!confirm('Set all stocks to zero? This will mark the product as Sold Out.')) return;
-            try {
-                const res = await fetch(`/api/products/${productId}`);
-                if (!res.ok) throw new Error('Product not found');
-                const product = await res.json();
-                // Set all size stocks to 0
-                const newSizes = product.sizes.map(s => ({ ...s, stock: 0 }));
-                // Set all color swatch stocks to 0
-                const newSwatches = (product.colorSwatches || []).map(c => ({ ...c, stock: 0 }));
-                const updateRes = await fetch(`/api/products/${productId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...product, sizes: newSizes, colorSwatches: newSwatches })
-                });
-                if (!updateRes.ok) throw new Error('Update failed');
-                showToast('Product marked as Sold Out', 'success');
-                fetchProducts();
-                if (document.getElementById('productId').value === productId) {
-                    editProduct({ ...product, sizes: newSizes, colorSwatches: newSwatches });
-                }
-            } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
-        }
-
         function resetForm() {
             document.getElementById('formTitle').innerText = 'Add New Product';
             document.getElementById('productId').value = '';
             document.getElementById('name').value = '';
             document.getElementById('price').value = '';
             document.getElementById('desc').value = '';
-            document.getElementById('colorsLegacy').value = '';
-            colorSwatches = [];
-            renderColorSwatches();
+            colorRows = [];
+            renderColorRows();
             document.getElementById('stock_s').value = 0;
             document.getElementById('stock_m').value = 0;
             document.getElementById('stock_l').value = 0;
@@ -377,7 +338,7 @@
                 if (!products.length) { container.innerHTML = '<div class="text-center py-10">No products</div>'; return; }
                 container.innerHTML = '';
                 products.forEach(p => {
-                    const swatchNames = (p.colorSwatches || []).map(c => c.name).join(', ');
+                    const colorNames = (p.colors || []).map(c => c.name).join(', ');
                     const isSoldOut = p.isSoldOut;
                     const card = document.createElement('div');
                     card.className = `bg-white/5 p-4 rounded-xl border ${isSoldOut ? 'border-red-500/50' : 'border-white/10'}`;
@@ -386,12 +347,11 @@
                             <div>
                                 <h3 class="font-bold">${escapeHtml(p.name)} ${isSoldOut ? '<span class="sold-out-badge">SOLD OUT</span>' : ''}</h3>
                                 <p class="text-yellow-500">${p.price} DT</p>
-                                <p class="text-[10px] text-gray-400">Swatches: ${swatchNames || 'none'}</p>
+                                <p class="text-[10px] text-gray-400">Colors: ${colorNames || 'none'}</p>
                             </div>
-                            <div class="flex gap-2 flex-wrap">
+                            <div class="flex gap-2">
                                 <button onclick='editProduct(${JSON.stringify(p)})' class="bg-blue-600/30 text-blue-300 px-3 py-1 rounded text-xs">Edit</button>
-                                <button onclick='markProductSoldOut("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Sold Out</button>
-                                <button onclick='deleteProduct("${p._id}")' class="bg-gray-600/30 text-gray-300 px-3 py-1 rounded text-xs">Delete</button>
+                                <button onclick='deleteProduct("${p._id}")' class="bg-red-600/30 text-red-300 px-3 py-1 rounded text-xs">Delete</button>
                             </div>
                         </div>`;
                     container.appendChild(card);

@@ -9,26 +9,54 @@
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <style>
-        body { background-color: #050505; color: #ffffff; font-family: 'Syne', sans-serif; overflow-x: hidden; }
-        .gothic-text { font-family: 'Pirata One', cursive; letter-spacing: 0.1em; }
-        .fade-in { animation: fadeIn 1.2s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .product-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .product-card:hover { transform: translateY(-10px); }
-        .product-card img { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .product-card:hover img { transform: scale(1.1); }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #050505; }
-        ::-webkit-scrollbar-thumb { background: #333; }
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Syne', sans-serif;
+            overflow-x: hidden;
+        }
+        .gothic-text {
+            font-family: 'Pirata One', cursive;
+            letter-spacing: 0.1em;
+        }
+        .product-card {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-10px);
+        }
+        .product-card img {
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover img {
+            transform: scale(1.05);
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
+    <!-- Navigation -->
     <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">VAL10</h1>
+            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors" onclick="window.location.href='/'">
+                VAL10
+            </h1>
             <div class="flex items-center gap-8">
                 <button class="hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-500 hover:text-white transition">Archive</button>
-                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">COLLECTION 2026</button>
+                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior: 'smooth'})">
+                    COLLECTION 2026
+                </button>
             </div>
         </div>
     </nav>
@@ -37,13 +65,18 @@
     <header class="h-screen relative overflow-hidden">
         <div class="swiper hero-swiper h-full">
             <div class="swiper-wrapper" id="hero-swiper-wrapper">
-                <div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">Loading hero images...</span></div></div>
+                <div class="swiper-slide">
+                    <div class="w-full h-full bg-black flex items-center justify-center">
+                        <span class="text-gray-600">Loading hero images...</span>
+                    </div>
+                </div>
             </div>
             <div class="swiper-pagination"></div>
             <div class="swiper-button-next !text-white"></div>
             <div class="swiper-button-prev !text-white"></div>
         </div>
 
+        <!-- Overlay text (centered) -->
         <div class="absolute inset-0 z-20 flex flex-col justify-center items-center text-center px-4 bg-black/40">
             <span class="text-[10px] tracking-[0.8em] uppercase text-gray-200 mb-4 block">Est. MMXXIV</span>
             <h2 id="hero-title" class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
@@ -60,17 +93,25 @@
         </div>
     </header>
 
+    <!-- Products Section -->
     <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-4">
-            <div><h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3><p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p></div>
+            <div>
+                <h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3>
+                <p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p>
+            </div>
             <div class="h-[1px] flex-1 bg-white/10 mx-10 hidden md:block mb-4"></div>
             <span class="text-[10px] text-gray-400 tracking-widest uppercase italic">Drop 1.0</span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
-            <div class="col-span-full flex flex-col items-center py-20"><div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div><p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p></div>
+            <div class="col-span-full flex flex-col items-center py-20">
+                <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+                <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
+            </div>
         </div>
     </main>
 
+    <!-- Footer -->
     <footer class="border-t border-white/5 py-20 bg-black">
         <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
             <h4 class="gothic-text text-4xl mb-8 tracking-widest">VAL10</h4>
@@ -86,18 +127,33 @@
     <script>
         let heroSwiper = null;
 
+        // Load homepage hero (title + slider images)
         async function loadHomepageHero() {
             try {
-                const res = await fetch('/api/homepage-hero', { cache: 'no-store' });
-                const data = await res.json();
-                if (data.title) document.getElementById('hero-title').innerHTML = data.title;
-                const heroImages = data.heroImages || [];
-                const wrapper = document.getElementById('hero-swiper-wrapper');
-                if (heroImages.length) {
-                    wrapper.innerHTML = heroImages.map(url => `<div class="swiper-slide"><img src="${url}" class="w-full h-full object-cover grayscale" alt="Hero"></div>`).join('');
-                } else {
-                    wrapper.innerHTML = '<div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">No hero images</span></div></div>';
+                const response = await fetch('/api/homepage-hero', { cache: 'no-store' });
+                if (!response.ok) throw new Error('Failed to fetch hero');
+                const data = await response.json();
+                
+                // Update title
+                if (data.title) {
+                    document.getElementById('hero-title').innerHTML = data.title;
                 }
+                
+                // Update hero slider images
+                const heroImages = data.heroImages || [];
+                const swiperWrapper = document.getElementById('hero-swiper-wrapper');
+                
+                if (heroImages.length === 0) {
+                    swiperWrapper.innerHTML = `<div class="swiper-slide"><div class="w-full h-full bg-black flex items-center justify-center"><span class="text-gray-600">No hero images</span></div></div>`;
+                } else {
+                    swiperWrapper.innerHTML = heroImages.map(url => `
+                        <div class="swiper-slide">
+                            <img src="${url}" class="w-full h-full object-cover grayscale" alt="Hero">
+                        </div>
+                    `).join('');
+                }
+                
+                // Initialize or reinitialize Swiper
                 if (heroSwiper) heroSwiper.destroy(true, true);
                 heroSwiper = new Swiper('.hero-swiper', {
                     loop: heroImages.length > 1,
@@ -107,50 +163,85 @@
                     effect: 'fade',
                     fadeEffect: { crossFade: true }
                 });
-            } catch (err) { console.error(err); }
+            } catch (error) {
+                console.error('Hero load error:', error);
+            }
         }
 
+        // Fetch and display products
         async function fetchProducts() {
             const grid = document.getElementById('product-grid');
             try {
-                const res = await fetch('/api/products');
-                if (!res.ok) throw new Error();
-                const products = await res.json();
+                const response = await fetch('/api/products');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const products = await response.json();
+                
                 grid.innerHTML = '';
-                if (!products.length) { grid.innerHTML = '<p class="text-gray-500 text-center col-span-full py-20">Archive Empty</p>'; return; }
-                products.forEach(p => {
-                    const imgUrl = p.images?.[0] || "https://via.placeholder.com/600x800/111/333?text=VAL10";
-                    const isSoldOut = p.isSoldOut;
+                if (!products.length) {
+                    grid.innerHTML = '<p class="text-gray-500 text-center w-full col-span-full py-20 uppercase tracking-[0.5em] text-xs">Archive Empty</p>';
+                    return;
+                }
+                
+                products.forEach(product => {
+                    // Get primary image: first color swatch image, then first gallery image, then fallback
+                    let imgUrl = 'https://via.placeholder.com/600x800/111/333?text=VAL10';
+                    if (product.colors && product.colors.length > 0 && product.colors[0].image) {
+                        imgUrl = product.colors[0].image;
+                    } else if (product.images && product.images.length > 0) {
+                        imgUrl = product.images[0];
+                    }
+                    
+                    const isSoldOut = product.isSoldOut === true;
                     const card = document.createElement('div');
-                    card.className = `group cursor-pointer fade-in product-card ${isSoldOut ? 'opacity-80' : ''}`;
-                    card.onclick = () => window.location.href = `/product?id=${p._id}`;
+                    card.className = `group cursor-pointer product-card ${isSoldOut ? 'opacity-80' : ''}`;
+                    card.onclick = () => window.location.href = `/product?id=${product._id}`;
                     card.innerHTML = `
-                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5">
-                            <img src="${imgUrl}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" loading="lazy" alt="${p.name}">
+                        <div class="relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-8 border border-white/5 rounded-xl">
+                            <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" loading="lazy" alt="${escapeHtml(product.name)}">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                                 <div class="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                    <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
+                                    <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase rounded-full">View Piece</span>
                                 </div>
                             </div>
-                            ${isSoldOut ? '<div class="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black px-2 py-1 uppercase">Sold Out</div>' : ''}
+                            ${isSoldOut ? '<div class="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black px-3 py-1.5 uppercase rounded-full tracking-wider shadow-lg">Sold Out</div>' : ''}
                         </div>
                         <div class="px-2">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${escapeHtml(p.name)}</h3>
-                                <span class="font-mono text-gray-400">${p.price} DT</span>
+                                <h3 class="text-lg font-bold uppercase tracking-tighter text-gray-100 truncate">${escapeHtml(product.name)}</h3>
+                                <span class="font-mono text-gray-400">${product.price} DT</span>
                             </div>
                             <p class="text-[9px] tracking-[0.2em] text-gray-600 uppercase">Limited Edition Drop</p>
-                            ${p.sizes && p.sizes.length ? `<p class="text-[8px] text-yellow-600 mt-2">Sizes: ${p.sizes.map(s => s.size).join(', ')}</p>` : ''}
+                            ${product.colors && product.colors.length ? `<p class="text-[8px] text-yellow-600 mt-2">Colors: ${product.colors.map(c => c.name).join(', ')}</p>` : ''}
                         </div>
                     `;
                     grid.appendChild(card);
                 });
-            } catch (err) { grid.innerHTML = `<div class="col-span-full text-center py-20 text-red-500">Error loading products</div>`; }
+            } catch (error) {
+                console.error('Products error:', error);
+                grid.innerHTML = `<div class="col-span-full text-center py-20">
+                    <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
+                    <p class="text-gray-600 text-[9px]">${error.message}</p>
+                    <button onclick="fetchProducts()" class="mt-4 text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border border-white/20 px-4 py-2 rounded">Retry</button>
+                </div>`;
+            }
         }
 
-        function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+        // Simple XSS prevention
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
 
-        window.onload = () => { loadHomepageHero(); fetchProducts(); };
+        // Initialize everything
+        window.onload = () => {
+            loadHomepageHero();
+            fetchProducts();
+        };
     </script>
 </body>
 </html>

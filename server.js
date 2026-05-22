@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = express();
 
+// Middleware – large payload for Base64 images
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -25,31 +26,32 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },
   description: { type: String, default: '' },
-  colors: [{ type: String }],                 // legacy simple color names
-  colorSwatches: [{
+  colors: [{
     name: { type: String, required: true },
-    image: { type: String, required: true },
+    hex: { type: String, default: '#000000' },
+    image: { type: String, required: true },   // Base64 compressed image
     stock: { type: Number, default: 0, min: 0 }
   }],
   sizes: [{
     size: { type: String, enum: ['S', 'M', 'L', 'XL'], required: true },
     stock: { type: Number, default: 0, min: 0 }
   }],
-  images: [{ type: String }],
+  images: [{ type: String }],   // fallback gallery (optional)
   isSoldOut: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
-// Auto‑compute isSoldOut
+// Auto‑compute isSoldOut: true if all color stocks === 0 AND all size stocks === 0
 productSchema.pre('save', function(next) {
+  const allColorsZero = this.colors.every(c => c.stock === 0);
   const allSizesZero = this.sizes.every(s => s.stock === 0);
-  const allSwatchesZero = (this.colorSwatches || []).every(c => c.stock === 0);
-  this.isSoldOut = allSizesZero && allSwatchesZero;
+  this.isSoldOut = allColorsZero && allSizesZero;
   next();
 });
 
 const Product = mongoose.model('Product', productSchema);
 
+// Homepage banner schema (unchanged)
 const bannerSchema = new mongoose.Schema({
   title: { type: String, default: 'VAL10 Collection' },
   heroImages: [{ type: String }],
@@ -57,9 +59,10 @@ const bannerSchema = new mongoose.Schema({
 });
 const Banner = mongoose.model('Banner', bannerSchema);
 
+// Order schema (simplified for demo)
 const orderSchema = new mongoose.Schema({
   customerName: String, customerPhone: String, customerAddress: String,
-  productName: String, size: String, color: String, totalPrice: Number,
+  productName: String, color: String, size: String, totalPrice: Number,
   status: { type: String, default: 'Pending' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -83,9 +86,9 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, price, description, colors, colorSwatches, sizes, images } = req.body;
+    const { name, price, description, colors, sizes, images } = req.body;
     if (!name || price === undefined) return res.status(400).json({ error: 'Name and price required' });
-    const product = new Product({ name, price, description, colors, colorSwatches, sizes, images });
+    const product = new Product({ name, price, description, colors, sizes, images });
     await product.save();
     res.status(201).json(product);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -106,6 +109,7 @@ app.delete('/api/products/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Homepage banner endpoints
 app.get('/api/homepage-hero', async (req, res) => {
   try {
     let banner = await Banner.findOne();
@@ -129,6 +133,7 @@ app.post('/api/homepage-hero', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Order endpoint
 app.post('/api/orders', async (req, res) => {
   try {
     const order = new Order(req.body);
@@ -137,6 +142,7 @@ app.post('/api/orders', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Frontend routes
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/product', (req, res) => res.sendFile(path.join(__dirname, 'public', 'product.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

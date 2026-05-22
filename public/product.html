@@ -14,7 +14,7 @@
         .swiper-pagination-bullet { background: #fff !important; }
         .size-btn.active { background: white; color: black; border-color: white; }
         .color-swatch {
-            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+            width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
             border: 2px solid transparent; transition: all 0.2s;
             background-size: cover; background-position: center;
         }
@@ -60,7 +60,7 @@
                 </div>
 
                 <!-- Color Swatches -->
-                <div class="space-y-3">
+                <div class="space-y-3" id="color-section" style="display: none;">
                     <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Colors</h4>
                     <div id="color-swatches-container" class="flex flex-wrap gap-3"></div>
                 </div>
@@ -103,7 +103,6 @@
         let currentProduct = null;
         let selectedSize = '';
         let selectedColor = null;
-
         let mainSwiper = null;
 
         async function loadProduct() {
@@ -117,13 +116,24 @@
                 document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
                 document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED.";
 
-                // Set overall stock status
-                const anyStock = currentProduct.sizes.some(s => s.stock > 0) || currentProduct.colors.some(c => c.stock > 0);
-                document.getElementById('stock-status').innerText = anyStock ? "In Stock" : "Sold Out";
-                document.getElementById('stock-status').className = anyStock ? "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase" : "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
+                // Overall stock status (colors + sizes)
+                const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
+                const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
+                const inStock = anyColorStock || anySizeStock;
+                const stockSpan = document.getElementById('stock-status');
+                stockSpan.innerText = inStock ? "In Stock" : "Sold Out";
+                stockSpan.className = inStock ? "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase" : "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
 
                 // Render color swatches
-                renderColorSwatches();
+                if (currentProduct.colors && currentProduct.colors.length > 0) {
+                    document.getElementById('color-section').style.display = 'block';
+                    renderColorSwatches();
+                } else {
+                    document.getElementById('color-section').style.display = 'none';
+                    // If no colors, use first fallback image
+                    selectedColor = null;
+                    updateMainImages();
+                }
 
                 // Render sizes
                 const sizeContainer = document.getElementById('size-container');
@@ -135,8 +145,10 @@
                     selectedSize = 'One Size';
                 }
 
-                // Initialize main swiper with first color image or first available image
-                updateMainImages();
+                // If no swatches, still show images
+                if (!currentProduct.colors || currentProduct.colors.length === 0) {
+                    updateMainImages();
+                }
             } catch (error) {
                 console.error(error);
                 document.getElementById('p-name').innerText = 'Product Not Found';
@@ -155,17 +167,16 @@
                 const swatch = document.createElement('div');
                 swatch.className = `color-swatch ${isSoldOut ? 'sold-out' : ''} ${selectedColor === color ? 'active' : ''}`;
                 swatch.style.backgroundImage = `url(${color.image})`;
-                swatch.style.backgroundSize = 'cover';
                 if (!isSoldOut) {
                     swatch.onclick = () => {
                         selectedColor = color;
-                        renderColorSwatches(); // re-render to update active class
-                        updateMainImages();    // change main image to this color's image
+                        renderColorSwatches();
+                        updateMainImages();
                     };
                 }
                 container.appendChild(swatch);
             });
-            // If no color selected and there is at least one in-stock color, select the first
+            // Auto-select first in-stock color if none selected
             if (!selectedColor && currentProduct.colors.length) {
                 const firstInStock = currentProduct.colors.find(c => c.stock > 0) || currentProduct.colors[0];
                 selectedColor = firstInStock;
@@ -175,7 +186,6 @@
         }
 
         function updateMainImages() {
-            // Determine images to show in swiper: if a color is selected, use its image; otherwise use product.images
             let imagesArray = [];
             if (selectedColor && selectedColor.image) {
                 imagesArray = [selectedColor.image];
@@ -202,7 +212,7 @@
 
         function openModal() {
             if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT SIZE FIRST."); return; }
-            if (!selectedColor && currentProduct.colors?.length) { alert("SELECT COLOR."); return; }
+            if (currentProduct.colors && currentProduct.colors.length && !selectedColor) { alert("SELECT COLOR."); return; }
             document.getElementById('modal').classList.remove('hidden');
         }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
@@ -215,8 +225,8 @@
             const orderData = {
                 customerName: name, customerPhone: phone, customerAddress: addr,
                 productName: currentProduct.name,
-                size: selectedSize,
                 color: selectedColor ? selectedColor.name : '',
+                size: selectedSize,
                 totalPrice: currentProduct.price
             };
             try {
