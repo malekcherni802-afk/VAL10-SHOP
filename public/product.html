@@ -7,34 +7,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { 'gothic': ['"Pirata One"'], 'body': ['"Syne"'] }
-                }
-            }
-        }
-    </script>
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <style>
-        body { background-color: #050505; color: #ffffff; font-family: 'Syne'; overflow-x: hidden; }
+        body { background: #050505; color: white; font-family: 'Syne'; }
         .gothic-text { font-family: 'Pirata One'; letter-spacing: 0.2em; }
         .swiper-pagination-bullet { background: #fff !important; }
         .size-btn.active { background: white; color: black; border-color: white; }
+        .color-swatch {
+            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.2s;
+            background-size: cover; background-position: center;
+        }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: white; box-shadow: 0 0 0 2px black, 0 0 0 4px white; }
+        .color-swatch.sold-out { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
         .fade-in { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased selection:bg-white selection:text-black">
+<body class="antialiased">
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-3xl gothic-text cursor-pointer uppercase hover:opacity-70 transition" onclick="window.location.href='/'">VAL10</h1>
-            <a href="/" class="text-[10px] tracking-widest uppercase text-gray-400 hover:text-white transition">Back to Archive</a>
+            <h1 class="text-3xl gothic-text cursor-pointer" onclick="window.location.href='/'">VAL10</h1>
+            <a href="/" class="text-[10px] tracking-widest uppercase text-gray-400 hover:text-white">Back to Archive</a>
         </div>
     </nav>
 
     <main class="pt-32 pb-20 max-w-7xl mx-auto px-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+            <!-- Main Image Gallery (Swiper) -->
             <div class="space-y-4 fade-in">
                 <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden">
                     <div class="swiper-wrapper" id="image-wrapper"></div>
@@ -43,35 +44,40 @@
                 <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic">Swipe to view details</p>
             </div>
 
+            <!-- Product Info -->
             <div class="flex flex-col space-y-10 fade-in" style="animation-delay: 0.2s;">
                 <header>
                     <h2 id="p-name" class="text-5xl md:text-7xl font-extrabold uppercase tracking-tighter leading-none mb-4">Loading...</h2>
                     <div class="flex items-center gap-4">
-                        <span id="p-price" class="text-2xl font-mono text-white">-- DT</span>
-                        <span class="text-[10px] px-2 py-1 border border-white/10 text-gray-500 uppercase">In Stock</span>
+                        <span id="p-price" class="text-2xl font-mono">-- DT</span>
+                        <span id="stock-status" class="text-[10px] px-2 py-1 border border-white/10 text-gray-500 uppercase">In Stock</span>
                     </div>
                 </header>
+
                 <div class="space-y-4">
                     <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">The Narrative</h4>
                     <p id="p-desc" class="text-sm text-gray-400 leading-relaxed max-w-md italic"></p>
                 </div>
-                <div class="space-y-6">
+
+                <!-- Color Swatches -->
+                <div class="space-y-3">
+                    <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Colors</h4>
+                    <div id="color-swatches-container" class="flex flex-wrap gap-3"></div>
+                </div>
+
+                <!-- Sizes -->
+                <div class="space-y-3">
                     <div class="flex justify-between items-center max-w-sm">
                         <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Dimensions</h4>
-                        <button class="text-[9px] text-gray-600 underline uppercase tracking-widest">Size Guide</button>
+                        <button class="text-[9px] text-gray-600 underline uppercase">Size Guide</button>
                     </div>
                     <div id="size-container" class="flex flex-wrap gap-3"></div>
                 </div>
+
                 <button onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
                     <span class="relative z-10">Acquire Piece</span>
                     <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
                 </button>
-                <div class="pt-10 border-t border-white/5 space-y-4">
-                    <details class="group cursor-pointer">
-                        <summary class="text-[10px] uppercase tracking-widest list-none flex justify-between text-gray-500 group-open:text-white">Shipping & Returns <span>+</span></summary>
-                        <p class="text-[10px] text-gray-600 mt-4 leading-relaxed uppercase">Domestic delivery within 2-4 business days. All archive sales are final.</p>
-                    </details>
-                </div>
             </div>
         </div>
     </main>
@@ -83,20 +89,22 @@
                 <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="space-y-4">
-                <input type="text" id="cust-name" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
-                <input type="text" id="cust-phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
-                <input type="text" id="cust-addr" placeholder="SHIPPING ADDRESS (CITY, ZIP)" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none transition-colors uppercase tracking-widest">
+                <input type="text" id="cust-name" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
+                <input type="text" id="cust-phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
+                <input type="text" id="cust-addr" placeholder="SHIPPING ADDRESS (CITY, ZIP)" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
             </div>
             <button onclick="submitOrder()" class="w-full bg-white text-black py-4 font-black uppercase text-xs tracking-[0.4em]">Confirm Purchase</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
         let currentProduct = null;
         let selectedSize = '';
+        let selectedColor = null;
+
+        let mainSwiper = null;
 
         async function loadProduct() {
             try {
@@ -109,23 +117,81 @@
                 document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
                 document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED.";
 
-                const wrapper = document.getElementById('image-wrapper');
-                let imgs = (currentProduct.images && currentProduct.images.length) ? currentProduct.images : ['https://via.placeholder.com/800/111/333?text=VAL10'];
-                wrapper.innerHTML = imgs.map(img => `<div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500" alt="${currentProduct.name}"></div>`).join('');
-                new Swiper(".mySwiper", { pagination: { el: ".swiper-pagination", clickable: true }, loop: imgs.length > 1, autoplay: imgs.length > 1 ? { delay: 3000, disableOnInteraction: false } : false });
+                // Set overall stock status
+                const anyStock = currentProduct.sizes.some(s => s.stock > 0) || currentProduct.colors.some(c => c.stock > 0);
+                document.getElementById('stock-status').innerText = anyStock ? "In Stock" : "Sold Out";
+                document.getElementById('stock-status').className = anyStock ? "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase" : "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
 
+                // Render color swatches
+                renderColorSwatches();
+
+                // Render sizes
                 const sizeContainer = document.getElementById('size-container');
                 if (currentProduct.sizes && currentProduct.sizes.length) {
                     sizeContainer.innerHTML = currentProduct.sizes.map(s => `<button onclick="selectSize(this, '${s.size}')" class="size-btn border border-white/10 px-8 py-3 text-[10px] font-bold uppercase hover:border-white transition-all">${s.size}</button>`).join('');
-                    if (currentProduct.sizes[0]) selectedSize = currentProduct.sizes[0].size;
+                    if (currentProduct.sizes[0]) selectSize(document.querySelector('.size-btn'), currentProduct.sizes[0].size);
                 } else {
                     sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
                     selectedSize = 'One Size';
                 }
+
+                // Initialize main swiper with first color image or first available image
+                updateMainImages();
             } catch (error) {
+                console.error(error);
                 document.getElementById('p-name').innerText = 'Product Not Found';
-                document.getElementById('p-desc').innerText = 'This product may have been removed.';
             }
+        }
+
+        function renderColorSwatches() {
+            const container = document.getElementById('color-swatches-container');
+            if (!currentProduct.colors || currentProduct.colors.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-[10px]">No color variants</p>';
+                return;
+            }
+            container.innerHTML = '';
+            currentProduct.colors.forEach((color, idx) => {
+                const isSoldOut = color.stock === 0;
+                const swatch = document.createElement('div');
+                swatch.className = `color-swatch ${isSoldOut ? 'sold-out' : ''} ${selectedColor === color ? 'active' : ''}`;
+                swatch.style.backgroundImage = `url(${color.image})`;
+                swatch.style.backgroundSize = 'cover';
+                if (!isSoldOut) {
+                    swatch.onclick = () => {
+                        selectedColor = color;
+                        renderColorSwatches(); // re-render to update active class
+                        updateMainImages();    // change main image to this color's image
+                    };
+                }
+                container.appendChild(swatch);
+            });
+            // If no color selected and there is at least one in-stock color, select the first
+            if (!selectedColor && currentProduct.colors.length) {
+                const firstInStock = currentProduct.colors.find(c => c.stock > 0) || currentProduct.colors[0];
+                selectedColor = firstInStock;
+                renderColorSwatches();
+                updateMainImages();
+            }
+        }
+
+        function updateMainImages() {
+            // Determine images to show in swiper: if a color is selected, use its image; otherwise use product.images
+            let imagesArray = [];
+            if (selectedColor && selectedColor.image) {
+                imagesArray = [selectedColor.image];
+            } else if (currentProduct.images && currentProduct.images.length) {
+                imagesArray = currentProduct.images;
+            } else {
+                imagesArray = ['https://via.placeholder.com/800/111/333?text=VAL10'];
+            }
+            const wrapper = document.getElementById('image-wrapper');
+            wrapper.innerHTML = imagesArray.map(img => `<div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500" alt="${currentProduct.name}"></div>`).join('');
+            if (mainSwiper) mainSwiper.destroy(true, true);
+            mainSwiper = new Swiper(".mySwiper", {
+                pagination: { el: ".swiper-pagination", clickable: true },
+                loop: imagesArray.length > 1,
+                autoplay: imagesArray.length > 1 ? { delay: 3000, disableOnInteraction: false } : false
+            });
         }
 
         function selectSize(btn, size) {
@@ -136,6 +202,7 @@
 
         function openModal() {
             if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT SIZE FIRST."); return; }
+            if (!selectedColor && currentProduct.colors?.length) { alert("SELECT COLOR."); return; }
             document.getElementById('modal').classList.remove('hidden');
         }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
@@ -145,11 +212,17 @@
             const phone = document.getElementById('cust-phone').value.trim();
             const addr = document.getElementById('cust-addr').value.trim();
             if (!name || !phone || !addr) { alert("COMPLETE ALL FIELDS."); return; }
+            const orderData = {
+                customerName: name, customerPhone: phone, customerAddress: addr,
+                productName: currentProduct.name,
+                size: selectedSize,
+                color: selectedColor ? selectedColor.name : '',
+                totalPrice: currentProduct.price
+            };
             try {
                 const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customerName: name, customerPhone: phone, customerAddress: addr, productName: currentProduct.name, size: selectedSize, totalPrice: currentProduct.price })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
                 });
                 if (!res.ok) throw new Error(await res.text());
                 alert("ARCHIVE SECURED. WE WILL CONTACT YOU SOON.");
