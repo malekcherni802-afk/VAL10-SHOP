@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAL10 | Order Confirmed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background: #050505; color: white; font-family: 'Syne', sans-serif; }
+        .gothic-text { font-family: 'Pirata One'; letter-spacing: 0.2em; }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .checkmark-circle {
+            width: 72px; height: 72px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Nav -->
+    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+            <h1 class="text-3xl gothic-text cursor-pointer hover:text-gray-400 transition-colors"
+                onclick="window.location.href='/'">VAL10</h1>
+        </div>
+    </nav>
+
+    <main class="flex-1 flex items-center justify-center pt-24 pb-20 px-6">
+        <div class="max-w-md w-full text-center fade-in">
+
+            <div class="checkmark-circle">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+
+            <p class="text-[9px] tracking-[0.5em] text-gray-600 uppercase mb-3">Archive Secured</p>
+            <h2 class="gothic-text text-5xl md:text-6xl mb-6">Order Confirmed</h2>
+            <p class="text-gray-400 text-sm leading-relaxed mb-10 max-w-sm mx-auto">
+                Your piece has been reserved. We will contact you shortly on the phone number you provided to arrange delivery.
+            </p>
+
+            <!-- Order summary card -->
+            <div id="order-summary" class="bg-white/3 border border-white/8 rounded-sm p-6 text-left space-y-3 mb-10 hidden">
+                <div class="flex justify-between items-center border-b border-white/8 pb-3 mb-3">
+                    <span class="text-[9px] tracking-[0.4em] uppercase text-gray-500">Order Reference</span>
+                    <span id="order-id" class="font-mono text-[10px] text-gray-400"></span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-gray-500 uppercase tracking-widest">Product</span>
+                    <span id="conf-product" class="text-gray-200 font-bold text-right max-w-[60%]"></span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-gray-500 uppercase tracking-widest">Size</span>
+                    <span id="conf-size" class="text-yellow-500 font-mono"></span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-gray-500 uppercase tracking-widest">Color</span>
+                    <span id="conf-color" class="text-gray-300"></span>
+                </div>
+                <div class="flex justify-between text-[11px] pt-2 border-t border-white/8 mt-2">
+                    <span class="text-gray-500 uppercase tracking-widest">Total</span>
+                    <span id="conf-price" class="text-white font-black text-sm"></span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-gray-500 uppercase tracking-widest">Phone</span>
+                    <span id="conf-phone" class="text-gray-300 font-mono"></span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <a href="/"
+                   class="block w-full bg-white text-black py-4 font-black uppercase text-xs tracking-[0.3em] hover:bg-gray-100 transition-colors text-center">
+                    Back to Archive
+                </a>
+                <p class="text-[9px] text-gray-700 tracking-widest uppercase">
+                    Keep this page as your purchase reference.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+<script>
+(async () => {
+    const params  = new URLSearchParams(window.location.search);
+    const orderId = params.get('orderId');
+    if (!orderId) return;
+
+    try {
+        const res = await fetch(`/api/orders/${orderId}`);
+        if (!res.ok) return;
+        const order = await res.json();
+
+        document.getElementById('order-id').textContent    = orderId.slice(-10).toUpperCase();
+        document.getElementById('conf-product').textContent = order.productName  || '—';
+        document.getElementById('conf-size').textContent    = order.size         || '—';
+        document.getElementById('conf-color').textContent   = order.colorName    || '—';
+        document.getElementById('conf-price').textContent   = `${order.totalPrice} TND`;
+        document.getElementById('conf-phone').textContent   = order.customerPhone || '—';
+        document.getElementById('order-summary').classList.remove('hidden');
+    } catch (_) { /* order summary is optional — don't crash if fetch fails */ }
+})();
+</script>
+</body>
+</html>

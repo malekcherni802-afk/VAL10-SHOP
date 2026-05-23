@@ -528,6 +528,17 @@ let allOrders       = [];
 let editingId       = null;
 let confirmCallback = null;
 
+/* ─── XSS Protection ─────────────────────────────────────────── */
+// FIX: escape all user-supplied strings before inserting into innerHTML
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* ─── Toast ─────────────────────────────────────────────────── */
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
@@ -559,7 +570,8 @@ function updateStats() {
   document.getElementById('stat-products').textContent = allProducts.length;
   document.getElementById('stat-orders').textContent   = allOrders.length;
   document.getElementById('stat-pending').textContent  = allOrders.filter(o => o.status === 'Pending').length;
-  const rev = allOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
+  // FIX: only count Delivered orders in revenue (exclude Cancelled/Pending)
+  const rev = allOrders.filter(o => o.status === 'Delivered').reduce((s, o) => s + (o.totalPrice || 0), 0);
   document.getElementById('stat-revenue').textContent  = rev.toFixed(0) + ' TND';
   renderDashOrders();
 }
@@ -567,8 +579,10 @@ function updateStats() {
 /* ─── Products ────────────────────────────────────────────────── */
 async function fetchProducts() {
   try {
-    const res = await fetch(`${API}/api/products`);
-    allProducts = await res.json();
+    const res  = await fetch(`${API}/api/products`);
+    const data = await res.json();
+    // FIX: handle paginated response { products, total }
+    allProducts = Array.isArray(data) ? data : (data.products || []);
     renderProducts();
     document.getElementById('product-count').textContent = `${allProducts.length} items`;
   } catch (e) {
@@ -630,8 +644,8 @@ function renderProducts() {
 
     return `<tr>
       <td>${thumb}</td>
-      <td style="font-weight:500">${p.name}</td>
-      <td style="font-family:var(--font-mono)">${p.price} TND</td>
+      <td style="font-weight:500">${escHtml(p.name)}</td>
+      <td style="font-family:var(--font-mono)">${escHtml(String(p.price))} TND</td>
       <td>${getSizesDisplay(p)}</td>
       <td><div class="color-dots">${dots || '<span style="color:var(--muted)">—</span>'}</div></td>
       <td>${stockBadge}</td>
@@ -966,8 +980,10 @@ async function deleteProduct(id) {
 /* ─── Orders ─────────────────────────────────────────────────── */
 async function fetchOrders() {
   try {
-    const res = await fetch(`${API}/api/orders`);
-    allOrders = await res.json();
+    const res  = await fetch(`${API}/api/orders`);
+    const data = await res.json();
+    // FIX: handle paginated response { orders, total }
+    allOrders = Array.isArray(data) ? data : (data.orders || []);
     renderOrders();
     renderDashOrders();
     updateStats();
@@ -986,13 +1002,13 @@ function renderOrders() {
   tbody.innerHTML = allOrders.map(o => {
     const date = new Date(o.createdAt).toLocaleDateString();
     return `<tr>
-      <td style="font-weight:500">${o.customerName}</td>
-      <td style="font-family:var(--font-mono);font-size:0.75rem">${o.customerPhone}</td>
-      <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.customerAddress}</td>
-      <td>${o.productName}</td>
+      <td style="font-weight:500">${escHtml(o.customerName)}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(o.customerPhone)}</td>
+      <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(o.customerAddress)}</td>
+      <td>${escHtml(o.productName)}</td>
       <td><span class="badge badge-gray">${o.size || '—'}</span></td>
       <td>${o.colorName || '—'}</td>
-      <td style="font-family:var(--font-mono)">${o.totalPrice} TND</td>
+      <td style="font-family:var(--font-mono)">${escHtml(String(o.totalPrice))} TND</td>
       <td>
         <select class="order-status" onchange="updateOrderStatus('${o._id}', this.value)">
           ${['Pending','Confirmed','Shipped','Delivered','Cancelled'].map(s =>
@@ -1020,11 +1036,11 @@ function renderDashOrders() {
   tbody.innerHTML = recent.map(o => {
     const date = new Date(o.createdAt).toLocaleDateString();
     return `<tr>
-      <td style="font-weight:500">${o.customerName}</td>
-      <td>${o.productName}</td>
+      <td style="font-weight:500">${escHtml(o.customerName)}</td>
+      <td>${escHtml(o.productName)}</td>
       <td><span class="badge badge-gray">${o.size || '—'}</span></td>
       <td>${o.colorName || '—'}</td>
-      <td style="font-family:var(--font-mono)">${o.totalPrice} TND</td>
+      <td style="font-family:var(--font-mono)">${escHtml(String(o.totalPrice))} TND</td>
       <td>${statusBadge(o.status)}</td>
       <td style="font-size:0.75rem;color:var(--muted)">${date}</td>
     </tr>`;

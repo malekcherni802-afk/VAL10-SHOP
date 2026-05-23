@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VAL10 | Archive Piece</title>
+    <!-- OG_PLACEHOLDER -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
@@ -105,6 +106,54 @@
         }
         .modal-input::placeholder { color: rgba(255,255,255,0.25); }
         .modal-input:focus { border-bottom-color: white; }
+
+        /* ── Image zoom lightbox ─────────────────────────────── */
+        #zoom-overlay {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.95); cursor: zoom-out;
+            align-items: center; justify-content: center;
+        }
+        #zoom-overlay.open { display: flex; }
+        #zoom-overlay img {
+            max-width: 92vw; max-height: 92vh; object-fit: contain;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        #zoom-close {
+            position: fixed; top: 20px; right: 24px; background: none;
+            border: 1px solid rgba(255,255,255,0.2); color: white;
+            font-size: 1.4rem; line-height: 1; cursor: pointer;
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        #zoom-close:hover { background: rgba(255,255,255,0.1); }
+
+        /* ── Size guide modal ────────────────────────────────── */
+        #sizeguide-overlay {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.92); align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        #sizeguide-overlay.open { display: flex; }
+        .sg-box {
+            background: #111; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 28px; max-width: 480px; width: 100%;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .sg-box h3 { font-family: 'Pirata One'; font-size: 1.4rem; letter-spacing: 0.2em; margin-bottom: 16px; }
+        .sg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .sg-table th { padding: 8px 10px; text-align: left; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.15em; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sg-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.75); font-family: 'Space Mono', monospace; font-size: 10px; }
+        .sg-table tr:last-child td { border-bottom: none; }
+
+        /* ── Spinner on submit button ────────────────────────── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -136,7 +185,7 @@
                     <p class="text-[9px] tracking-[0.4em] text-gray-600 uppercase mb-3" id="p-category">Underground</p>
                     <h2 id="p-name" class="text-5xl md:text-7xl font-extrabold uppercase tracking-tighter leading-none mb-4">Loading…</h2>
                     <div class="flex items-center gap-4">
-                        <span id="p-price" class="text-2xl font-mono text-gray-300">— DT</span>
+                        <span id="p-price" class="text-2xl font-mono text-gray-300">— TND</span>
                         <span id="stock-status"
                               class="text-[10px] px-3 py-1 border border-white/10 text-gray-500 uppercase tracking-widest rounded-sm">
                             Checking…
@@ -163,6 +212,7 @@
                 <div class="space-y-4" id="sizes-section">
                     <div class="flex items-center justify-between max-w-sm">
                         <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Dimensions</h4>
+                        <button onclick="document.getElementById('sizeguide-overlay').classList.add('open')" class="text-[9px] tracking-widest uppercase text-gray-600 hover:text-white transition-colors underline underline-offset-2 cursor-pointer">Size Guide</button>
                         <span id="selected-size-label" class="text-[10px] text-yellow-600 uppercase tracking-widest font-mono"></span>
                     </div>
                     <div id="size-container" class="flex flex-wrap gap-3"></div>
@@ -182,6 +232,48 @@
             </div>
         </div>
     </main>
+
+    <!-- Image Zoom Lightbox -->
+    <div id="zoom-overlay" onclick="closeZoom()">
+        <button id="zoom-close" onclick="closeZoom()" aria-label="Close zoom">&times;</button>
+        <img id="zoom-img" src="" alt="Product zoom" onclick="event.stopPropagation()" />
+    </div>
+
+    <!-- Size Guide Modal -->
+    <div id="sizeguide-overlay" onclick="closeSizeGuide()">
+        <div class="sg-box" onclick="event.stopPropagation()">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3>Size Guide</h3>
+                <button onclick="closeSizeGuide()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.4rem;cursor:pointer">&times;</button>
+            </div>
+            <p style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:16px">Apparel — chest & waist measurements</p>
+            <table class="sg-table">
+                <thead><tr><th>Size</th><th>Chest (cm)</th><th>Waist (cm)</th><th>Length (cm)</th></tr></thead>
+                <tbody>
+                    <tr><td>XS</td><td>84 – 88</td><td>68 – 72</td><td>68</td></tr>
+                    <tr><td>S</td><td>88 – 92</td><td>72 – 76</td><td>70</td></tr>
+                    <tr><td>M</td><td>92 – 96</td><td>76 – 80</td><td>72</td></tr>
+                    <tr><td>L</td><td>96 – 102</td><td>80 – 86</td><td>74</td></tr>
+                    <tr><td>XL</td><td>102 – 108</td><td>86 – 92</td><td>76</td></tr>
+                    <tr><td>XXL</td><td>108 – 116</td><td>92 – 100</td><td>78</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.15em;margin:16px 0 8px">Footwear — EU sizing</p>
+            <table class="sg-table">
+                <thead><tr><th>EU</th><th>Foot length (cm)</th><th>US approx.</th></tr></thead>
+                <tbody>
+                    <tr><td>38</td><td>24.0</td><td>6</td></tr>
+                    <tr><td>39</td><td>24.7</td><td>6.5</td></tr>
+                    <tr><td>40</td><td>25.3</td><td>7</td></tr>
+                    <tr><td>41</td><td>26.0</td><td>7.5</td></tr>
+                    <tr><td>42</td><td>26.7</td><td>8.5</td></tr>
+                    <tr><td>43</td><td>27.3</td><td>9.5</td></tr>
+                    <tr><td>44</td><td>28.0</td><td>10</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:16px;text-align:center;text-transform:uppercase;letter-spacing:0.1em">Measurements are approximate. When in doubt, size up.</p>
+        </div>
+    </div>
 
     <!-- Order Modal -->
     <div id="modal" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
@@ -261,7 +353,7 @@ async function loadProduct() {
 
         document.title = `VAL10 | ${currentProduct.name}`;
         document.getElementById('p-name').textContent     = currentProduct.name;
-        document.getElementById('p-price').textContent    = `${currentProduct.price} DT`;
+        document.getElementById('p-price').textContent    = `${currentProduct.price} TND`;
         document.getElementById('p-desc').textContent     = currentProduct.description || 'No description provided.';
         document.getElementById('p-category').textContent = currentProduct.category || 'Underground';
 
@@ -420,8 +512,9 @@ function updateMainImages() {
     wrapper.innerHTML = imagesArray.map(img =>
         `<div class="swiper-slide">
             <img src="${img}"
-                 class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500"
-                 alt="${currentProduct.name}" />
+                 class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500 cursor-zoom-in"
+                 alt="${currentProduct.name}"
+                 onclick="openZoom(this.src)" />
          </div>`
     ).join('');
 
@@ -458,7 +551,7 @@ function openModal() {
     document.getElementById('ms-name').textContent  = currentProduct.name;
     document.getElementById('ms-size').textContent  = selectedSize  || 'One Size';
     document.getElementById('ms-color').textContent = selectedColor?.name || '—';
-    document.getElementById('ms-price').textContent = `${currentProduct.price} DT`;
+    document.getElementById('ms-price').textContent = `${currentProduct.price} TND`;
     document.getElementById('modal-summary').textContent =
         `${currentProduct.name} · ${selectedSize || 'One Size'}${selectedColor ? ' · ' + selectedColor.name : ''}`;
 
@@ -484,6 +577,15 @@ async function submitOrder() {
         return;
     }
 
+    // FIX: Tunisian phone validation (8 digits, optional +216/00216 prefix)
+    const phoneClean = phone.replace(/\s/g, '');
+    const phoneRe    = /^(\+?216|00216)?[2-9]\d{7}$/;
+    if (!phoneRe.test(phoneClean)) {
+        alert('Please enter a valid Tunisian phone number (8 digits, e.g. 52 123 456).');
+        document.getElementById('cust-phone').focus();
+        return;
+    }
+
     // Re-check stock before submitting (race condition guard)
     const sizes = normaliseSizes(currentProduct.sizes);
     const anyColorStock = (currentProduct.colors || []).some(c => (c.stock || 0) > 0);
@@ -496,15 +598,30 @@ async function submitOrder() {
         return;
     }
 
+    // FIX: include productId + colorIndex so server can do atomic stock decrement
+    const colorIndex = selectedColor
+        ? (currentProduct.colors || []).findIndex(c => c.name === selectedColor.name)
+        : -1;
+
     const orderData = {
         customerName:    name,
-        customerPhone:   phone,
+        customerPhone:   phoneClean,
         customerAddress: addr,
+        productId:       currentProduct._id || '',
+        colorIndex:      colorIndex,
         productName:     currentProduct.name,
         size:            selectedSize  || 'One Size',
         colorName:       selectedColor?.name || '',
         totalPrice:      currentProduct.price
     };
+
+    // FIX: loading state on submit button — prevents double-submit
+    const btn = document.querySelector('#modal button[onclick="submitOrder()"]');
+    const origText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled    = true;
+        btn.innerHTML   = '<span class="btn-spinner"></span>Processing…';
+    }
 
     try {
         const res = await fetch('/api/orders', {
@@ -518,10 +635,12 @@ async function submitOrder() {
             throw new Error(err.error || 'Order failed');
         }
 
-        alert('ARCHIVE SECURED. WE WILL CONTACT YOU SOON.');
-        window.location.href = '/';
+        const order = await res.json();
+        // FIX: redirect to confirmation page with order ID
+        window.location.href = `/confirmation?orderId=${order._id}`;
     } catch (error) {
         alert(`Error: ${error.message}`);
+        if (btn) { btn.disabled = false; btn.textContent = origText; }
     }
 }
 
@@ -529,6 +648,27 @@ async function submitOrder() {
 document.getElementById('modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
+
+/* ── Keyboard shortcuts ──────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeZoom(); closeSizeGuide(); }
+});
+
+/* ── Image Zoom ─────────────────────────────────────────────── */
+function openZoom(src) {
+    document.getElementById('zoom-img').src = src;
+    document.getElementById('zoom-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeZoom() {
+    document.getElementById('zoom-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+/* ── Size Guide ──────────────────────────────────────────────── */
+function closeSizeGuide() {
+    document.getElementById('sizeguide-overlay').classList.remove('open');
+}
 
 /* ── Boot ───────────────────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', loadProduct);
