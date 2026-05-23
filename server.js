@@ -48,11 +48,21 @@ const colorVariantSchema = new mongoose.Schema({
     stock: { type: Number, required: true, min: 0, default: 0 }
 }, { _id: false });
 
+/**
+ * SizeStock sub-document
+ * Each size tracks its own stock count.
+ * Supports both new format { size, stock } and legacy plain strings.
+ */
+const sizeStockSchema = new mongoose.Schema({
+    size:  { type: String, required: true, trim: true },
+    stock: { type: Number, required: true, min: 0, default: 0 }
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
     name:        { type: String, required: true, trim: true },
     price:       { type: Number, required: true, min: 0 },
     description: { type: String, default: '' },
-    sizes:       { type: [String], default: [] },
+    sizes:       { type: [sizeStockSchema], default: [] },
     category:    { type: String, default: 'Underground' },
     /**
      * colors replaces the old flat `images` array.
@@ -150,6 +160,13 @@ function checkStockStatus(product) {
             ...color,
             availability: color.stock > 0 ? 'In Stock' : 'Sold Out'
         }));
+    }
+
+    // Migrate legacy sizes: plain strings -> { size, stock: 1 }
+    if (Array.isArray(obj.sizes)) {
+        obj.sizes = obj.sizes
+            .map(s => (typeof s === 'string' && s.trim()) ? { size: s.trim(), stock: 1 } : s)
+            .filter(s => s && s.size);
     }
 
     // Convenience top-level flag: product is available if any color has stock
