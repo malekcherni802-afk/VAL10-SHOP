@@ -83,35 +83,44 @@ const Product = mongoose.model('Product', productSchema);
 const Order   = mongoose.model('Order',   orderSchema);
 
 // ─── Banner Schema ─────────────────────────────────────────────────────────────
-// Stores a single homepage hero banner. Only one document is ever kept
-// (upsert pattern). Completely isolated from product/order logic.
+// Stores the full slideshow config as a single document (upsert pattern).
+// `slides` is an ordered array; the homepage cycles through them.
+
+const slideSchema = new mongoose.Schema({
+    imageUrl: { type: String, required: true },
+    linkUrl:  { type: String, default: '/' },
+    caption:  { type: String, default: '' }
+}, { _id: false });
 
 const bannerSchema = new mongoose.Schema({
-    imageUrl: { type: String, default: '' },  // base64 or remote URL
-    linkUrl:  { type: String, default: '/' }, // redirect target when clicked
-    updatedAt:{ type: Date,   default: Date.now }
+    slides:    { type: [slideSchema], default: [] },
+    updatedAt: { type: Date, default: Date.now }
 });
 
 const Banner = mongoose.model('Banner', bannerSchema);
 
-// GET /api/banner — returns the current banner (empty object if none set yet)
+// GET /api/banner — returns slides array (empty array if nothing saved yet)
 app.get('/api/banner', async (req, res) => {
     try {
         const banner = await Banner.findOne().sort({ updatedAt: -1 });
-        res.json(banner || { imageUrl: '', linkUrl: '/' });
+        res.json(banner || { slides: [] });
     } catch (error) {
         console.error('GET /api/banner error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// POST /api/banner — upsert: update existing banner or create first one
+// POST /api/banner — replace entire slides array (upsert)
+// Body: { slides: [{ imageUrl, linkUrl, caption }, …] }
 app.post('/api/banner', async (req, res) => {
     try {
-        const { imageUrl, linkUrl } = req.body;
+        const { slides } = req.body;
+        if (!Array.isArray(slides)) {
+            return res.status(400).json({ error: '`slides` must be an array' });
+        }
         const banner = await Banner.findOneAndUpdate(
-            {},                                          // match any (first doc)
-            { imageUrl, linkUrl, updatedAt: new Date() },
+            {},
+            { slides, updatedAt: new Date() },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
         res.json(banner);

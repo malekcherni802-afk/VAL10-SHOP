@@ -172,44 +172,50 @@
         </div>
     </nav>
 
-    <!-- Hero — image & link are controlled from the Admin Panel (/admin) -->
-    <header id="hero-banner" class="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
+    <!-- ── Hero Slideshow — controlled from Admin Panel (/admin) ── -->
+    <header id="hero-banner" class="relative h-screen overflow-hidden">
 
-        <!-- Background layer: swapped to banner image when API responds -->
-        <div class="absolute inset-0 z-0">
-            <div class="absolute inset-0 bg-black/60 z-10"></div>
-            <!-- Fallback image shown while banner loads or if none is set -->
-            <img id="hero-bg-img"
-                 src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop"
-                 class="w-full h-full object-cover grayscale scale-110 transition-opacity duration-700"
-                 alt="VAL10 Hero">
-        </div>
+        <!-- Slides container — JS appends .slide divs here -->
+        <div id="hero-slides" class="absolute inset-0"></div>
 
-        <!--
-            Clickable full-cover anchor — covers the entire hero so clicking
-            anywhere on the banner navigates to the linkUrl from the admin panel.
-            href is set dynamically by fetchBanner(); defaults to '#shop'.
-        -->
-        <a id="hero-banner-link"
-           href="#shop"
-           class="absolute inset-0 z-[5]"
-           aria-label="Homepage banner link"></a>
+        <!-- Dark overlay always on top of images -->
+        <div class="absolute inset-0 bg-black/55 z-10 pointer-events-none"></div>
 
-        <!-- Foreground text — sits above the clickable anchor -->
-        <div class="z-20 fade-in px-4 pointer-events-none">
+        <!-- Dot navigation -->
+        <div id="hero-dots" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2"></div>
+
+        <!-- Prev / Next arrows -->
+        <button id="hero-prev" onclick="slideshowStep(-1)"
+                class="absolute left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all opacity-0 hover:opacity-100 focus:opacity-100"
+                aria-label="Previous slide">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <button id="hero-next" onclick="slideshowStep(1)"
+                class="absolute right-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all opacity-0 hover:opacity-100 focus:opacity-100"
+                aria-label="Next slide">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+
+        <!-- Foreground text — always visible above slides -->
+        <div class="relative z-20 h-full flex flex-col justify-center items-center text-center fade-in px-4 pointer-events-none">
             <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
             <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
                 Define <br>
                 <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800">Your Ego</span>
             </h2>
-            <!-- CTA re-enables pointer events so it's independently clickable -->
             <a href="#shop"
                class="pointer-events-auto inline-block bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">
                 Explore Drop
             </a>
+            <!-- Caption shown when current slide has one -->
+            <p id="hero-caption" class="pointer-events-none mt-6 text-[10px] tracking-[0.3em] text-gray-400 uppercase opacity-0 transition-opacity duration-500"></p>
         </div>
 
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 animate-bounce pointer-events-none">
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 animate-bounce pointer-events-none">
             <div class="w-[1px] h-12 bg-gradient-to-b from-white to-transparent"></div>
         </div>
     </header>
@@ -468,36 +474,117 @@ async function fetchProducts() {
     }
 }
 
-// ── Banner Fetch ───────────────────────────────────────────────────────────
-/**
- * fetchBanner()
- * Loads the current hero banner from /api/banner.
- * - Swaps the background image if imageUrl is set
- * - Points the full-cover anchor to linkUrl
- * Runs silently — any error leaves the fallback Unsplash image in place.
- */
+// ── Slideshow Engine ──────────────────────────────────────────────────────
+
+const FALLBACK_SLIDE = {
+    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop',
+    linkUrl:  '#shop',
+    caption:  ''
+};
+
+let _ssSlides     = [];
+let _ssCurrent    = 0;
+let _ssTimer      = null;
+const SS_INTERVAL = 5000;
+
+function buildSlideEl(slide) {
+    const div = document.createElement('div');
+    div.className = 'absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0';
+    div.style.backgroundImage    = `url('${slide.imageUrl}')`;
+    div.style.backgroundSize     = 'cover';
+    div.style.backgroundPosition = 'center';
+
+    const a = document.createElement('a');
+    a.href      = slide.linkUrl || '#shop';
+    a.className = 'absolute inset-0 block';
+    a.setAttribute('aria-label', slide.caption || 'Homepage banner');
+    div.appendChild(a);
+    return div;
+}
+
+function initSlideshow(slides) {
+    _ssSlides  = slides.length ? slides : [FALLBACK_SLIDE];
+    _ssCurrent = 0;
+
+    const container = document.getElementById('hero-slides');
+    const dotsWrap  = document.getElementById('hero-dots');
+    container.innerHTML = '';
+    dotsWrap.innerHTML  = '';
+
+    _ssSlides.forEach((slide, i) => {
+        const el = buildSlideEl(slide);
+        el.dataset.slideIndex = i;
+        container.appendChild(el);
+    });
+
+    if (_ssSlides.length > 1) {
+        _ssSlides.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'w-1.5 h-1.5 rounded-full border border-white/40 transition-all duration-300 bg-transparent';
+            dot.setAttribute('aria-label', `Slide ${i + 1}`);
+            dot.onclick = () => { goToSlide(i); restartAutoAdvance(); };
+            dotsWrap.appendChild(dot);
+        });
+        ['hero-prev','hero-next'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.style.opacity = '0.7'; el.classList.remove('opacity-0'); }
+        });
+    }
+
+    goToSlide(0);
+    startAutoAdvance();
+}
+
+function goToSlide(index) {
+    const slideEls = document.querySelectorAll('#hero-slides > div');
+    const dots     = document.querySelectorAll('#hero-dots button');
+
+    _ssCurrent = ((index % _ssSlides.length) + _ssSlides.length) % _ssSlides.length;
+
+    slideEls.forEach((el, i) => {
+        el.style.opacity = i === _ssCurrent ? '1' : '0';
+        el.style.zIndex  = i === _ssCurrent ? '1' : '0';
+    });
+
+    dots.forEach((dot, i) => {
+        const active = i === _ssCurrent;
+        dot.className = `rounded-full border border-white/40 transition-all duration-300 ${active ? 'bg-white w-4 h-1.5' : 'bg-transparent w-1.5 h-1.5'}`;
+    });
+
+    const caption   = _ssSlides[_ssCurrent]?.caption || '';
+    const captionEl = document.getElementById('hero-caption');
+    if (captionEl) {
+        captionEl.textContent  = caption;
+        captionEl.style.opacity = caption ? '1' : '0';
+    }
+}
+
+function slideshowStep(dir) { goToSlide(_ssCurrent + dir); restartAutoAdvance(); }
+function startAutoAdvance()  { if (_ssSlides.length > 1) _ssTimer = setInterval(() => goToSlide(_ssCurrent + 1), SS_INTERVAL); }
+function restartAutoAdvance(){ clearInterval(_ssTimer); startAutoAdvance(); }
+
+const heroEl = document.getElementById('hero-banner');
+if (heroEl) {
+    heroEl.addEventListener('mouseenter', () => clearInterval(_ssTimer));
+    heroEl.addEventListener('mouseleave', startAutoAdvance);
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft')  slideshowStep(-1);
+    if (e.key === 'ArrowRight') slideshowStep(1);
+});
+
 async function fetchBanner() {
     try {
         const res = await fetch('/api/banner');
-        if (!res.ok) return; // server error — keep fallback silently
-
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const banner = await res.json();
-
-        if (banner?.imageUrl) {
-            const bgImg = document.getElementById('hero-bg-img');
-            // Fade in the new image once it loads
-            bgImg.style.opacity = '0';
-            bgImg.onload = () => { bgImg.style.opacity = '1'; };
-            bgImg.src = banner.imageUrl;
-            bgImg.classList.remove('grayscale'); // admin-set banners shown in colour
-        }
-
-        if (banner?.linkUrl) {
-            document.getElementById('hero-banner-link').href = banner.linkUrl;
-        }
+        const slides = Array.isArray(banner?.slides) && banner.slides.length
+            ? banner.slides
+            : [FALLBACK_SLIDE];
+        initSlideshow(slides);
     } catch (err) {
-        // Network error — fallback image remains, no toast needed
-        console.warn('Banner fetch skipped:', err.message);
+        console.warn('Banner fetch failed, using fallback:', err.message);
+        initSlideshow([FALLBACK_SLIDE]);
     }
 }
 

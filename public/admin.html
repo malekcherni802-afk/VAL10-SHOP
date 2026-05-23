@@ -80,76 +80,36 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════
-         HOMEPAGE BANNER MANAGER
+         HOMEPAGE SLIDESHOW MANAGER — Multi-slide
          Completely isolated — touches no product/order logic.
     ═══════════════════════════════════════════════════════ -->
     <div class="glass rounded-2xl p-6 mb-8 border border-yellow-500/10">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Homepage Banner Manager</h2>
-            <span class="text-[8px] text-gray-700 uppercase tracking-widest ml-auto">Hero Section Control</span>
+            <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Homepage Slideshow Manager</h2>
+            <span class="text-[8px] text-gray-700 uppercase tracking-widest ml-auto">Hero Section · Multi-Slide</span>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-6 items-start">
+        <!-- Slide cards list -->
+        <div id="slide-list" class="space-y-3 mb-4"></div>
 
-            <!-- Left: inputs -->
-            <div class="space-y-4">
-                <!-- Image upload -->
-                <div>
-                    <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Banner Image</label>
-                    <label id="banner-img-label"
-                           class="flex items-center gap-3 cursor-pointer border border-dashed border-white/10 rounded-xl px-5 py-4 hover:border-yellow-500/40 transition-all group">
-                        <svg class="w-5 h-5 text-gray-600 group-hover:text-yellow-500 transition flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <div>
-                            <p id="banner-img-filename" class="text-[10px] text-gray-400 font-bold">Click to upload banner image</p>
-                            <p class="text-[8px] text-gray-700 mt-0.5">Will be compressed to ≤ 200 KB automatically</p>
-                        </div>
-                        <input type="file" id="banner-img-file" accept="image/*" class="hidden" onchange="handleBannerImage(this)">
-                    </label>
-                </div>
+        <!-- Add slide button -->
+        <button onclick="addSlideCard()" type="button"
+                class="w-full border border-dashed border-white/10 rounded-xl py-3 text-[9px] font-bold text-gray-500 uppercase tracking-[0.25em] hover:border-yellow-500/40 hover:text-yellow-500 transition-all flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Slide
+        </button>
 
-                <!-- Link URL -->
-                <div>
-                    <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Click-through URL</label>
-                    <input type="text" id="banner-link-url"
-                           placeholder="https://... or #shop"
-                           class="w-full px-4 py-3 rounded-lg text-sm">
-                </div>
-
-                <!-- Submit -->
-                <button onclick="updateBanner()" id="banner-btn"
-                        class="w-full bg-yellow-500 text-black font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all flex items-center justify-center gap-3">
-                    <span id="banner-btn-text">Update Banner</span>
-                    <div id="banner-spinner" class="loading-spinner w-4 h-4 hidden"></div>
-                </button>
-
-                <p id="banner-status" class="text-[8px] text-gray-600 uppercase tracking-widest text-center hidden"></p>
-            </div>
-
-            <!-- Right: live preview -->
-            <div>
-                <p class="text-[8px] text-gray-500 uppercase tracking-[0.2em] mb-2">Current Banner Preview</p>
-                <div class="relative rounded-xl overflow-hidden border border-white/5 bg-zinc-900 aspect-[16/5]">
-                    <img id="banner-preview-img"
-                         src=""
-                         alt="Banner preview"
-                         class="w-full h-full object-cover hidden">
-                    <div id="banner-preview-empty"
-                         class="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                        <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="text-[8px] text-gray-700 uppercase tracking-widest">No banner set</span>
-                    </div>
-                </div>
-                <p id="banner-preview-link" class="text-[8px] text-gray-700 mt-2 truncate hidden">
-                    Links to: <span id="banner-link-display" class="text-yellow-600"></span>
-                </p>
-            </div>
+        <!-- Save all -->
+        <div class="flex items-center gap-4 mt-5 pt-5 border-t border-white/5">
+            <button onclick="saveSlideshow()" id="slideshow-btn"
+                    class="flex-1 bg-yellow-500 text-black font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all flex items-center justify-center gap-3">
+                <span id="slideshow-btn-text">Save Slideshow</span>
+                <div id="slideshow-spinner" class="loading-spinner w-4 h-4 hidden"></div>
+            </button>
+            <p id="slideshow-status" class="text-[8px] text-gray-600 uppercase tracking-widest hidden"></p>
         </div>
     </div>
     <!-- ══════════════════════════════════════════════════════ -->
@@ -710,54 +670,41 @@ async function refreshData() {
     }
 }
 
-// ── Banner Logic ───────────────────────────────────────────────────────────
+// ── Slideshow / Banner Logic ──────────────────────────────────────────────
 
-// In-memory store for the compressed banner image between compress & submit
-let _bannerImageData = '';
+let _slideCardCount = 0;
 
 /**
  * compressBannerImage(file)
- * Same canvas pipeline as product images, but targets ≤ 200 KB.
- * Progressively lowers quality until the output is small enough.
+ * Canvas pipeline targeting ≤ 200 KB. Iterates quality downward.
  */
 function compressBannerImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Failed to read banner file'));
+        reader.onerror = () => reject(new Error('Failed to read file'));
         reader.onload = (e) => {
             const img = new Image();
-            img.onerror = () => reject(new Error('Failed to decode banner image'));
+            img.onerror = () => reject(new Error('Failed to decode image'));
             img.onload = () => {
                 try {
-                    const MAX_DIM      = 1800;   // banners are wide; allow more px
-                    const TARGET_BYTES = 200_000; // 200 KB hard limit
-
+                    const MAX_DIM      = 1800;
+                    const TARGET_BYTES = 200_000;
                     let { width, height } = img;
                     if (width > MAX_DIM || height > MAX_DIM) {
                         if (width >= height) { height = Math.round(height * MAX_DIM / width);  width = MAX_DIM; }
                         else                 { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
                     }
-
                     const canvas = document.createElement('canvas');
-                    canvas.width  = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Try quality levels from 0.85 down until we hit the target
+                    canvas.width = width; canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
                     let quality = 0.85;
                     let base64  = canvas.toDataURL('image/jpeg', quality);
-
                     while (base64.length > TARGET_BYTES * 1.37 && quality > 0.30) {
-                        // base64 is ~1.37× the byte size of the raw data
                         quality = parseFloat((quality - 0.08).toFixed(2));
                         base64  = canvas.toDataURL('image/jpeg', quality);
                     }
-
                     resolve(base64);
-                } catch (err) {
-                    reject(err);
-                }
+                } catch (err) { reject(err); }
             };
             img.src = e.target.result;
         };
@@ -765,85 +712,108 @@ function compressBannerImage(file) {
     });
 }
 
-async function handleBannerImage(input) {
+function addSlideCard(prefill = {}) {
+    const id   = ++_slideCardCount;
+    const card = document.createElement('div');
+    card.dataset.slideId = id;
+    card.className = 'fade-in grid gap-3 p-4 rounded-xl border border-white/5 bg-white/[0.02]';
+    card.style.gridTemplateColumns = '80px 1fr 1fr auto';
+    card.style.alignItems = 'center';
+
+    card.innerHTML = `
+        <div class="relative rounded-lg overflow-hidden bg-zinc-900 aspect-video cursor-pointer border border-white/5 hover:border-yellow-500/30 transition"
+             onclick="document.getElementById('slide-file-${id}').click()" title="Click to upload image">
+            <img id="slide-thumb-${id}" src="${prefill.imageUrl || ''}"
+                 class="w-full h-full object-cover ${prefill.imageUrl ? '' : 'hidden'}" alt="Slide">
+            <div id="slide-thumb-empty-${id}" class="absolute inset-0 flex items-center justify-center ${prefill.imageUrl ? 'hidden' : ''}">
+                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <input type="file" id="slide-file-${id}" accept="image/*" class="hidden" onchange="handleSlideImage(${id}, this)">
+        </div>
+        <input type="hidden" id="slide-img-data-${id}" value="${prefill.imageUrl || ''}">
+        <input type="text" id="slide-link-${id}" value="${prefill.linkUrl || '/'}"
+               placeholder="Link URL (e.g. #shop)" class="px-3 py-2 rounded-lg text-[11px] w-full">
+        <input type="text" id="slide-caption-${id}" value="${prefill.caption || ''}"
+               placeholder="Caption (optional)" class="px-3 py-2 rounded-lg text-[11px] w-full">
+        <button type="button" onclick="removeSlideCard(${id})"
+                class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    document.getElementById('slide-list').appendChild(card);
+}
+
+function removeSlideCard(id) {
+    const card = document.querySelector(`[data-slide-id="${id}"]`);
+    if (card) card.remove();
+}
+
+async function handleSlideImage(id, input) {
     const file = input.files[0];
     if (!file) return;
-
-    const label    = document.getElementById('banner-img-label');
-    const filename = document.getElementById('banner-img-filename');
-    filename.textContent = 'Compressing…';
-
+    const thumbEmpty = document.getElementById(`slide-thumb-empty-${id}`);
+    thumbEmpty.innerHTML = '<div class="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>';
     try {
         const base64 = await compressBannerImage(file);
-        _bannerImageData = base64;
-
-        // Show preview immediately
-        const previewImg   = document.getElementById('banner-preview-img');
-        const previewEmpty = document.getElementById('banner-preview-empty');
-        previewImg.src = base64;
-        previewImg.classList.remove('hidden');
-        previewEmpty.classList.add('hidden');
-
+        document.getElementById(`slide-img-data-${id}`).value = base64;
+        const thumb = document.getElementById(`slide-thumb-${id}`);
+        thumb.src = base64;
+        thumb.classList.remove('hidden');
+        thumbEmpty.classList.add('hidden');
         const kb = Math.round((base64.length * 0.75) / 1024);
-        filename.textContent = `✓ ${file.name}  (${kb} KB after compression)`;
-        label.style.borderColor = 'rgba(34,197,94,0.4)';
-        showToast(`Banner compressed to ~${kb} KB`, 'success');
+        showToast(`Slide compressed to ~${kb} KB`, 'success');
     } catch (err) {
-        console.error('Banner compression error:', err);
         showToast('Compression failed: ' + err.message, 'error');
-        filename.textContent = 'Click to upload banner image';
-        label.style.borderColor = '';
     }
 }
 
-async function updateBanner() {
-    const linkUrl = document.getElementById('banner-link-url').value.trim() || '/';
+function collectSlides() {
+    const cards  = document.querySelectorAll('#slide-list [data-slide-id]');
+    const slides = [];
+    cards.forEach(card => {
+        const id      = card.dataset.slideId;
+        const imgData = document.getElementById(`slide-img-data-${id}`)?.value;
+        const linkUrl = document.getElementById(`slide-link-${id}`)?.value?.trim() || '/';
+        const caption = document.getElementById(`slide-caption-${id}`)?.value?.trim() || '';
+        if (imgData) slides.push({ imageUrl: imgData, linkUrl, caption });
+    });
+    return slides;
+}
 
-    if (!_bannerImageData) {
-        showToast('Please select a banner image first', 'error');
-        return;
-    }
+async function saveSlideshow() {
+    const slides = collectSlides();
+    if (!slides.length) { showToast('Add at least one slide with an image', 'error'); return; }
 
-    const btn     = document.getElementById('banner-btn');
-    const btnText = document.getElementById('banner-btn-text');
-    const spinner = document.getElementById('banner-spinner');
-    const status  = document.getElementById('banner-status');
-
-    btn.disabled        = true;
-    btnText.textContent = 'Uploading…';
-    spinner.classList.remove('hidden');
-    status.classList.add('hidden');
+    const btn     = document.getElementById('slideshow-btn');
+    const btnText = document.getElementById('slideshow-btn-text');
+    const spinner = document.getElementById('slideshow-spinner');
+    const status  = document.getElementById('slideshow-status');
+    btn.disabled = true; btnText.textContent = 'Saving…';
+    spinner.classList.remove('hidden'); status.classList.add('hidden');
 
     try {
         const res = await fetch('/api/banner', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ imageUrl: _bannerImageData, linkUrl })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slides })
         });
-
         if (!res.ok) {
             const err = await res.json().catch(() => ({ error: 'Unknown error' }));
             throw new Error(err.error || `HTTP ${res.status}`);
         }
-
-        showToast('Homepage banner updated!', 'success');
-        status.textContent = '✓ Banner live on homepage';
-        status.classList.remove('hidden');
+        showToast(`${slides.length} slide${slides.length > 1 ? 's' : ''} live on homepage!`, 'success');
+        status.textContent = `✓ ${slides.length} slides live`;
         status.style.color = '#22c55e';
-
-        // Refresh preview link display
-        document.getElementById('banner-link-display').textContent = linkUrl;
-        document.getElementById('banner-preview-link').classList.remove('hidden');
-
-    } catch (err) {
-        console.error('updateBanner error:', err);
-        showToast('Update failed: ' + err.message, 'error');
-        status.textContent = '✗ Update failed — check console';
         status.classList.remove('hidden');
-        status.style.color = '#ef4444';
+    } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+        status.textContent = '✗ Save failed'; status.style.color = '#ef4444';
+        status.classList.remove('hidden');
     } finally {
-        btn.disabled        = false;
-        btnText.textContent = 'Update Banner';
+        btn.disabled = false; btnText.textContent = 'Save Slideshow';
         spinner.classList.add('hidden');
     }
 }
@@ -853,21 +823,17 @@ async function loadCurrentBanner() {
         const res = await fetch('/api/banner');
         if (!res.ok) return;
         const banner = await res.json();
-
-        if (banner?.imageUrl) {
-            const previewImg   = document.getElementById('banner-preview-img');
-            const previewEmpty = document.getElementById('banner-preview-empty');
-            previewImg.src = banner.imageUrl;
-            previewImg.classList.remove('hidden');
-            previewEmpty.classList.add('hidden');
-
-            document.getElementById('banner-link-url').value = banner.linkUrl || '/';
-            document.getElementById('banner-link-display').textContent = banner.linkUrl || '/';
-            document.getElementById('banner-preview-link').classList.remove('hidden');
-            _bannerImageData = banner.imageUrl; // keep in memory so re-submit works
+        if (Array.isArray(banner?.slides) && banner.slides.length) {
+            document.getElementById('slide-list').innerHTML = '';
+            _slideCardCount = 0;
+            banner.slides.forEach(s => addSlideCard(s));
+            const status = document.getElementById('slideshow-status');
+            status.textContent = `✓ ${banner.slides.length} slides currently live`;
+            status.style.color = '#22c55e';
+            status.classList.remove('hidden');
         }
     } catch (err) {
-        console.warn('Could not load current banner:', err.message);
+        console.warn('Could not load current slideshow:', err.message);
     }
 }
 
