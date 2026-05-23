@@ -13,20 +13,13 @@
             font-family: 'Syne', sans-serif;
             overflow-x: hidden;
         }
-        .gothic-text {
-            font-family: 'Pirata One', cursive;
-            letter-spacing: 0.1em;
-        }
-        .fade-in {
-            animation: fadeIn 1.2s ease-out forwards;
-        }
+        .gothic-text { font-family: 'Pirata One', cursive; letter-spacing: 0.1em; }
+        .fade-in { animation: fadeIn 1.2s ease-out forwards; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(30px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        .product-card {
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .product-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .product-card:hover { transform: translateY(-10px); }
         .product-card img   { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
         .product-card:hover img { transform: scale(1.1); }
@@ -36,115 +29,55 @@
         ::-webkit-scrollbar-thumb { background: #333; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* ── Color Swatch System ───────────────────────────────── */
-
-        .swatch-strip {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        /* Base circle */
+        /* ── Color Swatch ─────────────────────────────────────── */
+        .swatch-strip { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
         .color-swatch {
-            position: relative;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            cursor: pointer;
+            position: relative; width: 22px; height: 22px;
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.15);
+            cursor: pointer; flex-shrink: 0;
             transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-            flex-shrink: 0;
         }
-
-        /* Hover — non-sold-out */
         .color-swatch:not(.sold-out):hover {
-            transform: scale(1.25);
-            border-color: rgba(255, 255, 255, 0.7);
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+            transform: scale(1.25); border-color: rgba(255,255,255,0.7);
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
         }
-
-        /* Active / selected swatch */
         .color-swatch.active {
-            border-color: #eab308;
-            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
-            transform: scale(1.2);
+            border-color: #eab308; box-shadow: 0 0 0 2px rgba(234,179,8,0.4); transform: scale(1.2);
         }
-
-        /* Sold-out state */
         .color-swatch.sold-out {
-            filter: grayscale(1) brightness(0.45);
-            cursor: not-allowed;
-            opacity: 0.5;
-            pointer-events: none; /* unclickable */
+            filter: grayscale(1) brightness(0.45); opacity: 0.5; pointer-events: all;
         }
-
-        /* Diagonal slash overlay for sold-out */
         .color-swatch.sold-out::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: linear-gradient(
-                135deg,
-                transparent 42%,
-                rgba(255, 60, 60, 0.85) 42%,
-                rgba(255, 60, 60, 0.85) 58%,
-                transparent 58%
-            );
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: linear-gradient(135deg, transparent 42%, rgba(255,60,60,0.85) 42%, rgba(255,60,60,0.85) 58%, transparent 58%);
         }
-
-        /* Tooltip label on hover */
         .color-swatch[data-label]::before {
-            content: attr(data-label);
-            position: absolute;
-            bottom: calc(100% + 6px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: #111;
-            color: #fff;
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            padding: 3px 7px;
-            border-radius: 4px;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            border: 1px solid rgba(255,255,255,0.08);
+            content: attr(data-label); position: absolute; bottom: calc(100% + 6px);
+            left: 50%; transform: translateX(-50%); background: #111; color: #fff;
+            font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+            padding: 3px 7px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+            opacity: 0; transition: opacity 0.15s ease; border: 1px solid rgba(255,255,255,0.08);
         }
-        .color-swatch:not(.sold-out):hover::before,
-        .color-swatch.sold-out:hover::before {
-            opacity: 1;
-            pointer-events: none;
-        }
-        /* Re-enable hover just for tooltip display on sold-out */
-        .color-swatch.sold-out { pointer-events: all; }
+        .color-swatch:hover::before { opacity: 1; }
         .color-swatch.sold-out:hover { transform: none; cursor: not-allowed; }
 
-        /* Sold-out badge on the label */
-        .sold-out-label {
-            font-size: 8px;
-            color: #ef4444;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        /* ── Size Pills on card ───────────────────────────────── */
+        .size-pill {
+            display: inline-flex; align-items: center;
+            font-size: 8px; font-family: 'Courier New', monospace;
+            font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 2px 7px; border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.12); color: #a3a3a3;
+            background: transparent; transition: border-color 0.15s;
         }
+        .size-pill.in-stock  { border-color: rgba(234,179,8,0.35); color: #ca8a04; }
+        .size-pill.no-stock  { opacity: 0.32; text-decoration: line-through; }
 
-        /* ── Toast ─────────────────────────────────────────────── */
+        /* ── Toast ────────────────────────────────────────────── */
         .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            z-index: 9999;
-            animation: slideIn 0.3s ease-out;
-            max-width: 300px;
+            position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+            border-radius: 8px; font-size: 12px; font-weight: 700; z-index: 9999;
+            animation: slideIn 0.3s ease-out; max-width: 300px;
         }
         @keyframes slideIn {
             from { transform: translateX(110%); opacity: 0; }
@@ -172,19 +105,12 @@
         </div>
     </nav>
 
-    <!-- ── Hero Slideshow — controlled from Admin Panel (/admin) ── -->
+    <!-- Hero Slideshow -->
     <header id="hero-banner" class="relative h-screen overflow-hidden">
-
-        <!-- Slides container — JS appends .slide divs here -->
         <div id="hero-slides" class="absolute inset-0"></div>
-
-        <!-- Dark overlay always on top of images -->
         <div class="absolute inset-0 bg-black/55 z-10 pointer-events-none"></div>
-
-        <!-- Dot navigation -->
         <div id="hero-dots" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2"></div>
 
-        <!-- Prev / Next arrows -->
         <button id="hero-prev" onclick="slideshowStep(-1)"
                 class="absolute left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 border border-white/10 text-white flex items-center justify-center hover:bg-white hover:text-black transition-all opacity-0 hover:opacity-100 focus:opacity-100"
                 aria-label="Previous slide">
@@ -200,7 +126,6 @@
             </svg>
         </button>
 
-        <!-- Foreground text — always visible above slides -->
         <div class="relative z-20 h-full flex flex-col justify-center items-center text-center fade-in px-4 pointer-events-none">
             <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
             <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
@@ -211,7 +136,6 @@
                class="pointer-events-auto inline-block bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">
                 Explore Drop
             </a>
-            <!-- Caption shown when current slide has one -->
             <p id="hero-caption" class="pointer-events-none mt-6 text-[10px] tracking-[0.3em] text-gray-400 uppercase opacity-0 transition-opacity duration-500"></p>
         </div>
 
@@ -232,7 +156,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
-            <!-- Loading state -->
             <div class="col-span-full flex flex-col items-center py-20">
                 <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
                 <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
@@ -253,15 +176,14 @@
         </div>
     </footer>
 
-<!-- ═══════════════════════════════════════════════════════════════ SCRIPTS -->
+<!-- ═══════════════════════════════ SCRIPTS -->
 <script>
 'use strict';
 
-// ── Toast ──────────────────────────────────────────────────────────────────
+/* ── Toast ──────────────────────────────────────────────────────── */
 function showToast(message, type = 'info') {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
-
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -269,37 +191,51 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 3500);
 }
 
-// ── Color Swatch Renderer ──────────────────────────────────────────────────
-/**
- * buildSwatchStrip(colors, onSelect)
- *
- * Returns a <div class="swatch-strip"> containing one circle per color.
- *
- * Rules:
- *  - stock === 0  → swatch gets .sold-out  (grayscale + slash + unclickable)
- *  - stock  > 0  → normal, clickable
- *  - On click     → calls onSelect(colorIndex, colorObject)
- *  - Tooltip      → color name + "(Sold Out)" when applicable
- */
+/* ══════════════════════════════════════════════════════════════════
+   normaliseSizes(rawSizes)
+
+   The DB can hold TWO formats:
+     NEW → sizes = [{ size: "M", stock: 5 }, { size: "L", stock: 0 }]
+     OLD → sizes = ["S", "M", "L"]   (plain strings, no per-size stock)
+
+   This function ALWAYS returns [{ size: String, stock: Number }]
+   so everything downstream is format-agnostic.
+   ══════════════════════════════════════════════════════════════════ */
+function normaliseSizes(rawSizes) {
+    if (!rawSizes || !Array.isArray(rawSizes) || rawSizes.length === 0) return [];
+
+    return rawSizes
+        .map(s => {
+            if (s && typeof s === 'object' && s.size !== undefined) {
+                // New format: { size, stock }
+                return { size: String(s.size), stock: Number(s.stock) || 0 };
+            }
+            if (typeof s === 'string' && s.trim()) {
+                // Old format: plain string — no stock data, treat as available
+                return { size: s.trim(), stock: 1 };
+            }
+            return null;
+        })
+        .filter(s => s && s.size && s.size !== 'undefined' && s.size !== 'null');
+}
+
+/* ── Color Swatch Strip ─────────────────────────────────────────── */
 function buildSwatchStrip(colors, onSelect) {
     const strip = document.createElement('div');
     strip.className = 'swatch-strip';
 
     colors.forEach((color, idx) => {
-        const isSoldOut = color.stock === 0 ||
-                          color.availability === 'Sold Out';
+        const isSoldOut = color.stock === 0 || color.availability === 'Sold Out';
 
         const swatch = document.createElement('span');
-        swatch.className    = 'color-swatch' + (isSoldOut ? ' sold-out' : '');
+        swatch.className        = 'color-swatch' + (isSoldOut ? ' sold-out' : '');
         swatch.style.background = color.hex || '#888';
-        swatch.dataset.label = color.name + (isSoldOut ? ' — Sold Out' : '');
-        swatch.dataset.index = idx;
-        swatch.title         = color.name + (isSoldOut ? ' (Sold Out)' : '');
+        swatch.dataset.label    = color.name + (isSoldOut ? ' — Sold Out' : '');
+        swatch.title            = color.name + (isSoldOut ? ' (Sold Out)' : '');
 
         if (!isSoldOut) {
-            swatch.addEventListener('click', (e) => {
-                e.stopPropagation(); // don't bubble up to card → navigate
-                // Remove active from siblings
+            swatch.addEventListener('click', e => {
+                e.stopPropagation();
                 strip.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
                 swatch.classList.add('active');
                 onSelect(idx, color);
@@ -312,31 +248,53 @@ function buildSwatchStrip(colors, onSelect) {
     return strip;
 }
 
-// ── Product Card Builder ───────────────────────────────────────────────────
-/**
- * buildProductCard(product)
- *
- * Creates a full product card DOM element with:
- *  - Main image that swaps when a color swatch is clicked
- *  - Color swatch strip with live sold-out state
- *  - Sold-out overlay when ALL colors are sold out
- */
+/* ── Size Pills (card preview) ──────────────────────────────────── */
+function buildSizePills(product) {
+    const sizes = normaliseSizes(product.sizes);
+    if (!sizes.length) return null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'flex flex-wrap gap-1 mt-2 mb-1';
+
+    sizes.forEach(s => {
+        const inStock = s.stock > 0;
+        const pill = document.createElement('span');
+        pill.className   = `size-pill ${inStock ? 'in-stock' : 'no-stock'}`;
+        pill.textContent = s.size;
+        pill.title       = inStock ? `${s.size} — ${s.stock} left` : `${s.size} — Sold Out`;
+        wrap.appendChild(pill);
+    });
+
+    return wrap;
+}
+
+/* ── Product Card ───────────────────────────────────────────────── */
 function buildProductCard(product) {
     const colors = Array.isArray(product.colors) ? product.colors : [];
 
-    // Determine initial image: first in-stock color, else first color, else legacy images[0]
+    // Best initial image: first in-stock color → first color → legacy → placeholder
     const firstAvailable = colors.find(c => c.stock > 0) || colors[0];
-    let initialImg = firstAvailable?.image ||
-                     (product.images?.length ? product.images[0] : null) ||
-                     'https://via.placeholder.com/600x800/111/333?text=VAL10';
+    const initialImg = firstAvailable?.image
+        || (product.images?.length ? product.images[0] : null)
+        || 'https://via.placeholder.com/600x800/111/333?text=VAL10';
 
-    const allSoldOut = colors.length > 0 && colors.every(c => c.stock === 0);
+    // Sold-out logic — must check BOTH colors and sizes
+    const sizes = normaliseSizes(product.sizes);
+    const allColorsSoldOut = colors.length > 0 && colors.every(c => (c.stock || 0) === 0);
+    const allSizesSoldOut  = sizes.length  > 0 && sizes.every(s => s.stock === 0);
 
-    // ── Card shell
+    // Product is fully sold out only when every variant is gone
+    const allSoldOut =
+        (colors.length === 0 && sizes.length === 0)  ? false   // no variants = assume available
+        : (colors.length > 0 && sizes.length > 0)    ? allColorsSoldOut && allSizesSoldOut
+        : (colors.length > 0)                         ? allColorsSoldOut
+        :                                               allSizesSoldOut;
+
+    /* Card shell */
     const card = document.createElement('div');
     card.className = 'group cursor-pointer fade-in product-card';
 
-    // ── Image container
+    /* Image container */
     const imgWrap = document.createElement('div');
     imgWrap.className = 'relative overflow-hidden aspect-[3/4] bg-zinc-900 mb-5 border border-white/5';
 
@@ -346,7 +304,7 @@ function buildProductCard(product) {
     img.loading   = 'lazy';
     img.className = 'w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500';
 
-    // "View Piece" hover overlay
+    /* Hover overlay */
     const hoverOverlay = document.createElement('div');
     hoverOverlay.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center pointer-events-none';
     hoverOverlay.innerHTML = `
@@ -354,7 +312,7 @@ function buildProductCard(product) {
             <span class="bg-white text-black px-8 py-3 font-bold text-[10px] tracking-[0.3em] uppercase">View Piece</span>
         </div>`;
 
-    // "Sold Out" full overlay when every variant is gone
+    /* Sold-out overlay */
     if (allSoldOut) {
         const soldOutOverlay = document.createElement('div');
         soldOutOverlay.className = 'absolute inset-0 bg-black/60 flex items-center justify-center z-10';
@@ -365,12 +323,12 @@ function buildProductCard(product) {
     imgWrap.appendChild(img);
     imgWrap.appendChild(hoverOverlay);
 
-    // ── Navigate on card click (but NOT when clicking a swatch)
+    /* Navigate on click */
     card.addEventListener('click', () => {
         window.location.href = `/product?id=${product._id}`;
     });
 
-    // ── Info section
+    /* Info section */
     const info = document.createElement('div');
     info.className = 'px-1';
 
@@ -381,39 +339,29 @@ function buildProductCard(product) {
         <span class="font-mono text-gray-400 flex-shrink-0">${product.price} DT</span>`;
 
     const subLine = document.createElement('p');
-    subLine.className = 'text-[9px] tracking-[0.2em] text-gray-600 uppercase mb-3';
+    subLine.className = 'text-[9px] tracking-[0.2em] text-gray-600 uppercase mb-2';
     subLine.textContent = product.category || 'Limited Edition Drop';
 
-    // Sizes
-    let sizesEl = null;
-    if (product.sizes?.length) {
-        sizesEl = document.createElement('p');
-        sizesEl.className = 'text-[8px] text-yellow-600 mb-3 font-mono';
-        sizesEl.textContent = 'Sizes: ' + product.sizes.join('  ');
-    }
+    /* Size pills — correctly handles both DB formats */
+    const sizePills = buildSizePills(product);
 
-    // ── Swatch strip (only if colors exist)
+    /* Color swatches */
     let swatchSection = null;
     if (colors.length > 0) {
         swatchSection = document.createElement('div');
         swatchSection.className = 'flex items-center gap-3 mt-2';
 
-        const strip = buildSwatchStrip(colors, (idx, color) => {
-            // Swap main image to the selected color's image
-            if (color.image) {
-                img.src = color.image;
-            }
-            // Update color name label
-            colorLabel.textContent = color.name;
-        });
-
-        // Active-select the first in-stock swatch by default
-        const firstInStockSwatch = strip.querySelector('.color-swatch:not(.sold-out)');
-        if (firstInStockSwatch) firstInStockSwatch.classList.add('active');
-
         const colorLabel = document.createElement('span');
         colorLabel.className = 'text-[8px] text-gray-500 uppercase tracking-widest transition-all';
         colorLabel.textContent = firstAvailable?.name || '';
+
+        const strip = buildSwatchStrip(colors, (idx, color) => {
+            if (color.image) img.src = color.image;
+            colorLabel.textContent = color.name;
+        });
+
+        const firstInStockSwatch = strip.querySelector('.color-swatch:not(.sold-out)');
+        if (firstInStockSwatch) firstInStockSwatch.classList.add('active');
 
         swatchSection.appendChild(strip);
         swatchSection.appendChild(colorLabel);
@@ -421,7 +369,7 @@ function buildProductCard(product) {
 
     info.appendChild(topRow);
     info.appendChild(subLine);
-    if (sizesEl)      info.appendChild(sizesEl);
+    if (sizePills)     info.appendChild(sizePills);
     if (swatchSection) info.appendChild(swatchSection);
 
     card.appendChild(imgWrap);
@@ -430,17 +378,13 @@ function buildProductCard(product) {
     return card;
 }
 
-// ── Fetch & Render Products ────────────────────────────────────────────────
+/* ── Fetch & Render Products ────────────────────────────────────── */
 async function fetchProducts() {
     const grid = document.getElementById('product-grid');
-
     try {
         const res = await fetch('/api/products');
-
         if (!res.ok) throw new Error(`Server error ${res.status}`);
-
         const products = await res.json();
-
         grid.innerHTML = '';
 
         if (!products?.length) {
@@ -451,13 +395,7 @@ async function fetchProducts() {
             return;
         }
 
-        // The GET /api/products route already calls checkStockStatus on the
-        // backend, so every color already has an `availability` field.
-        // We just render — no manual stock calculation needed here.
-        products.forEach(product => {
-            const card = buildProductCard(product);
-            grid.appendChild(card);
-        });
+        products.forEach(product => grid.appendChild(buildProductCard(product)));
 
     } catch (err) {
         console.error('fetchProducts error:', err);
@@ -474,17 +412,15 @@ async function fetchProducts() {
     }
 }
 
-// ── Slideshow Engine ──────────────────────────────────────────────────────
-
+/* ── Slideshow ──────────────────────────────────────────────────── */
 const FALLBACK_SLIDE = {
     imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop',
     linkUrl:  '#shop',
     caption:  ''
 };
-
-let _ssSlides     = [];
-let _ssCurrent    = 0;
-let _ssTimer      = null;
+let _ssSlides  = [];
+let _ssCurrent = 0;
+let _ssTimer   = null;
 const SS_INTERVAL = 5000;
 
 function buildSlideEl(slide) {
@@ -493,7 +429,6 @@ function buildSlideEl(slide) {
     div.style.backgroundImage    = `url('${slide.imageUrl}')`;
     div.style.backgroundSize     = 'cover';
     div.style.backgroundPosition = 'center';
-
     const a = document.createElement('a');
     a.href      = slide.linkUrl || '#shop';
     a.className = 'absolute inset-0 block';
@@ -505,7 +440,6 @@ function buildSlideEl(slide) {
 function initSlideshow(slides) {
     _ssSlides  = slides.length ? slides : [FALLBACK_SLIDE];
     _ssCurrent = 0;
-
     const container = document.getElementById('hero-slides');
     const dotsWrap  = document.getElementById('hero-dots');
     container.innerHTML = '';
@@ -530,7 +464,6 @@ function initSlideshow(slides) {
             if (el) { el.style.opacity = '0.7'; el.classList.remove('opacity-0'); }
         });
     }
-
     goToSlide(0);
     startAutoAdvance();
 }
@@ -538,19 +471,15 @@ function initSlideshow(slides) {
 function goToSlide(index) {
     const slideEls = document.querySelectorAll('#hero-slides > div');
     const dots     = document.querySelectorAll('#hero-dots button');
-
     _ssCurrent = ((index % _ssSlides.length) + _ssSlides.length) % _ssSlides.length;
-
     slideEls.forEach((el, i) => {
         el.style.opacity = i === _ssCurrent ? '1' : '0';
         el.style.zIndex  = i === _ssCurrent ? '1' : '0';
     });
-
     dots.forEach((dot, i) => {
         const active = i === _ssCurrent;
         dot.className = `rounded-full border border-white/40 transition-all duration-300 ${active ? 'bg-white w-4 h-1.5' : 'bg-transparent w-1.5 h-1.5'}`;
     });
-
     const caption   = _ssSlides[_ssCurrent]?.caption || '';
     const captionEl = document.getElementById('hero-caption');
     if (captionEl) {
@@ -559,16 +488,16 @@ function goToSlide(index) {
     }
 }
 
-function slideshowStep(dir) { goToSlide(_ssCurrent + dir); restartAutoAdvance(); }
-function startAutoAdvance()  { if (_ssSlides.length > 1) _ssTimer = setInterval(() => goToSlide(_ssCurrent + 1), SS_INTERVAL); }
-function restartAutoAdvance(){ clearInterval(_ssTimer); startAutoAdvance(); }
+function slideshowStep(dir)   { goToSlide(_ssCurrent + dir); restartAutoAdvance(); }
+function startAutoAdvance()   { if (_ssSlides.length > 1) _ssTimer = setInterval(() => goToSlide(_ssCurrent + 1), SS_INTERVAL); }
+function restartAutoAdvance() { clearInterval(_ssTimer); startAutoAdvance(); }
 
 const heroEl = document.getElementById('hero-banner');
 if (heroEl) {
     heroEl.addEventListener('mouseenter', () => clearInterval(_ssTimer));
     heroEl.addEventListener('mouseleave', startAutoAdvance);
 }
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft')  slideshowStep(-1);
     if (e.key === 'ArrowRight') slideshowStep(1);
 });
@@ -579,8 +508,7 @@ async function fetchBanner() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const banner = await res.json();
         const slides = Array.isArray(banner?.slides) && banner.slides.length
-            ? banner.slides
-            : [FALLBACK_SLIDE];
+            ? banner.slides : [FALLBACK_SLIDE];
         initSlideshow(slides);
     } catch (err) {
         console.warn('Banner fetch failed, using fallback:', err.message);
@@ -588,7 +516,7 @@ async function fetchBanner() {
     }
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
+/* ── Init ───────────────────────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', () => {
     fetchBanner();
     fetchProducts();

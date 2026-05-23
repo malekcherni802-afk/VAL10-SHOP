@@ -9,313 +9,529 @@
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <style>
-        body { background: #050505; color: white; font-family: 'Syne'; }
+        body { background: #050505; color: white; font-family: 'Syne', sans-serif; }
         .gothic-text { font-family: 'Pirata One'; letter-spacing: 0.2em; }
+
+        /* ── Swiper ───────────────────────────────────────────── */
         .swiper-pagination-bullet { background: #fff !important; }
+
+        /* ── Size buttons ─────────────────────────────────────── */
         .size-btn {
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.12);
             padding: 12px 24px;
             font-size: 10px;
             font-weight: bold;
             text-transform: uppercase;
+            letter-spacing: 0.15em;
             transition: all 0.2s;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 6px;
+            background: transparent;
+            color: #d4d4d4;
+            position: relative;
         }
-        .size-btn.active { background: white; color: black; border-color: white; }
+        .size-btn:hover:not(.disabled) {
+            border-color: rgba(255,255,255,0.5);
+            color: #fff;
+            background: rgba(255,255,255,0.04);
+        }
+        .size-btn.active {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+        /* Sold-out: diagonal slash + dimmed */
         .size-btn.disabled {
-            opacity: 0.4;
-            filter: grayscale(0.5);
+            opacity: 0.32;
             cursor: not-allowed;
             pointer-events: none;
+            text-decoration: line-through;
+            color: #555;
         }
+        .size-btn.disabled::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                to bottom right,
+                transparent calc(50% - 0.5px),
+                rgba(255,60,60,0.4) calc(50% - 0.5px),
+                rgba(255,60,60,0.4) calc(50% + 0.5px),
+                transparent calc(50% + 0.5px)
+            );
+        }
+
+        /* Stock badge on size button hover */
+        .size-btn[data-stock]::before {
+            content: attr(data-stock) ' left';
+            position: absolute;
+            bottom: calc(100% + 5px);
+            left: 50%; transform: translateX(-50%);
+            background: #1a1a1a; border: 1px solid #333;
+            color: #aaa; font-size: 8px; letter-spacing: 0.05em;
+            padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+            pointer-events: none; opacity: 0; transition: opacity 0.15s;
+        }
+        .size-btn:not(.disabled):hover::before { opacity: 1; }
+
+        /* ── Color swatches (product page, larger) ──────────── */
         .color-swatch {
-            width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
-            border: 2px solid transparent; transition: all 0.2s;
-            background-size: cover; background-position: center;
+            width: 48px; height: 48px; border-radius: 50%;
+            cursor: pointer; border: 2px solid transparent;
+            transition: all 0.2s; background-size: cover;
+            background-position: center;
         }
-        .color-swatch:hover { transform: scale(1.1); }
-        .color-swatch.active { border-color: white; box-shadow: 0 0 0 2px black, 0 0 0 4px white; }
-        .color-swatch.sold-out { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
+        .color-swatch:hover:not(.sold-out) { transform: scale(1.1); border-color: rgba(255,255,255,0.5); }
+        .color-swatch.active { border-color: white; box-shadow: 0 0 0 2px #050505, 0 0 0 4px white; }
+        .color-swatch.sold-out {
+            opacity: 0.35; filter: grayscale(1); cursor: not-allowed; pointer-events: none;
+        }
+
+        /* ── Animations ──────────────────────────────────────── */
         .fade-in { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .btn-disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
+
+        /* ── Acquire button disabled ─────────────────────────── */
+        .btn-disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+        /* ── Modal input ─────────────────────────────────────── */
+        .modal-input {
+            width: 100%; background: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding: 14px 0; font-size: 13px; color: white;
+            outline: none; text-transform: uppercase; letter-spacing: 0.2em;
+            transition: border-color 0.2s;
         }
+        .modal-input::placeholder { color: rgba(255,255,255,0.25); }
+        .modal-input:focus { border-bottom-color: white; }
     </style>
 </head>
 <body class="antialiased">
+
+    <!-- Nav -->
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-3xl gothic-text cursor-pointer" onclick="window.location.href='/'">VAL10</h1>
-            <a href="/" class="text-[10px] tracking-widest uppercase text-gray-400 hover:text-white">Back to Archive</a>
+            <h1 class="text-3xl gothic-text cursor-pointer hover:text-gray-400 transition-colors"
+                onclick="window.location.href='/'">VAL10</h1>
+            <a href="/" class="text-[10px] tracking-widest uppercase text-gray-400 hover:text-white transition-colors">← Back to Archive</a>
         </div>
     </nav>
 
     <main class="pt-32 pb-20 max-w-7xl mx-auto px-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-            <!-- Main Image Gallery (Swiper) -->
+
+            <!-- Image Gallery -->
             <div class="space-y-4 fade-in">
-                <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden">
+                <div class="swiper mySwiper aspect-[3/4] bg-zinc-900 border border-white/5 overflow-hidden rounded-sm">
                     <div class="swiper-wrapper" id="image-wrapper"></div>
                     <div class="swiper-pagination"></div>
                 </div>
-                <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic">Swipe to view details</p>
+                <p class="text-[9px] text-gray-600 tracking-[0.3em] uppercase italic text-center">Swipe or click to explore</p>
             </div>
 
             <!-- Product Info -->
-            <div class="flex flex-col space-y-10 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex flex-col space-y-10 fade-in" style="animation-delay:0.2s">
                 <header>
-                    <h2 id="p-name" class="text-5xl md:text-7xl font-extrabold uppercase tracking-tighter leading-none mb-4">Loading...</h2>
+                    <p class="text-[9px] tracking-[0.4em] text-gray-600 uppercase mb-3" id="p-category">Underground</p>
+                    <h2 id="p-name" class="text-5xl md:text-7xl font-extrabold uppercase tracking-tighter leading-none mb-4">Loading…</h2>
                     <div class="flex items-center gap-4">
-                        <span id="p-price" class="text-2xl font-mono">-- DT</span>
-                        <span id="stock-status" class="text-[10px] px-2 py-1 border border-white/10 text-gray-500 uppercase">In Stock</span>
+                        <span id="p-price" class="text-2xl font-mono text-gray-300">— DT</span>
+                        <span id="stock-status"
+                              class="text-[10px] px-3 py-1 border border-white/10 text-gray-500 uppercase tracking-widest rounded-sm">
+                            Checking…
+                        </span>
                     </div>
                 </header>
 
-                <div class="space-y-4">
+                <!-- Description -->
+                <div class="space-y-3">
                     <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">The Narrative</h4>
                     <p id="p-desc" class="text-sm text-gray-400 leading-relaxed max-w-md italic"></p>
                 </div>
 
                 <!-- Color Swatches -->
-                <div class="space-y-3" id="color-section" style="display: none;">
-                    <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Colors</h4>
+                <div class="space-y-4" id="color-section" style="display:none">
+                    <div class="flex items-center justify-between max-w-sm">
+                        <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Color</h4>
+                        <span id="selected-color-name" class="text-[10px] text-gray-400 uppercase tracking-widest"></span>
+                    </div>
                     <div id="color-swatches-container" class="flex flex-wrap gap-3"></div>
                 </div>
 
                 <!-- Sizes -->
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center max-w-sm">
+                <div class="space-y-4" id="sizes-section">
+                    <div class="flex items-center justify-between max-w-sm">
                         <h4 class="text-[10px] tracking-[0.4em] uppercase text-gray-500">Dimensions</h4>
-                        <button class="text-[9px] text-gray-600 underline uppercase">Size Guide</button>
+                        <span id="selected-size-label" class="text-[10px] text-yellow-600 uppercase tracking-widest font-mono"></span>
                     </div>
                     <div id="size-container" class="flex flex-wrap gap-3"></div>
                 </div>
 
-                <button id="acquire-btn" onclick="openModal()" class="group relative w-full max-w-md bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
-                    <span class="relative z-10">Acquire Piece</span>
-                    <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
-                </button>
-                <p id="soldout-message" class="text-red-400 text-[10px] uppercase tracking-widest hidden text-center">This product is sold out and cannot be ordered.</p>
+                <!-- CTA -->
+                <div class="space-y-3 max-w-md">
+                    <button id="acquire-btn" onclick="openModal()"
+                            class="group relative w-full bg-white text-black py-5 font-black uppercase text-sm tracking-[0.3em] overflow-hidden transition-all hover:pr-12">
+                        <span class="relative z-10">Acquire Piece</span>
+                        <span class="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all">→</span>
+                    </button>
+                    <p id="soldout-message" class="hidden text-red-400 text-[10px] uppercase tracking-widest text-center pt-1">
+                        This piece is fully sold out.
+                    </p>
+                </div>
             </div>
         </div>
     </main>
 
+    <!-- Order Modal -->
     <div id="modal" class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
         <div class="w-full max-w-lg space-y-8 fade-in">
-            <div class="flex justify-between items-center">
-                <h3 class="text-3xl gothic-text tracking-widest">ORDER FORM</h3>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            <div class="flex justify-between items-center border-b border-white/8 pb-4">
+                <div>
+                    <h3 class="text-3xl gothic-text tracking-widest mb-1">ORDER FORM</h3>
+                    <p class="text-[9px] text-gray-600 uppercase tracking-widest" id="modal-summary">—</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-600 hover:text-white text-2xl transition-colors">&times;</button>
             </div>
-            <div class="space-y-4">
-                <input type="text" id="cust-name" placeholder="FULL NAME" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
-                <input type="text" id="cust-phone" placeholder="PHONE NUMBER" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
-                <input type="text" id="cust-addr" placeholder="SHIPPING ADDRESS (CITY, ZIP)" class="w-full bg-transparent border-b border-white/10 py-4 text-sm focus:border-white outline-none uppercase tracking-widest">
+
+            <div class="space-y-2">
+                <input type="text" id="cust-name"  class="modal-input" placeholder="Full Name" />
+                <input type="text" id="cust-phone" class="modal-input" placeholder="Phone Number" />
+                <input type="text" id="cust-addr"  class="modal-input" placeholder="Shipping Address (City, ZIP)" />
             </div>
-            <button onclick="submitOrder()" class="w-full bg-white text-black py-4 font-black uppercase text-xs tracking-[0.4em]">Confirm Purchase</button>
+
+            <!-- Order summary inside modal -->
+            <div class="bg-white/3 border border-white/6 rounded-sm p-4 text-[10px] space-y-1 text-gray-400">
+                <div class="flex justify-between"><span class="uppercase tracking-widest">Product</span><span id="ms-name" class="text-white font-bold">—</span></div>
+                <div class="flex justify-between"><span class="uppercase tracking-widest">Size</span><span id="ms-size" class="text-yellow-500 font-mono">—</span></div>
+                <div class="flex justify-between"><span class="uppercase tracking-widest">Color</span><span id="ms-color" class="text-gray-300">—</span></div>
+                <div class="flex justify-between pt-1 border-t border-white/6 mt-2">
+                    <span class="uppercase tracking-widest">Total</span>
+                    <span id="ms-price" class="text-white font-black text-sm">—</span>
+                </div>
+            </div>
+
+            <button onclick="submitOrder()"
+                    class="w-full bg-white text-black py-4 font-black uppercase text-xs tracking-[0.4em] hover:bg-gray-100 transition-colors">
+                Confirm Purchase
+            </button>
         </div>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const productId = urlParams.get('id');
-        let currentProduct = null;
-        let selectedSize = '';
-        let selectedColor = null;
-        let mainSwiper = null;
+<script>
+/* ══════════════════════════════════════════════════════════════
+   VAL10 — product.html
+   ══════════════════════════════════════════════════════════════ */
 
-        async function loadProduct() {
-            try {
-                if (!productId) throw new Error('No product ID');
-                const res = await fetch(`/api/products/${productId}`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                currentProduct = await res.json();
-                document.title = `VAL10 | ${currentProduct.name}`;
-                document.getElementById('p-name').innerText = currentProduct.name;
-                document.getElementById('p-price').innerText = `${currentProduct.price} DT`;
-                document.getElementById('p-desc').innerText = currentProduct.description || "NO DESCRIPTION PROVIDED.";
+const urlParams    = new URLSearchParams(window.location.search);
+const productId    = urlParams.get('id');
+let currentProduct = null;
+let selectedSize   = '';
+let selectedColor  = null;
+let mainSwiper     = null;
 
-                // Check if product is fully sold out (all colors and sizes have zero stock)
-                const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
-                const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
-                const isFullySoldOut = !anyColorStock && !anySizeStock;
-
-                // Update stock status badge
-                const stockSpan = document.getElementById('stock-status');
-                if (isFullySoldOut) {
-                    stockSpan.innerText = "Sold Out";
-                    stockSpan.className = "text-[10px] px-2 py-1 border border-white/10 text-red-400 uppercase";
-                    // Disable the Acquire button and show message
-                    const acquireBtn = document.getElementById('acquire-btn');
-                    acquireBtn.classList.add('btn-disabled');
-                    acquireBtn.onclick = () => alert("This product is sold out and cannot be ordered.");
-                    document.getElementById('soldout-message').classList.remove('hidden');
-                } else {
-                    stockSpan.innerText = "In Stock";
-                    stockSpan.className = "text-[10px] px-2 py-1 border border-white/10 text-green-400 uppercase";
-                }
-
-                // Render color swatches (already handles zero-stock disabling)
-                if (currentProduct.colors && currentProduct.colors.length > 0) {
-                    document.getElementById('color-section').style.display = 'block';
-                    renderColorSwatches();
-                } else {
-                    document.getElementById('color-section').style.display = 'none';
-                    selectedColor = null;
-                    updateMainImages();
-                }
-
-                // Render sizes with disabled state for zero stock
-                renderSizes();
-
-                // If no swatches, still show images
-                if (!currentProduct.colors || currentProduct.colors.length === 0) {
-                    updateMainImages();
-                }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('p-name').innerText = 'Product Not Found';
+/* ── normaliseSizes ─────────────────────────────────────────────
+ * Handles both DB formats:
+ *   NEW: [{ size: "M", stock: 5 }, ...]
+ *   OLD: ["S", "M", "L"]
+ * Always returns [{ size, stock }].
+ */
+function normaliseSizes(rawSizes) {
+    if (!rawSizes || !Array.isArray(rawSizes) || rawSizes.length === 0) return [];
+    return rawSizes
+        .map(s => {
+            if (s && typeof s === 'object' && s.size !== undefined) {
+                return { size: String(s.size), stock: Number(s.stock) || 0 };
             }
+            if (typeof s === 'string' && s.trim()) {
+                return { size: s.trim(), stock: 1 }; // legacy: no stock data → assume available
+            }
+            return null;
+        })
+        .filter(s => s && s.size && s.size !== 'undefined' && s.size !== 'null');
+}
+
+/* ── Load product from API ──────────────────────────────────── */
+async function loadProduct() {
+    try {
+        if (!productId) throw new Error('No product ID in URL');
+        const res = await fetch(`/api/products/${productId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        currentProduct = await res.json();
+
+        document.title = `VAL10 | ${currentProduct.name}`;
+        document.getElementById('p-name').textContent     = currentProduct.name;
+        document.getElementById('p-price').textContent    = `${currentProduct.price} DT`;
+        document.getElementById('p-desc').textContent     = currentProduct.description || 'No description provided.';
+        document.getElementById('p-category').textContent = currentProduct.category || 'Underground';
+
+        /* Sold-out check: ALL colors AND ALL sizes must be 0 */
+        const sizes = normaliseSizes(currentProduct.sizes);
+        const anyColorStock = (currentProduct.colors || []).some(c => (c.stock || 0) > 0);
+        const anySizeStock  = sizes.some(s => s.stock > 0);
+
+        // If no variants at all, product is considered available
+        const hasVariants = (currentProduct.colors || []).length > 0 || sizes.length > 0;
+        const isFullySoldOut = hasVariants ? (!anyColorStock && !anySizeStock) : false;
+
+        /* Stock status badge */
+        const stockSpan = document.getElementById('stock-status');
+        if (isFullySoldOut) {
+            stockSpan.textContent  = 'Sold Out';
+            stockSpan.className    = 'text-[10px] px-3 py-1 border border-red-400/30 text-red-400 uppercase tracking-widest rounded-sm';
+            const acquireBtn = document.getElementById('acquire-btn');
+            acquireBtn.classList.add('btn-disabled');
+            acquireBtn.onclick = () => alert('This piece is fully sold out.');
+            document.getElementById('soldout-message').classList.remove('hidden');
+        } else {
+            stockSpan.textContent = 'In Stock';
+            stockSpan.className   = 'text-[10px] px-3 py-1 border border-green-400/30 text-green-400 uppercase tracking-widest rounded-sm';
         }
 
-        function renderSizes() {
-            const sizeContainer = document.getElementById('size-container');
-            if (!currentProduct.sizes || currentProduct.sizes.length === 0) {
-                sizeContainer.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size available</p>';
-                selectedSize = 'One Size';
-                return;
-            }
-            sizeContainer.innerHTML = '';
-            currentProduct.sizes.forEach(s => {
-                const isOutOfStock = s.stock === 0;
-                const btn = document.createElement('button');
-                btn.innerText = s.size;
-                btn.className = `size-btn ${isOutOfStock ? 'disabled' : ''} ${selectedSize === s.size ? 'active' : ''}`;
-                if (!isOutOfStock) {
-                    btn.onclick = () => selectSize(btn, s.size);
-                }
-                sizeContainer.appendChild(btn);
-            });
-            // Auto-select first in-stock size
-            const firstInStock = currentProduct.sizes.find(s => s.stock > 0);
-            if (firstInStock) {
-                const firstBtn = sizeContainer.querySelector('.size-btn:not(.disabled)');
-                if (firstBtn) selectSize(firstBtn, firstInStock.size);
-            } else {
-                selectedSize = '';
-            }
+        /* Render */
+        renderSizes();
+
+        if (currentProduct.colors && currentProduct.colors.length > 0) {
+            document.getElementById('color-section').style.display = 'block';
+            renderColorSwatches();
+        } else {
+            document.getElementById('color-section').style.display = 'none';
+            selectedColor = null;
+            updateMainImages();
         }
 
-        function renderColorSwatches() {
-            const container = document.getElementById('color-swatches-container');
-            if (!currentProduct.colors || currentProduct.colors.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-[10px]">No color variants</p>';
-                return;
-            }
-            container.innerHTML = '';
-            currentProduct.colors.forEach((color, idx) => {
-                const isOutOfStock = color.stock === 0;
-                const swatch = document.createElement('div');
-                swatch.className = `color-swatch ${isOutOfStock ? 'sold-out' : ''} ${selectedColor === color ? 'active' : ''}`;
-                swatch.style.backgroundImage = `url(${color.image})`;
-                if (!isOutOfStock) {
-                    swatch.onclick = () => {
-                        selectedColor = color;
-                        renderColorSwatches();
-                        updateMainImages();
-                    };
-                }
-                container.appendChild(swatch);
-            });
-            // Auto-select first in-stock color if none selected
-            if (!selectedColor && currentProduct.colors.length) {
-                const firstInStock = currentProduct.colors.find(c => c.stock > 0) || currentProduct.colors[0];
-                selectedColor = firstInStock;
+    } catch (error) {
+        console.error('loadProduct error:', error);
+        document.getElementById('p-name').textContent = 'Product Not Found';
+        document.getElementById('p-desc').textContent = error.message;
+    }
+}
+
+/* ── Render size buttons ────────────────────────────────────── */
+function renderSizes() {
+    const container = document.getElementById('size-container');
+    const sizes = normaliseSizes(currentProduct.sizes);
+
+    if (!sizes.length) {
+        // No sizes defined — auto-set "One Size" and hide the section
+        container.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">One Size</p>';
+        selectedSize = 'One Size';
+        document.getElementById('selected-size-label').textContent = 'One Size';
+        return;
+    }
+
+    container.innerHTML = '';
+    sizes.forEach(s => {
+        const isOutOfStock = s.stock === 0;
+        const btn = document.createElement('button');
+        btn.textContent    = s.size;
+        btn.dataset.stock  = isOutOfStock ? '' : s.stock; // for tooltip
+        btn.className      = `size-btn${isOutOfStock ? ' disabled' : ''}`;
+
+        if (!isOutOfStock) {
+            btn.onclick = () => selectSize(btn, s.size);
+        }
+
+        container.appendChild(btn);
+    });
+
+    // Auto-select first in-stock size
+    const firstInStock = sizes.find(s => s.stock > 0);
+    if (firstInStock) {
+        const firstBtn = container.querySelector('.size-btn:not(.disabled)');
+        if (firstBtn) selectSize(firstBtn, firstInStock.size);
+    } else {
+        selectedSize = '';
+        document.getElementById('selected-size-label').textContent = 'None available';
+    }
+}
+
+/* ── Select a size ──────────────────────────────────────────── */
+function selectSize(btn, size) {
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedSize = size;
+    document.getElementById('selected-size-label').textContent = size;
+}
+
+/* ── Render color swatches ──────────────────────────────────── */
+function renderColorSwatches() {
+    const container = document.getElementById('color-swatches-container');
+    if (!currentProduct.colors || !currentProduct.colors.length) {
+        container.innerHTML = '<p class="text-gray-600 text-[10px] uppercase tracking-widest">No color variants</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    currentProduct.colors.forEach((color, idx) => {
+        const isOutOfStock = (color.stock || 0) === 0;
+
+        const swatch = document.createElement('div');
+        swatch.className = `color-swatch${isOutOfStock ? ' sold-out' : ''}${selectedColor === color ? ' active' : ''}`;
+        swatch.title = `${color.name}${isOutOfStock ? ' — Sold Out' : ` — ${color.stock} left`}`;
+
+        // Use image as background if available, otherwise plain hex color
+        if (color.image) {
+            swatch.style.backgroundImage = `url(${color.image})`;
+        } else {
+            swatch.style.background = color.hex || '#888';
+        }
+
+        if (!isOutOfStock) {
+            swatch.onclick = () => {
+                selectedColor = color;
+                document.getElementById('selected-color-name').textContent = color.name;
                 renderColorSwatches();
                 updateMainImages();
-            }
-        }
-
-        function selectSize(btn, size) {
-            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedSize = size;
-        }
-
-        function updateMainImages() {
-            let imagesArray = [];
-            if (selectedColor && selectedColor.image) {
-                imagesArray = [selectedColor.image];
-            } else if (currentProduct.images && currentProduct.images.length) {
-                imagesArray = currentProduct.images;
-            } else {
-                imagesArray = ['https://via.placeholder.com/800/111/333?text=VAL10'];
-            }
-            const wrapper = document.getElementById('image-wrapper');
-            wrapper.innerHTML = imagesArray.map(img => `<div class="swiper-slide"><img src="${img}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500" alt="${currentProduct.name}"></div>`).join('');
-            if (mainSwiper) mainSwiper.destroy(true, true);
-            mainSwiper = new Swiper(".mySwiper", {
-                pagination: { el: ".swiper-pagination", clickable: true },
-                loop: imagesArray.length > 1,
-                autoplay: imagesArray.length > 1 ? { delay: 3000, disableOnInteraction: false } : false
-            });
-        }
-
-        function openModal() {
-            // Prevent opening if product is fully sold out
-            const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
-            const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
-            if (!anyColorStock && !anySizeStock) {
-                alert("This product is sold out and cannot be ordered.");
-                return;
-            }
-            if (!selectedSize && currentProduct.sizes?.length) { alert("SELECT SIZE FIRST."); return; }
-            if (currentProduct.colors && currentProduct.colors.length && !selectedColor) { alert("SELECT COLOR."); return; }
-            document.getElementById('modal').classList.remove('hidden');
-        }
-
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-
-        async function submitOrder() {
-            const name = document.getElementById('cust-name').value.trim();
-            const phone = document.getElementById('cust-phone').value.trim();
-            const addr = document.getElementById('cust-addr').value.trim();
-            if (!name || !phone || !addr) { alert("COMPLETE ALL FIELDS."); return; }
-            
-            // Double-check stock again before submitting (prevent race conditions)
-            const anyColorStock = (currentProduct.colors || []).some(c => c.stock > 0);
-            const anySizeStock = (currentProduct.sizes || []).some(s => s.stock > 0);
-            if (!anyColorStock && !anySizeStock) {
-                alert("Sorry, this product is now sold out.");
-                closeModal();
-                return;
-            }
-            
-            const orderData = {
-                customerName: name, customerPhone: phone, customerAddress: addr,
-                productName: currentProduct.name,
-                color: selectedColor ? selectedColor.name : '',
-                size: selectedSize,
-                totalPrice: currentProduct.price
             };
-            try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.error || 'Order failed');
-                }
-                alert("ARCHIVE SECURED. WE WILL CONTACT YOU SOON.");
-                window.location.href = "/";
-            } catch (error) { alert(`ERROR: ${error.message}`); }
         }
 
-        window.onload = loadProduct;
-    </script>
+        container.appendChild(swatch);
+    });
+
+    // Auto-select first in-stock color
+    if (!selectedColor) {
+        const firstInStock = currentProduct.colors.find(c => (c.stock || 0) > 0) || currentProduct.colors[0];
+        selectedColor = firstInStock;
+        document.getElementById('selected-color-name').textContent = firstInStock?.name || '';
+        renderColorSwatches();
+        updateMainImages();
+    }
+}
+
+/* ── Update main image gallery ──────────────────────────────── */
+function updateMainImages() {
+    let imagesArray = [];
+
+    if (selectedColor?.image) {
+        imagesArray = [selectedColor.image];
+    } else if (currentProduct.images?.length) {
+        imagesArray = currentProduct.images;
+    } else if (currentProduct.colors?.length) {
+        // Collect all color images as a gallery
+        imagesArray = currentProduct.colors.filter(c => c.image).map(c => c.image);
+    }
+
+    if (!imagesArray.length) {
+        imagesArray = ['https://via.placeholder.com/800/111/333?text=VAL10'];
+    }
+
+    const wrapper = document.getElementById('image-wrapper');
+    wrapper.innerHTML = imagesArray.map(img =>
+        `<div class="swiper-slide">
+            <img src="${img}"
+                 class="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-500"
+                 alt="${currentProduct.name}" />
+         </div>`
+    ).join('');
+
+    if (mainSwiper) mainSwiper.destroy(true, true);
+    mainSwiper = new Swiper('.mySwiper', {
+        pagination: { el: '.swiper-pagination', clickable: true },
+        loop:       imagesArray.length > 1,
+        autoplay:   imagesArray.length > 1 ? { delay: 3500, disableOnInteraction: false } : false
+    });
+}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+function openModal() {
+    // Block if sold out
+    const sizes = normaliseSizes(currentProduct.sizes);
+    const anyColorStock = (currentProduct.colors || []).some(c => (c.stock || 0) > 0);
+    const anySizeStock  = sizes.some(s => s.stock > 0);
+    const hasVariants   = (currentProduct.colors || []).length > 0 || sizes.length > 0;
+
+    if (hasVariants && !anyColorStock && !anySizeStock) {
+        alert('This piece is fully sold out.');
+        return;
+    }
+    if (sizes.length > 0 && !selectedSize) {
+        alert('Please select a size first.');
+        return;
+    }
+    if (currentProduct.colors?.length > 0 && !selectedColor) {
+        alert('Please select a color first.');
+        return;
+    }
+
+    // Populate summary
+    document.getElementById('ms-name').textContent  = currentProduct.name;
+    document.getElementById('ms-size').textContent  = selectedSize  || 'One Size';
+    document.getElementById('ms-color').textContent = selectedColor?.name || '—';
+    document.getElementById('ms-price').textContent = `${currentProduct.price} DT`;
+    document.getElementById('modal-summary').textContent =
+        `${currentProduct.name} · ${selectedSize || 'One Size'}${selectedColor ? ' · ' + selectedColor.name : ''}`;
+
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    // Clear inputs
+    ['cust-name','cust-phone','cust-addr'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+}
+
+/* ── Submit order ───────────────────────────────────────────── */
+async function submitOrder() {
+    const name  = document.getElementById('cust-name').value.trim();
+    const phone = document.getElementById('cust-phone').value.trim();
+    const addr  = document.getElementById('cust-addr').value.trim();
+
+    if (!name || !phone || !addr) {
+        alert('Please fill in all fields.');
+        return;
+    }
+
+    // Re-check stock before submitting (race condition guard)
+    const sizes = normaliseSizes(currentProduct.sizes);
+    const anyColorStock = (currentProduct.colors || []).some(c => (c.stock || 0) > 0);
+    const anySizeStock  = sizes.some(s => s.stock > 0);
+    const hasVariants   = (currentProduct.colors || []).length > 0 || sizes.length > 0;
+
+    if (hasVariants && !anyColorStock && !anySizeStock) {
+        alert('Sorry — this piece just sold out.');
+        closeModal();
+        return;
+    }
+
+    const orderData = {
+        customerName:    name,
+        customerPhone:   phone,
+        customerAddress: addr,
+        productName:     currentProduct.name,
+        size:            selectedSize  || 'One Size',
+        colorName:       selectedColor?.name || '',
+        totalPrice:      currentProduct.price
+    };
+
+    try {
+        const res = await fetch('/api/orders', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(orderData)
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Order failed');
+        }
+
+        alert('ARCHIVE SECURED. WE WILL CONTACT YOU SOON.');
+        window.location.href = '/';
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+/* ── Close modal on backdrop click ─────────────────────────── */
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+/* ── Boot ───────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', loadProduct);
+</script>
 </body>
 </html>
