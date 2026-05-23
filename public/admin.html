@@ -1,847 +1,1482 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAL10 | CONTROL PANEL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #050505; color: white; font-family: 'Inter', sans-serif; min-height: 100vh; }
-        .glass { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
-        input, textarea, select { background: #000 !important; border: 1px solid #1a1a1a !important; color: white !important; transition: all 0.3s ease; }
-        input:focus, textarea:focus, select:focus { border-color: #eab308 !important; outline: none; box-shadow: 0 0 0 2px rgba(234,179,8,0.1); }
-        select option { background: #111; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #111; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        .size-btn.active { background: #eab308; color: black; border-color: #eab308; font-weight: bold; }
-        .status-badge { font-size: 8px; padding: 2px 6px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
-        .status-pending  { background: rgba(234,179,8,0.2);  color: #eab308; }
-        .status-completed{ background: rgba(34,197,94,0.2);  color: #22c55e; }
-        .image-preview { border: 2px dashed rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; transition: all 0.3s ease; }
-        .image-preview:hover { border-color: rgba(234,179,8,0.3); }
-        .loading-spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #eab308; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
-        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; font-size: 12px; font-weight: bold; z-index: 9999; animation: slideIn 0.3s ease-out; max-width: 300px; }
-        @keyframes slideIn { from{transform:translateX(100%);opacity:0;} to{transform:translateX(0);opacity:1;} }
-        .toast-success { background: #10b981; color: white; }
-        .toast-error   { background: #ef4444; color: white; }
-        .toast-warning { background: #f59e0b; color: white; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VAL10 — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ─── Reset & Base ──────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ── Color Swatch Row ── */
-        .color-row { display: grid; grid-template-columns: 1fr 120px 1fr 80px 32px; gap: 6px; align-items: center; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 6px; }
-        .color-hex-preview { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0; }
-        .color-img-label { display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px; padding: 6px 8px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; transition: all 0.2s; white-space: nowrap; overflow: hidden; }
-        .color-img-label:hover { border-color: #eab308; color: #eab308; }
-        .color-img-label.has-image { border-color: rgba(34,197,94,0.4); color: #22c55e; }
-        .remove-color-btn { width: 28px; height: 28px; border-radius: 6px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-        .remove-color-btn:hover { background: rgba(239,68,68,0.3); }
-        .hex-wrapper { display: flex; align-items: center; gap: 6px; }
-    </style>
+  :root {
+    --bg:       #0a0a0a;
+    --surface:  #111111;
+    --card:     #161616;
+    --border:   #2a2a2a;
+    --accent:   #c8ff00;
+    --accent2:  #ff3c3c;
+    --text:     #f0f0f0;
+    --muted:    #666;
+    --radius:   6px;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono:    'Space Mono', monospace;
+    --font-body:    'DM Sans', sans-serif;
+  }
+
+  html { font-size: 14px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  /* ─── Layout ────────────────────────────────────────────────── */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* ─── Sidebar ───────────────────────────────────────────────── */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+    line-height: 1;
+  }
+  .sidebar-logo span {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .nav { padding: 16px 0; flex: 1; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 24px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(200,255,0,0.04); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(200,255,0,0.06);
+  }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ─── Main Content ──────────────────────────────────────────── */
+  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+  }
+  .topbar-actions { display: flex; gap: 10px; }
+
+  /* ─── Buttons ───────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #d4ff1a; color: #000; }
+  .btn-danger { border-color: var(--accent2); color: var(--accent2); }
+  .btn-danger:hover { background: var(--accent2); color: #fff; }
+  .btn-sm { padding: 5px 10px; font-size: 0.65rem; }
+  .btn svg { width: 13px; height: 13px; }
+
+  /* ─── Section Tabs ──────────────────────────────────────────── */
+  .content { padding: 28px 32px; flex: 1; overflow-y: auto; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ─── Stats Row ─────────────────────────────────────────────── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  /* ─── Card / Panel ──────────────────────────────────────────── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .panel-header h3 {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .panel-body { padding: 20px; }
+
+  /* ─── Table ─────────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(42,42,42,0.5);
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(200,255,0,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .badge-green  { background: rgba(200,255,0,0.15); color: var(--accent); border: 1px solid rgba(200,255,0,0.3); }
+  .badge-red    { background: rgba(255,60,60,0.15); color: var(--accent2); border: 1px solid rgba(255,60,60,0.3); }
+  .badge-yellow { background: rgba(255,200,0,0.15); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
+  .badge-gray   { background: rgba(100,100,100,0.2); color: var(--muted); border: 1px solid var(--border); }
+
+  .prod-thumb {
+    width: 40px; height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .color-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+  .color-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .color-dot:hover { transform: scale(1.3); }
+  .actions-cell { display: flex; gap: 6px; }
+
+  /* ─── Modal ─────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 780px;
+    margin: auto;
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp {
+    from { opacity:0; transform: translateY(24px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px 8px 0 0;
+  }
+  .modal-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+  }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.4rem; line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--accent2); }
+  .modal-body { padding: 24px; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* ─── Form ──────────────────────────────────────────────────── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 9px 12px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 72px; }
+
+  /* ─── Color Variants Editor ─────────────────────────────────── */
+  .colors-editor { margin-top: 8px; }
+  .colors-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+  .color-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 110px auto;
+    gap: 10px;
+    align-items: center;
+    transition: border-color 0.15s;
+  }
+  .color-row:hover { border-color: #3a3a3a; }
+
+  .color-preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .color-img-preview {
+    width: 60px; height: 60px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+  }
+  .color-img-preview.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.2rem;
+  }
+  .color-img-input { display: none; }
+  .upload-hint {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .color-swatch-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .color-swatch-preview {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .color-swatch-preview:hover { transform: scale(1.1); }
+  .color-hex-input {
+    width: 90px !important;
+    padding: 6px 8px !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.7rem !important;
+  }
+
+  .remove-color-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px 8px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .remove-color-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .add-color-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    width: 100%;
+    transition: all 0.15s;
+  }
+  .add-color-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── Sizes Tags ────────────────────────────────────────────── */
+  .sizes-tag-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 44px;
+    cursor: text;
+  }
+  .size-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(200,255,0,0.1);
+    border: 1px solid rgba(200,255,0,0.3);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+  }
+  .size-tag-remove {
+    cursor: pointer;
+    color: inherit;
+    font-size: 0.8rem;
+    line-height: 1;
+    opacity: 0.6;
+  }
+  .size-tag-remove:hover { opacity: 1; }
+  .size-tag-input {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    color: var(--text) !important;
+    padding: 2px 4px !important;
+    font-size: 0.85rem !important;
+    min-width: 60px;
+    flex: 1;
+    width: auto !important;
+  }
+
+  /* ─── Toast ─────────────────────────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn 0.2s ease;
+    min-width: 260px;
+  }
+  .toast.success { border-left: 3px solid var(--accent); }
+  .toast.error   { border-left: 3px solid var(--accent2); }
+  @keyframes toastIn {
+    from { opacity:0; transform: translateX(20px); }
+    to   { opacity:1; transform: translateX(0); }
+  }
+
+  /* ─── Loader ────────────────────────────────────────────────── */
+  .loader {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+  }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-state p { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* ─── Orders status colors ──────────────────────────────────── */
+  .order-status select {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+  }
+
+  /* ─── Banner Section ────────────────────────────────────────── */
+  .banner-slide-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .banner-thumb {
+    width: 70px; height: 45px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: var(--bg);
+  }
+
+  /* ─── Confirm Dialog ────────────────────────────────────────── */
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+  }
+  .confirm-box h3 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    color: var(--accent2);
+  }
+  .confirm-box p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+  /* ─── Responsive ────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .sidebar-logo h1, .sidebar-logo span, .nav-item span, .sidebar-footer { display: none; }
+    .nav-item { justify-content: center; padding: 14px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .color-row { grid-template-columns: 70px 1fr 70px auto; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
-<body class="p-4 md:p-6 lg:p-8">
-<div class="max-w-7xl mx-auto">
+<body>
 
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-white/5 pb-6 gap-4">
-        <div>
-            <div class="flex items-center gap-3">
-                <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                <h1 class="text-2xl md:text-3xl font-black italic tracking-tighter text-yellow-500 uppercase">VAL10 ADMIN</h1>
-            </div>
-            <p class="text-[9px] text-gray-500 tracking-[0.3em] uppercase mt-1">Underground Luxury Management</p>
-            <div class="flex items-center gap-2 mt-2">
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span class="text-[8px] text-green-500 font-bold uppercase tracking-widest" id="connection-status">Connecting...</span>
-            </div>
-        </div>
-        <div class="flex flex-wrap gap-3">
-            <a href="/" class="text-[9px] font-bold border border-white/10 px-4 py-2 hover:bg-white hover:text-black transition-all uppercase tracking-widest rounded-lg">Live Site</a>
-            <button onclick="refreshData()" class="text-[9px] font-bold bg-white text-black px-4 py-2 uppercase tracking-widest hover:bg-yellow-500 transition-all rounded-lg">Sync Data</button>
-        </div>
-    </header>
+<div class="shell">
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="glass p-4 rounded-xl border border-white/5">
-            <p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Total Products</p>
-            <p class="text-xl font-bold mt-1" id="total-products">0</p>
-        </div>
-        <div class="glass p-4 rounded-xl border border-white/5">
-            <p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Pending Orders</p>
-            <p class="text-xl font-bold mt-1" id="pending-orders">0</p>
-        </div>
-        <div class="glass p-4 rounded-xl border border-white/5">
-            <p class="text-[8px] text-gray-500 uppercase tracking-[0.3em]">Total Revenue</p>
-            <p class="text-xl font-bold mt-1" id="total-revenue">0 DT</p>
-        </div>
+  <!-- ─── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>VAL10</h1>
+      <span>Admin Panel</span>
     </div>
+    <nav class="nav">
+      <a class="nav-item active" data-section="dashboard" onclick="switchSection('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" data-section="products" onclick="switchSection('products',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span>Products</span>
+      </a>
+      <a class="nav-item" data-section="orders" onclick="switchSection('orders',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        <span>Orders</span>
+      </a>
+      <a class="nav-item" data-section="banner" onclick="switchSection('banner',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span>Banner</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="status-dot"></span>LIVE
+    </div>
+  </aside>
 
-    <!-- ══════════════════════════════════════════════════════
-         HOMEPAGE SLIDESHOW MANAGER — Multi-slide
-         Completely isolated — touches no product/order logic.
-    ═══════════════════════════════════════════════════════ -->
-    <div class="glass rounded-2xl p-6 mb-8 border border-yellow-500/10">
-        <div class="flex items-center gap-3 mb-5">
-            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Homepage Slideshow Manager</h2>
-            <span class="text-[8px] text-gray-700 uppercase tracking-widest ml-auto">Hero Section · Multi-Slide</span>
-        </div>
-
-        <!-- Slide cards list -->
-        <div id="slide-list" class="space-y-3 mb-4"></div>
-
-        <!-- Add slide button -->
-        <button onclick="addSlideCard()" type="button"
-                class="w-full border border-dashed border-white/10 rounded-xl py-3 text-[9px] font-bold text-gray-500 uppercase tracking-[0.25em] hover:border-yellow-500/40 hover:text-yellow-500 transition-all flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Add Slide
+  <!-- ─── Main ─────────────────────────────────────────────────── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">DASHBOARD</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="add-product-btn" style="display:none" onclick="openAddModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Product
         </button>
+        <button class="btn" onclick="refreshAll()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.67"/></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
 
-        <!-- Save all -->
-        <div class="flex items-center gap-4 mt-5 pt-5 border-t border-white/5">
-            <button onclick="saveSlideshow()" id="slideshow-btn"
-                    class="flex-1 bg-yellow-500 text-black font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all flex items-center justify-center gap-3">
-                <span id="slideshow-btn-text">Save Slideshow</span>
-                <div id="slideshow-spinner" class="loading-spinner w-4 h-4 hidden"></div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="section active" id="section-dashboard">
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value" id="stat-products">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="stat-orders">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div>
+          <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value" id="stat-revenue">—</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>Recent Orders</h3></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table id="dash-orders-table">
+                <thead><tr><th>Customer</th><th>Product</th><th>Size</th><th>Color</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+                <tbody id="dash-orders-body"><tr><td colspan="7" class="loading-state"><span class="loader"></span></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products -->
+      <div class="section" id="section-products">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>All Products</h3>
+            <span id="product-count" style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted)"></span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="products-table">
+                <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Sizes</th><th>Colors</th><th>Stock</th><th>Actions</th></tr></thead>
+                <tbody id="products-body"><tr><td colspan="7" class="loading-state"><span class="loader"></span></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="section" id="section-orders">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>All Orders</h3>
+            <span id="order-count" style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted)"></span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="orders-table">
+                <thead><tr><th>Customer</th><th>Phone</th><th>Address</th><th>Product</th><th>Size</th><th>Color</th><th>Amount</th><th>Status</th><th>Date</th><th>Del</th></tr></thead>
+                <tbody id="orders-body"><tr><td colspan="10" class="loading-state"><span class="loader"></span></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner -->
+      <div class="section" id="section-banner">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Slideshow Banners</h3>
+            <button class="btn btn-sm" onclick="saveBanner()">Save Banner</button>
+          </div>
+          <div class="panel-body">
+            <div id="banner-slides-list"></div>
+            <button class="add-color-btn" onclick="addBannerSlide()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Slide
             </button>
-            <p id="slideshow-status" class="text-[8px] text-gray-600 uppercase tracking-widest hidden"></p>
+          </div>
         </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ─── Product Modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">ADD PRODUCT</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
-    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="modal-body">
+      <input type="hidden" id="edit-product-id" />
+      <div class="form-grid">
 
-    <!-- Main Grid -->
-    <div class="grid lg:grid-cols-3 gap-6 lg:gap-8">
-
-        <!-- Product Form -->
-        <div class="lg:col-span-1">
-            <div class="glass p-6 rounded-2xl sticky top-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 id="form-title" class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">New Drop Entry</h2>
-                    <button onclick="clearForm()" class="text-[8px] font-bold text-gray-500 hover:text-white transition uppercase px-3 py-1 border border-white/5 rounded-lg">Clear</button>
-                </div>
-
-                <input type="hidden" id="edit-id">
-
-                <!-- Name -->
-                <div class="mb-4">
-                    <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Product Name *</label>
-                    <input type="text" id="product-name" placeholder="e.g. Shadow Oversized Tee" class="w-full px-4 py-3 rounded-lg text-sm">
-                </div>
-
-                <!-- Price + Category -->
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Price (DT) *</label>
-                        <input type="number" id="product-price" placeholder="199" class="w-full px-4 py-3 rounded-lg text-sm">
-                    </div>
-                    <div>
-                        <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Category</label>
-                        <input type="text" id="product-category" placeholder="Underground" class="w-full px-4 py-3 rounded-lg text-sm">
-                    </div>
-                </div>
-
-                <!-- Description -->
-                <div class="mb-4">
-                    <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-2">Description</label>
-                    <textarea id="product-description" rows="2" placeholder="Drop notes..." class="w-full px-4 py-3 rounded-lg text-sm resize-none"></textarea>
-                </div>
-
-                <!-- Sizes -->
-                <div class="mb-6">
-                    <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em] block mb-3">Available Sizes</label>
-                    <div class="flex flex-wrap gap-2" id="size-buttons">
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="XS">XS</button>
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="S">S</button>
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="M">M</button>
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="L">L</button>
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="XL">XL</button>
-                        <button type="button" class="size-btn text-[9px] font-bold border border-white/10 px-3 py-1.5 rounded-lg uppercase hover:border-yellow-500/50 transition-all" data-size="XXL">XXL</button>
-                    </div>
-                </div>
-
-                <!-- ─── Color Variants ──────────────────────────────── -->
-                <div class="mb-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <label class="text-[8px] text-gray-500 uppercase tracking-[0.2em]">Color Variants</label>
-                        <button type="button" onclick="addColorRow()" class="text-[8px] font-bold text-yellow-500 border border-yellow-500/30 px-3 py-1 rounded-lg hover:bg-yellow-500/10 transition uppercase tracking-widest">+ Add Color</button>
-                    </div>
-
-                    <!-- Column headers -->
-                    <div class="grid gap-1 mb-2 px-1" style="grid-template-columns:1fr 120px 1fr 80px 32px">
-                        <span class="text-[7px] text-gray-600 uppercase tracking-widest">Name</span>
-                        <span class="text-[7px] text-gray-600 uppercase tracking-widest">Hex</span>
-                        <span class="text-[7px] text-gray-600 uppercase tracking-widest">Image</span>
-                        <span class="text-[7px] text-gray-600 uppercase tracking-widest">Stock</span>
-                        <span></span>
-                    </div>
-
-                    <div id="color-rows-container"></div>
-
-                    <p class="text-[8px] text-gray-700 mt-2 italic">Stock = 0 → automatically shown as Sold Out on storefront</p>
-                </div>
-                <!-- ──────────────────────────────────────────────────── -->
-
-                <button onclick="submitProduct()" id="submit-btn"
-                    class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all duration-300 flex items-center justify-center gap-3">
-                    <span id="submit-btn-text">Launch Drop</span>
-                    <div id="submit-spinner" class="loading-spinner w-4 h-4 hidden"></div>
-                </button>
-            </div>
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" id="f-name" placeholder="e.g. VAL10 Tee" />
+        </div>
+        <div class="form-group">
+          <label>Price (TND) *</label>
+          <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" id="f-category" placeholder="Underground" />
+        </div>
+        <div class="form-group">
+          <label>Sizes (press Enter or comma)</label>
+          <div class="sizes-tag-wrap" id="sizes-tag-wrap" onclick="document.getElementById('sizes-input').focus()">
+            <input type="text" class="size-tag-input" id="sizes-input" placeholder="XS, S, M, L…" />
+          </div>
+          <!-- hidden storage -->
+          <input type="hidden" id="f-sizes" />
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="f-description" placeholder="Product description…"></textarea>
         </div>
 
-        <!-- Right Column: Products + Orders -->
-        <div class="lg:col-span-2 space-y-8">
-
-            <!-- Products Table -->
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Product Archive</h2>
-                    <span id="product-count" class="text-[8px] text-gray-600 uppercase tracking-widest">Loading...</span>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-[11px]">
-                        <thead>
-                            <tr class="border-b border-white/5 text-[8px] text-gray-500 uppercase tracking-[0.2em]">
-                                <th class="text-left py-4 px-6 font-normal">Product</th>
-                                <th class="text-left py-4 px-4 font-normal">Colors</th>
-                                <th class="text-left py-4 px-4 font-normal">Price</th>
-                                <th class="text-left py-4 px-4 font-normal">Stock</th>
-                                <th class="text-left py-4 px-4 font-normal">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="products-tbody">
-                            <tr><td colspan="5" class="text-center py-12 text-gray-600 text-[9px] uppercase tracking-widest">Loading archive...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Orders Table -->
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Incoming Orders</h2>
-                    <span id="order-count" class="text-[8px] text-gray-600 uppercase tracking-widest">Loading...</span>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-[11px]">
-                        <thead>
-                            <tr class="border-b border-white/5 text-[8px] text-gray-500 uppercase tracking-[0.2em]">
-                                <th class="text-left py-4 px-6 font-normal">Customer</th>
-                                <th class="text-left py-4 px-4 font-normal">Product</th>
-                                <th class="text-left py-4 px-4 font-normal">Size / Color</th>
-                                <th class="text-left py-4 px-4 font-normal">Total</th>
-                                <th class="text-left py-4 px-4 font-normal">Status</th>
-                                <th class="text-left py-4 px-4 font-normal">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-tbody">
-                            <tr><td colspan="6" class="text-center py-12 text-gray-600 text-[9px] uppercase tracking-widest">Loading orders...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- Colors -->
+        <div class="form-group full">
+          <label>Color Variants</label>
+          <div class="colors-editor">
+            <div class="colors-list" id="colors-list"></div>
+            <button class="add-color-btn" onclick="addColorRow()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Color Variant
+            </button>
+          </div>
         </div>
+
+      </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save Product
+      </button>
+    </div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ SCRIPTS -->
+<!-- ─── Confirm Delete ─────────────────────────────────────────── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3>DELETE?</h3>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast Container ───────────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
 <script>
-// ── Toast ──────────────────────────────────────────────────────────────────
-function showToast(message, type = 'success') {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
+/* ═══════════════════════════════════════════════════════════════
+   VAL10 ADMIN — Full Script
+   ═══════════════════════════════════════════════════════════════ */
 
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
+const API = '';   // same origin
+let allProducts  = [];
+let allOrders    = [];
+let editingId    = null;
+let sizesArray   = [];
+let confirmCallback = null;
+
+/* ─── Toast ─────────────────────────────────────────────────── */
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '✓' : '✗'}</span>${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
 }
 
-// ── Image Compression (Canvas-based) ──────────────────────────────────────
-/**
- * compressImage(file)
- * Resizes & JPEG-compresses a File/Blob to ≤ ~1.5 MB base64 string.
- * Prevents 500 errors caused by sending raw 12 MB+ images to the backend.
- */
-function compressImage(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Failed to read image file'));
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onerror = () => reject(new Error('Failed to decode image'));
-            img.onload = () => {
-                try {
-                    const MAX_DIM  = 1200;   // max width or height in px
-                    const QUALITY  = 0.78;   // JPEG quality (0–1)
-
-                    let { width, height } = img;
-                    if (width > MAX_DIM || height > MAX_DIM) {
-                        if (width >= height) { height = Math.round(height * MAX_DIM / width);  width = MAX_DIM; }
-                        else                 { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
-                    }
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width  = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const base64 = canvas.toDataURL('image/jpeg', QUALITY);
-                    resolve(base64);
-                } catch (err) {
-                    reject(err);
-                }
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
+/* ─── Nav ────────────────────────────────────────────────────── */
+function switchSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = name.toUpperCase();
+  document.getElementById('add-product-btn').style.display = name === 'products' ? 'flex' : 'none';
+  if (name === 'orders') fetchOrders();
+  if (name === 'banner') fetchBanner();
 }
 
-// ── Color Row Management ───────────────────────────────────────────────────
-let colorRowCount = 0;
+/* ─── Init & Refresh ─────────────────────────────────────────── */
+async function refreshAll() {
+  await Promise.all([fetchProducts(), fetchOrders()]);
+  updateStats();
+}
 
-function addColorRow(prefill = {}) {
-    const id  = ++colorRowCount;
-    const row = document.createElement('div');
-    row.className = 'color-row fade-in';
-    row.dataset.rowId = id;
+function updateStats() {
+  document.getElementById('stat-products').textContent = allProducts.length;
+  document.getElementById('stat-orders').textContent   = allOrders.length;
+  const pending = allOrders.filter(o => o.status === 'Pending').length;
+  document.getElementById('stat-pending').textContent  = pending;
+  const rev = allOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
+  document.getElementById('stat-revenue').textContent  = rev.toFixed(0) + ' TND';
+  renderDashOrders();
+}
 
-    row.innerHTML = `
-        <input type="text"
-               id="color-name-${id}"
-               placeholder="e.g. Onyx"
-               value="${prefill.name || ''}"
-               class="px-2 py-2 rounded-md text-[11px] w-full">
+/* ─── Products ────────────────────────────────────────────────── */
+async function fetchProducts() {
+  try {
+    const res  = await fetch(`${API}/api/products`);
+    allProducts = await res.json();
+    renderProducts();
+    document.getElementById('product-count').textContent = `${allProducts.length} items`;
+  } catch (e) {
+    console.error('fetchProducts error:', e);
+    toast('Failed to load products', 'error');
+  }
+}
 
-        <div class="hex-wrapper">
-            <div class="color-hex-preview" id="hex-preview-${id}"
-                 style="background:${prefill.hex || '#ffffff'}"
-                 onclick="document.getElementById('color-hex-input-${id}').click()"></div>
-            <input type="color"
-                   id="color-hex-input-${id}"
-                   value="${prefill.hex || '#ffffff'}"
-                   class="w-0 h-0 opacity-0 absolute"
-                   oninput="syncHexPreview(${id}, this.value)">
-            <input type="text"
-                   id="color-hex-text-${id}"
-                   value="${prefill.hex || '#ffffff'}"
-                   placeholder="#ffffff"
-                   class="px-2 py-2 rounded-md text-[11px] w-full"
-                   oninput="syncHexText(${id}, this.value)">
+function renderProducts() {
+  const tbody = document.getElementById('products-body');
+  if (!allProducts.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><p>No products yet</p></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allProducts.map(p => {
+    const firstImg = p.colors?.[0]?.image || p.images?.[0] || '';
+    const thumb = firstImg
+      ? `<img class="prod-thumb" src="${firstImg}" alt="${p.name}" />`
+      : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">?</div>`;
+
+    const dots = (p.colors || []).map(c =>
+      `<span class="color-dot" style="background:${c.hex||'#888'}" title="${c.name} — ${c.stock} in stock"></span>`
+    ).join('');
+
+    const totalStock = (p.colors || []).reduce((s, c) => s + (c.stock || 0), 0);
+    const stockBadge = totalStock > 0
+      ? `<span class="badge badge-green">${totalStock}</span>`
+      : `<span class="badge badge-red">SOLD OUT</span>`;
+
+    const sizesText = (p.sizes || []).join(', ') || '—';
+
+    return `<tr>
+      <td>${thumb}</td>
+      <td style="font-weight:500">${p.name}</td>
+      <td style="font-family:var(--font-mono)">${p.price} TND</td>
+      <td style="font-size:0.78rem;color:var(--muted)">${sizesText}</td>
+      <td><div class="color-dots">${dots || '<span style="color:var(--muted)">—</span>'}</div></td>
+      <td>${stockBadge}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-sm" onclick="openEditModal('${p._id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="confirmDelete('product','${p._id}','${p.name.replace(/'/g,"\\'")}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
         </div>
-
-        <label class="color-img-label ${prefill.image ? 'has-image' : ''}" id="img-label-${id}"
-               onclick="document.getElementById('color-img-file-${id}').click()">
-            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span id="img-label-text-${id}">${prefill.image ? '✓ Image set' : 'Upload'}</span>
-            <input type="file"
-                   id="color-img-file-${id}"
-                   accept="image/*"
-                   class="hidden"
-                   onchange="handleColorImage(${id}, this)">
-        </label>
-        <input type="hidden" id="color-img-data-${id}" value="${prefill.image || ''}">
-
-        <input type="number"
-               id="color-stock-${id}"
-               placeholder="0"
-               min="0"
-               value="${prefill.stock ?? ''}"
-               class="px-2 py-2 rounded-md text-[11px] w-full">
-
-        <button type="button" class="remove-color-btn" onclick="removeColorRow(${id})" title="Remove color">×</button>
-    `;
-
-    document.getElementById('color-rows-container').appendChild(row);
+      </td>
+    </tr>`;
+  }).join('');
 }
 
-function removeColorRow(id) {
-    const row = document.querySelector(`[data-row-id="${id}"]`);
-    if (row) row.remove();
+/* ─── Modal open/close ─────────────────────────────────────────── */
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'ADD PRODUCT';
+  clearForm();
+  document.getElementById('product-modal').classList.add('open');
 }
 
-function syncHexPreview(id, value) {
-    document.getElementById(`hex-preview-${id}`).style.background = value;
-    document.getElementById(`color-hex-text-${id}`).value = value;
+function openEditModal(id) {
+  const p = allProducts.find(x => x._id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'EDIT PRODUCT';
+  clearForm();
+  document.getElementById('edit-product-id').value = id;
+  document.getElementById('f-name').value        = p.name || '';
+  document.getElementById('f-price').value       = p.price || '';
+  document.getElementById('f-category').value    = p.category || '';
+  document.getElementById('f-description').value = p.description || '';
+
+  // sizes
+  sizesArray = [...(p.sizes || [])];
+  renderSizeTags();
+
+  // colors
+  const list = document.getElementById('colors-list');
+  list.innerHTML = '';
+  (p.colors || []).forEach(c => addColorRow(c));
+
+  document.getElementById('product-modal').classList.add('open');
 }
 
-function syncHexText(id, value) {
-    if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-        document.getElementById(`color-hex-input-${id}`).value = value;
-        document.getElementById(`hex-preview-${id}`).style.background = value;
+function closeModal() {
+  document.getElementById('product-modal').classList.remove('open');
+  editingId = null;
+}
+
+function clearForm() {
+  ['f-name','f-price','f-category','f-description','edit-product-id'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  sizesArray = [];
+  renderSizeTags();
+  document.getElementById('colors-list').innerHTML = '';
+}
+
+/* ─── Sizes tag input ─────────────────────────────────────────── */
+function renderSizeTags() {
+  const wrap  = document.getElementById('sizes-tag-wrap');
+  const input = document.getElementById('sizes-input');
+  wrap.innerHTML = '';
+  sizesArray.forEach((s, i) => {
+    const tag = document.createElement('span');
+    tag.className = 'size-tag';
+    tag.innerHTML = `${s} <span class="size-tag-remove" onclick="removeSize(${i})">×</span>`;
+    wrap.appendChild(tag);
+  });
+  wrap.appendChild(input);
+  input.value = '';
+  input.focus();
+}
+
+function removeSize(i) {
+  sizesArray.splice(i, 1);
+  renderSizeTags();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sizes-input').addEventListener('keydown', e => {
+    const val = e.target.value.trim();
+    if ((e.key === 'Enter' || e.key === ',') && val) {
+      e.preventDefault();
+      val.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+        if (!sizesArray.includes(s)) sizesArray.push(s);
+      });
+      renderSizeTags();
+    } else if (e.key === 'Backspace' && !e.target.value && sizesArray.length) {
+      sizesArray.pop();
+      renderSizeTags();
     }
-}
-
-async function handleColorImage(id, input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const label    = document.getElementById(`img-label-${id}`);
-    const labelTxt = document.getElementById(`img-label-text-${id}`);
-    labelTxt.textContent = 'Compressing…';
-
-    try {
-        const base64 = await compressImage(file);
-        document.getElementById(`color-img-data-${id}`).value = base64;
-        label.classList.add('has-image');
-        labelTxt.textContent = '✓ Image set';
-        showToast('Image compressed & ready', 'success');
-    } catch (err) {
-        console.error('Image compression error:', err);
-        showToast('Image compression failed: ' + err.message, 'error');
-        labelTxt.textContent = 'Upload';
-        label.classList.remove('has-image');
-    }
-}
-
-function collectColorRows() {
-    const rows = document.querySelectorAll('#color-rows-container .color-row');
-    const result = [];
-    rows.forEach(row => {
-        const id    = row.dataset.rowId;
-        const name  = document.getElementById(`color-name-${id}`)?.value?.trim();
-        const hex   = document.getElementById(`color-hex-text-${id}`)?.value?.trim() || '#ffffff';
-        const image = document.getElementById(`color-img-data-${id}`)?.value || '';
-        const stock = parseInt(document.getElementById(`color-stock-${id}`)?.value) || 0;
-        if (name) result.push({ name, hex, image, stock });
-    });
-    return result;
-}
-
-// ── Size Buttons ───────────────────────────────────────────────────────────
-document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.addEventListener('click', () => btn.classList.toggle('active'));
+  });
 });
 
-function getSelectedSizes() {
-    return [...document.querySelectorAll('.size-btn.active')].map(b => b.dataset.size);
+/* ─── Color Rows ──────────────────────────────────────────────── */
+function addColorRow(data = {}) {
+  const list = document.getElementById('colors-list');
+  const idx  = list.children.length;
+  const row  = document.createElement('div');
+  row.className = 'color-row';
+  row.dataset.idx = idx;
+
+  const img   = data.image || '';
+  const name  = data.name  || '';
+  const hex   = data.hex   || '#000000';
+  const stock = data.stock !== undefined ? data.stock : 0;
+
+  row.innerHTML = `
+    <!-- Image preview & upload -->
+    <div class="color-preview-wrap">
+      ${img
+        ? `<img class="color-img-preview" src="${img}" data-base64="${img}" />`
+        : `<div class="color-img-preview placeholder" style="width:60px;height:60px;border-radius:4px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;font-size:1.4rem">＋</div>`
+      }
+      <span class="upload-hint">click to upload</span>
+      <input type="file" class="color-img-input" accept="image/*" />
+    </div>
+
+    <!-- Name -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <label style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Color Name</label>
+      <input type="text" class="color-name" placeholder="e.g. Black" value="${name}" />
+    </div>
+
+    <!-- Hex -->
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+      <label style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Hex</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div class="color-swatch-preview" style="background:${hex}" onclick="this.nextElementSibling.click()"></div>
+        <input type="color" style="display:none" value="${hex}" oninput="this.previousElementSibling.style.background=this.value" />
+        <input type="text" class="color-hex color-hex-input" value="${hex}" placeholder="#000000"
+               oninput="this.previousElementSibling.previousElementSibling.previousElementSibling.style.background=this.value;this.previousElementSibling.value=this.value" />
+      </div>
+    </div>
+
+    <!-- Stock -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <label style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Stock</label>
+      <input type="number" class="color-stock" min="0" value="${stock}" placeholder="0" />
+    </div>
+
+    <!-- Remove -->
+    <button class="remove-color-btn" onclick="this.closest('.color-row').remove()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  `;
+
+  list.appendChild(row);
+
+  /* Wire up image upload */
+  const preview  = row.querySelector('.color-img-preview');
+  const fileInput = row.querySelector('.color-img-input');
+  const hint     = row.querySelector('.upload-hint');
+
+  const triggerUpload = () => fileInput.click();
+  preview.addEventListener('click', triggerUpload);
+  hint.addEventListener('click', triggerUpload);
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 900, 0.8);
+      // Replace placeholder div with img if needed
+      if (preview.tagName === 'DIV') {
+        const img = document.createElement('img');
+        img.className = 'color-img-preview';
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', triggerUpload);
+        preview.replaceWith(img);
+        row.querySelector('.color-img-preview').dataset.base64 = compressed;
+        row.querySelector('.color-img-preview').src = compressed;
+      } else {
+        preview.src = compressed;
+        preview.dataset.base64 = compressed;
+      }
+      toast('Image uploaded ✓');
+    } catch(err) {
+      toast('Image upload failed: ' + err.message, 'error');
+    }
+  });
+
+  /* Sync hex text ↔ color picker */
+  const colorPicker = row.querySelector('input[type="color"]');
+  const hexText     = row.querySelector('.color-hex');
+  hexText.addEventListener('input', () => {
+    const v = hexText.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) colorPicker.value = v;
+    row.querySelector('.color-swatch-preview').style.background = v;
+  });
+  colorPicker.addEventListener('input', () => {
+    hexText.value = colorPicker.value;
+    row.querySelector('.color-swatch-preview').style.background = colorPicker.value;
+  });
 }
 
-function setSelectedSizes(sizes = []) {
-    document.querySelectorAll('.size-btn').forEach(btn => {
-        btn.classList.toggle('active', sizes.includes(btn.dataset.size));
+/* ─── Image compression ─────────────────────────────────────── */
+function compressImage(file, maxW = 900, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale  = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ─── Read colors from DOM ────────────────────────────────────── */
+function readColorsFromDOM() {
+  const rows = document.querySelectorAll('#colors-list .color-row');
+  return Array.from(rows).map(row => {
+    const imgEl = row.querySelector('.color-img-preview');
+    const image = imgEl?.dataset?.base64 || imgEl?.src || '';
+    const hex   = row.querySelector('.color-hex')?.value?.trim()  || '#000000';
+    const name  = row.querySelector('.color-name')?.value?.trim() || '';
+    const stock = parseInt(row.querySelector('.color-stock')?.value, 10) || 0;
+    return { name, hex, image, stock };
+  });
+}
+
+/* ─── Save Product (Add / Edit) ───────────────────────────────── */
+async function saveProduct() {
+  const id          = document.getElementById('edit-product-id').value;
+  const name        = document.getElementById('f-name').value.trim();
+  const price       = parseFloat(document.getElementById('f-price').value);
+  const category    = document.getElementById('f-category').value.trim() || 'Underground';
+  const description = document.getElementById('f-description').value.trim();
+  const colors      = readColorsFromDOM();
+
+  /* Validation */
+  if (!name)        { toast('Product name is required', 'error'); return; }
+  if (isNaN(price)) { toast('Valid price is required',  'error'); return; }
+
+  const payload = { name, price, category, description, sizes: sizesArray, colors };
+
+  /* Payload size guard — MongoDB 16 MB cap */
+  const sizeKB = new Blob([JSON.stringify(payload)]).size / 1024;
+  console.log(`📦 Payload size: ${sizeKB.toFixed(1)} KB | Colors: ${colors.length}`);
+  colors.forEach((c, i) => console.log(`  [${i}] ${c.name} hex:${c.hex} stock:${c.stock} imgLen:${c.image?.length??0}`));
+
+  if (sizeKB > 14000) {
+    toast(`Payload too large (${sizeKB.toFixed(0)} KB). Reduce image sizes.`, 'error');
+    return;
+  }
+
+  const isEdit  = !!id;
+  const url     = isEdit ? `${API}/api/products/${id}` : `${API}/api/products`;
+  const method  = isEdit ? 'PUT' : 'POST';
+
+  try {
+    const res  = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-}
+    const data = await res.json();
 
-// ── Form Submit ────────────────────────────────────────────────────────────
-async function submitProduct() {
-    const name        = document.getElementById('product-name').value.trim();
-    const price       = parseFloat(document.getElementById('product-price').value);
-    const description = document.getElementById('product-description').value.trim();
-    const category    = document.getElementById('product-category').value.trim() || 'Underground';
-    const editId      = document.getElementById('edit-id').value;
-    const sizes       = getSelectedSizes();
-    const colors      = collectColorRows();
+    console.log(`📥 Server response [${res.status}]:`, data);
 
-    if (!name)         return showToast('Product name is required', 'error');
-    if (isNaN(price))  return showToast('Valid price is required', 'error');
-
-    const submitBtn     = document.getElementById('submit-btn');
-    const btnText       = document.getElementById('submit-btn-text');
-    const spinner       = document.getElementById('submit-spinner');
-    submitBtn.disabled  = true;
-    btnText.textContent = editId ? 'Updating…' : 'Launching…';
-    spinner.classList.remove('hidden');
-
-    try {
-        const payload = { name, price, description, category, sizes, colors };
-
-        const url    = editId ? `/api/products/${editId}` : '/api/products';
-        const method = editId ? 'PUT' : 'POST';
-
-        const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(err.error || `HTTP ${res.status}`);
-        }
-
-        showToast(editId ? 'Drop updated!' : 'New drop launched!', 'success');
-        clearForm();
-        refreshData();
-    } catch (err) {
-        console.error('submitProduct error:', err);
-        showToast('Error: ' + err.message, 'error');
-    } finally {
-        submitBtn.disabled  = false;
-        btnText.textContent = editId ? 'Update Drop' : 'Launch Drop';
-        spinner.classList.add('hidden');
-    }
-}
-
-// ── Edit Product ───────────────────────────────────────────────────────────
-function editProduct(product) {
-    document.getElementById('edit-id').value             = product._id;
-    document.getElementById('product-name').value        = product.name || '';
-    document.getElementById('product-price').value       = product.price || '';
-    document.getElementById('product-description').value = product.description || '';
-    document.getElementById('product-category').value    = product.category || '';
-    document.getElementById('form-title').textContent    = 'Edit Drop';
-    document.getElementById('submit-btn-text').textContent = 'Update Drop';
-
-    setSelectedSizes(product.sizes || []);
-
-    // Rebuild color rows
-    document.getElementById('color-rows-container').innerHTML = '';
-    colorRowCount = 0;
-    if (Array.isArray(product.colors) && product.colors.length > 0) {
-        product.colors.forEach(c => addColorRow(c));
+    if (!res.ok) {
+      toast(data.error || 'Save failed', 'error');
+      return;
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast(isEdit ? 'Product updated ✓' : 'Product added ✓');
+    closeModal();
+    await fetchProducts();   // ← re-render table with fresh DB data
+    updateStats();
+  } catch (err) {
+    console.error('saveProduct error:', err);
+    toast('Network error: ' + err.message, 'error');
+  }
 }
 
-// ── Delete Product ─────────────────────────────────────────────────────────
+/* ─── Delete Product ─────────────────────────────────────────── */
 async function deleteProduct(id) {
-    if (!confirm('Permanently delete this drop?')) return;
-    try {
-        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        showToast('Drop deleted', 'warning');
-        refreshData();
-    } catch (err) {
-        showToast('Delete failed: ' + err.message, 'error');
-    }
+  try {
+    const res = await fetch(`${API}/api/products/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Delete failed');
+    toast('Product deleted');
+    await fetchProducts();
+    updateStats();
+  } catch (err) {
+    toast('Delete failed: ' + err.message, 'error');
+  }
 }
 
-// ── Clear Form ─────────────────────────────────────────────────────────────
-function clearForm() {
-    document.getElementById('edit-id').value             = '';
-    document.getElementById('product-name').value        = '';
-    document.getElementById('product-price').value       = '';
-    document.getElementById('product-description').value = '';
-    document.getElementById('product-category').value    = '';
-    document.getElementById('form-title').textContent    = 'New Drop Entry';
-    document.getElementById('submit-btn-text').textContent = 'Launch Drop';
-    document.getElementById('color-rows-container').innerHTML = '';
-    colorRowCount = 0;
-    setSelectedSizes([]);
+/* ─── Orders ─────────────────────────────────────────────────── */
+async function fetchOrders() {
+  try {
+    const res = await fetch(`${API}/api/orders`);
+    allOrders = await res.json();
+    renderOrders();
+    renderDashOrders();
+    updateStats();
+    document.getElementById('order-count').textContent = `${allOrders.length} orders`;
+  } catch (e) {
+    console.error('fetchOrders error:', e);
+    toast('Failed to load orders', 'error');
+  }
 }
 
-// ── Render Products Table ──────────────────────────────────────────────────
-function renderProducts(products) {
-    const tbody = document.getElementById('products-tbody');
-    document.getElementById('total-products').textContent = products.length;
-    document.getElementById('product-count').textContent  = `${products.length} items`;
-
-    if (!products.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-12 text-gray-600 text-[9px] uppercase tracking-widest">Archive empty</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = products.map(p => {
-        // Build mini color swatch strip for table
-        const swatches = (p.colors || []).map(c =>
-            `<span title="${c.name} (${c.availability || (c.stock > 0 ? 'In Stock' : 'Sold Out')})"
-                   style="background:${c.hex};opacity:${c.stock === 0 ? 0.35 : 1}"
-                   class="inline-block w-4 h-4 rounded-full border border-white/10"></span>`
-        ).join('');
-
-        const totalStock = (p.colors || []).reduce((s, c) => s + (c.stock || 0), 0);
-        const stockColor = totalStock > 0 ? 'text-green-400' : 'text-red-400';
-
-        return `
-        <tr class="border-b border-white/5 hover:bg-white/[0.02] transition group">
-            <td class="py-4 px-6">
-                <div class="font-bold text-white truncate max-w-[160px]">${p.name}</div>
-                <div class="text-[8px] text-gray-600 uppercase tracking-wider mt-0.5">${p.category || '—'}</div>
-            </td>
-            <td class="py-4 px-4">
-                <div class="flex gap-1 flex-wrap max-w-[100px]">${swatches || '<span class="text-gray-700 text-[8px]">None</span>'}</div>
-            </td>
-            <td class="py-4 px-4 font-mono text-yellow-500">${p.price} DT</td>
-            <td class="py-4 px-4 font-bold text-[11px] ${stockColor}">${totalStock} units</td>
-            <td class="py-4 px-4">
-                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick='editProduct(${JSON.stringify(p)})'
-                            class="text-[8px] font-bold border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white hover:text-black transition uppercase">Edit</button>
-                    <button onclick="deleteProduct('${p._id}')"
-                            class="text-[8px] font-bold border border-red-500/20 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition uppercase">Del</button>
-                </div>
-            </td>
-        </tr>`;
-    }).join('');
+function renderOrders() {
+  const tbody = document.getElementById('orders-body');
+  if (!allOrders.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>No orders yet</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allOrders.map(o => {
+    const date = new Date(o.createdAt).toLocaleDateString();
+    const badge = statusBadge(o.status);
+    return `<tr>
+      <td style="font-weight:500">${o.customerName}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem">${o.customerPhone}</td>
+      <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.customerAddress}</td>
+      <td>${o.productName}</td>
+      <td><span class="badge badge-gray">${o.size}</span></td>
+      <td>${o.colorName||'—'}</td>
+      <td style="font-family:var(--font-mono)">${o.totalPrice} TND</td>
+      <td>
+        <select onchange="updateOrderStatus('${o._id}', this.value)" class="order-status">
+          ${['Pending','Confirmed','Shipped','Delivered','Cancelled'].map(s =>
+            `<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td style="font-size:0.75rem;color:var(--muted)">${date}</td>
+      <td>
+        <button class="btn btn-sm btn-danger" onclick="confirmDelete('order','${o._id}','order #${o._id.slice(-6)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
-// ── Render Orders Table ────────────────────────────────────────────────────
+function renderDashOrders() {
+  const tbody = document.getElementById('dash-orders-body');
+  const recent = [...allOrders].slice(0, 8);
+  if (!recent.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>No orders yet</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = recent.map(o => {
+    const date = new Date(o.createdAt).toLocaleDateString();
+    return `<tr>
+      <td style="font-weight:500">${o.customerName}</td>
+      <td>${o.productName}</td>
+      <td><span class="badge badge-gray">${o.size}</span></td>
+      <td>${o.colorName||'—'}</td>
+      <td style="font-family:var(--font-mono)">${o.totalPrice} TND</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="font-size:0.75rem;color:var(--muted)">${date}</td>
+    </tr>`;
+  }).join('');
+}
+
+function statusBadge(s) {
+  const map = {
+    Pending:   'badge-yellow',
+    Confirmed: 'badge-green',
+    Shipped:   'badge-green',
+    Delivered: 'badge-green',
+    Cancelled: 'badge-red'
+  };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
 async function updateOrderStatus(id, status) {
-    try {
-        const res = await fetch(`/api/orders/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        showToast(`Order marked as ${status}`, 'success');
-        refreshData();
-    } catch (err) {
-        showToast('Update failed: ' + err.message, 'error');
-    }
+  try {
+    const res = await fetch(`${API}/api/orders/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Update failed');
+    toast(`Status → ${status}`);
+    const idx = allOrders.findIndex(o => o._id === id);
+    if (idx !== -1) allOrders[idx].status = status;
+    updateStats();
+  } catch (err) {
+    toast('Failed to update status', 'error');
+  }
 }
 
 async function deleteOrder(id) {
-    if (!confirm('Delete this order?')) return;
-    try {
-        const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        showToast('Order removed', 'warning');
-        refreshData();
-    } catch (err) {
-        showToast('Delete failed: ' + err.message, 'error');
-    }
+  try {
+    await fetch(`${API}/api/orders/${id}`, { method: 'DELETE' });
+    toast('Order deleted');
+    await fetchOrders();
+  } catch (err) {
+    toast('Delete failed', 'error');
+  }
 }
 
-function renderOrders(orders) {
-    const tbody   = document.getElementById('orders-tbody');
-    const pending = orders.filter(o => o.status === 'Pending').length;
-    const revenue = orders.filter(o => o.status === 'Completed').reduce((s, o) => s + o.totalPrice, 0);
-
-    document.getElementById('pending-orders').textContent = pending;
-    document.getElementById('total-revenue').textContent  = `${revenue} DT`;
-    document.getElementById('order-count').textContent    = `${orders.length} orders`;
-
-    if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-12 text-gray-600 text-[9px] uppercase tracking-widest">No orders yet</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = orders.map(o => `
-        <tr class="border-b border-white/5 hover:bg-white/[0.02] transition group">
-            <td class="py-4 px-6">
-                <div class="font-bold">${o.customerName}</div>
-                <div class="text-[8px] text-gray-500">${o.customerPhone}</div>
-            </td>
-            <td class="py-4 px-4 text-gray-300">${o.productName}</td>
-            <td class="py-4 px-4 text-gray-400">${o.size}${o.colorName ? ' / ' + o.colorName : ''}</td>
-            <td class="py-4 px-4 font-mono text-yellow-500">${o.totalPrice} DT</td>
-            <td class="py-4 px-4">
-                <span class="status-badge ${o.status === 'Pending' ? 'status-pending' : 'status-completed'}">${o.status}</span>
-            </td>
-            <td class="py-4 px-4">
-                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    ${o.status === 'Pending'
-                        ? `<button onclick="updateOrderStatus('${o._id}','Completed')"
-                                   class="text-[8px] font-bold border border-green-500/20 text-green-400 px-2 py-1 rounded-lg hover:bg-green-500 hover:text-white transition uppercase">Done</button>`
-                        : ''}
-                    <button onclick="deleteOrder('${o._id}')"
-                            class="text-[8px] font-bold border border-red-500/20 text-red-400 px-2 py-1 rounded-lg hover:bg-red-500 hover:text-white transition uppercase">Del</button>
-                </div>
-            </td>
-        </tr>`).join('');
+/* ─── Confirm Dialog ─────────────────────────────────────────── */
+function confirmDelete(type, id, label) {
+  document.getElementById('confirm-msg').textContent = `Delete ${label}? This cannot be undone.`;
+  confirmCallback = () => {
+    if (type === 'product') deleteProduct(id);
+    else deleteOrder(id);
+  };
+  document.getElementById('confirm-overlay').classList.add('open');
 }
-
-// ── Refresh All Data ───────────────────────────────────────────────────────
-async function refreshData() {
-    try {
-        const [pRes, oRes] = await Promise.all([
-            fetch('/api/products'),
-            fetch('/api/orders')
-        ]);
-
-        if (!pRes.ok) throw new Error(`Products API ${pRes.status}`);
-        if (!oRes.ok) throw new Error(`Orders API ${oRes.status}`);
-
-        const [products, orders] = await Promise.all([pRes.json(), oRes.json()]);
-
-        renderProducts(products);
-        renderOrders(orders);
-
-        document.getElementById('connection-status').textContent = 'Connected to MongoDB';
-    } catch (err) {
-        console.error('refreshData error:', err);
-        document.getElementById('connection-status').textContent = 'Connection error';
-        document.getElementById('connection-status').style.color = '#ef4444';
-        showToast('Data sync failed: ' + err.message, 'error');
-    }
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  confirmCallback = null;
 }
-
-// ── Slideshow / Banner Logic ──────────────────────────────────────────────
-
-let _slideCardCount = 0;
-
-/**
- * compressBannerImage(file)
- * Canvas pipeline targeting ≤ 200 KB. Iterates quality downward.
- */
-function compressBannerImage(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onerror = () => reject(new Error('Failed to decode image'));
-            img.onload = () => {
-                try {
-                    const MAX_DIM      = 1800;
-                    const TARGET_BYTES = 200_000;
-                    let { width, height } = img;
-                    if (width > MAX_DIM || height > MAX_DIM) {
-                        if (width >= height) { height = Math.round(height * MAX_DIM / width);  width = MAX_DIM; }
-                        else                 { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width; canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    let quality = 0.85;
-                    let base64  = canvas.toDataURL('image/jpeg', quality);
-                    while (base64.length > TARGET_BYTES * 1.37 && quality > 0.30) {
-                        quality = parseFloat((quality - 0.08).toFixed(2));
-                        base64  = canvas.toDataURL('image/jpeg', quality);
-                    }
-                    resolve(base64);
-                } catch (err) { reject(err); }
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-function addSlideCard(prefill = {}) {
-    const id   = ++_slideCardCount;
-    const card = document.createElement('div');
-    card.dataset.slideId = id;
-    card.className = 'fade-in grid gap-3 p-4 rounded-xl border border-white/5 bg-white/[0.02]';
-    card.style.gridTemplateColumns = '80px 1fr 1fr auto';
-    card.style.alignItems = 'center';
-
-    card.innerHTML = `
-        <div class="relative rounded-lg overflow-hidden bg-zinc-900 aspect-video cursor-pointer border border-white/5 hover:border-yellow-500/30 transition"
-             onclick="document.getElementById('slide-file-${id}').click()" title="Click to upload image">
-            <img id="slide-thumb-${id}" src="${prefill.imageUrl || ''}"
-                 class="w-full h-full object-cover ${prefill.imageUrl ? '' : 'hidden'}" alt="Slide">
-            <div id="slide-thumb-empty-${id}" class="absolute inset-0 flex items-center justify-center ${prefill.imageUrl ? 'hidden' : ''}">
-                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
-                </svg>
-            </div>
-            <input type="file" id="slide-file-${id}" accept="image/*" class="hidden" onchange="handleSlideImage(${id}, this)">
-        </div>
-        <input type="hidden" id="slide-img-data-${id}" value="${prefill.imageUrl || ''}">
-        <input type="text" id="slide-link-${id}" value="${prefill.linkUrl || '/'}"
-               placeholder="Link URL (e.g. #shop)" class="px-3 py-2 rounded-lg text-[11px] w-full">
-        <input type="text" id="slide-caption-${id}" value="${prefill.caption || ''}"
-               placeholder="Caption (optional)" class="px-3 py-2 rounded-lg text-[11px] w-full">
-        <button type="button" onclick="removeSlideCard(${id})"
-                class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center flex-shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
-    `;
-    document.getElementById('slide-list').appendChild(card);
-}
-
-function removeSlideCard(id) {
-    const card = document.querySelector(`[data-slide-id="${id}"]`);
-    if (card) card.remove();
-}
-
-async function handleSlideImage(id, input) {
-    const file = input.files[0];
-    if (!file) return;
-    const thumbEmpty = document.getElementById(`slide-thumb-empty-${id}`);
-    thumbEmpty.innerHTML = '<div class="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>';
-    try {
-        const base64 = await compressBannerImage(file);
-        document.getElementById(`slide-img-data-${id}`).value = base64;
-        const thumb = document.getElementById(`slide-thumb-${id}`);
-        thumb.src = base64;
-        thumb.classList.remove('hidden');
-        thumbEmpty.classList.add('hidden');
-        const kb = Math.round((base64.length * 0.75) / 1024);
-        showToast(`Slide compressed to ~${kb} KB`, 'success');
-    } catch (err) {
-        showToast('Compression failed: ' + err.message, 'error');
-    }
-}
-
-function collectSlides() {
-    const cards  = document.querySelectorAll('#slide-list [data-slide-id]');
-    const slides = [];
-    cards.forEach(card => {
-        const id      = card.dataset.slideId;
-        const imgData = document.getElementById(`slide-img-data-${id}`)?.value;
-        const linkUrl = document.getElementById(`slide-link-${id}`)?.value?.trim() || '/';
-        const caption = document.getElementById(`slide-caption-${id}`)?.value?.trim() || '';
-        if (imgData) slides.push({ imageUrl: imgData, linkUrl, caption });
-    });
-    return slides;
-}
-
-async function saveSlideshow() {
-    const slides = collectSlides();
-    if (!slides.length) { showToast('Add at least one slide with an image', 'error'); return; }
-
-    const btn     = document.getElementById('slideshow-btn');
-    const btnText = document.getElementById('slideshow-btn-text');
-    const spinner = document.getElementById('slideshow-spinner');
-    const status  = document.getElementById('slideshow-status');
-    btn.disabled = true; btnText.textContent = 'Saving…';
-    spinner.classList.remove('hidden'); status.classList.add('hidden');
-
-    try {
-        const res = await fetch('/api/banner', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slides })
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(err.error || `HTTP ${res.status}`);
-        }
-        showToast(`${slides.length} slide${slides.length > 1 ? 's' : ''} live on homepage!`, 'success');
-        status.textContent = `✓ ${slides.length} slides live`;
-        status.style.color = '#22c55e';
-        status.classList.remove('hidden');
-    } catch (err) {
-        showToast('Save failed: ' + err.message, 'error');
-        status.textContent = '✗ Save failed'; status.style.color = '#ef4444';
-        status.classList.remove('hidden');
-    } finally {
-        btn.disabled = false; btnText.textContent = 'Save Slideshow';
-        spinner.classList.add('hidden');
-    }
-}
-
-async function loadCurrentBanner() {
-    try {
-        const res = await fetch('/api/banner');
-        if (!res.ok) return;
-        const banner = await res.json();
-        if (Array.isArray(banner?.slides) && banner.slides.length) {
-            document.getElementById('slide-list').innerHTML = '';
-            _slideCardCount = 0;
-            banner.slides.forEach(s => addSlideCard(s));
-            const status = document.getElementById('slideshow-status');
-            status.textContent = `✓ ${banner.slides.length} slides currently live`;
-            status.style.color = '#22c55e';
-            status.classList.remove('hidden');
-        }
-    } catch (err) {
-        console.warn('Could not load current slideshow:', err.message);
-    }
-}
-
-// ── Init ───────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-    refreshData();
-    loadCurrentBanner();
+document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
 });
+
+/* ─── Banner ─────────────────────────────────────────────────── */
+let bannerSlides = [];
+
+async function fetchBanner() {
+  try {
+    const res = await fetch(`${API}/api/banner`);
+    const data = await res.json();
+    bannerSlides = data.slides || [];
+    renderBannerSlides();
+  } catch (e) {
+    toast('Failed to load banner', 'error');
+  }
+}
+
+function renderBannerSlides() {
+  const list = document.getElementById('banner-slides-list');
+  list.innerHTML = '';
+  bannerSlides.forEach((slide, i) => {
+    const row = document.createElement('div');
+    row.className = 'banner-slide-row';
+    row.dataset.idx = i;
+    const hasImg = slide.imageUrl && slide.imageUrl.length > 0;
+    row.innerHTML = `
+      ${hasImg
+        ? `<img class="banner-thumb" src="${slide.imageUrl}" data-base64="${slide.imageUrl}" />`
+        : `<div class="banner-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;font-size:1.2rem;background:var(--surface)">＋</div>`
+      }
+      <input type="text" placeholder="Link URL (e.g. /product?id=…)" value="${slide.linkUrl||'/'}" class="banner-link" />
+      <input type="text" placeholder="Caption (optional)" value="${slide.caption||''}" class="banner-caption" />
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-sm" onclick="triggerBannerImg(${i})">Image</button>
+        <button class="remove-color-btn" onclick="removeBannerSlide(${i})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <input type="file" accept="image/*" style="display:none" class="banner-img-input" onchange="handleBannerImg(this, ${i})" />
+    `;
+    row.querySelector('.banner-thumb').addEventListener('click', () => triggerBannerImg(i));
+    list.appendChild(row);
+  });
+}
+
+function triggerBannerImg(i) {
+  document.querySelectorAll('.banner-img-input')[i]?.click();
+}
+
+async function handleBannerImg(input, i) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const compressed = await compressImage(file, 1400, 0.82);
+    bannerSlides[i].imageUrl = compressed;
+    renderBannerSlides();
+    toast('Banner image uploaded ✓');
+  } catch (err) {
+    toast('Image error: ' + err.message, 'error');
+  }
+}
+
+function addBannerSlide() {
+  bannerSlides.push({ imageUrl: '', linkUrl: '/', caption: '' });
+  renderBannerSlides();
+}
+
+function removeBannerSlide(i) {
+  bannerSlides.splice(i, 1);
+  renderBannerSlides();
+}
+
+function readBannerFromDOM() {
+  const rows = document.querySelectorAll('#banner-slides-list .banner-slide-row');
+  return Array.from(rows).map((row, i) => ({
+    imageUrl: (row.querySelector('.banner-thumb')?.dataset?.base64
+              || row.querySelector('.banner-thumb')?.src
+              || bannerSlides[i]?.imageUrl || ''),
+    linkUrl:  row.querySelector('.banner-link')?.value || '/',
+    caption:  row.querySelector('.banner-caption')?.value || ''
+  }));
+}
+
+async function saveBanner() {
+  const slides = readBannerFromDOM();
+  try {
+    const res = await fetch(`${API}/api/banner`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slides })
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    toast('Banner saved ✓');
+  } catch (err) {
+    toast('Banner save failed: ' + err.message, 'error');
+  }
+}
+
+/* ─── Close modal on overlay click ──────────────────────────── */
+document.getElementById('product-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeConfirm();
+});
+
+/* ─── Keyboard shortcuts ─────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+});
+
+/* ─── Boot ───────────────────────────────────────────────────── */
+(async () => {
+  await Promise.all([fetchProducts(), fetchOrders()]);
+  updateStats();
+})();
 </script>
 </body>
 </html>
