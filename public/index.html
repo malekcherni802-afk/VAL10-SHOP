@@ -492,15 +492,20 @@ section, .section{
 }
 .corridor-stage{
   position:relative;width:100%;height:70%;
-  perspective:1200px;perspective-origin:50% 50%;
+  /* Perspective on the stage: all cards share ONE vanishing point,
+     which is what actually reads as a corridor. */
+  perspective:1000px;
+  perspective-origin:50% 50%;
   transform-style:preserve-3d;
 }
 .corridor-card{
   position:absolute;top:50%;left:50%;
-  width:min(300px,30vw);aspect-ratio:3/4;
-  margin:-150px 0 0 -150px;
+  width:min(340px,32vw);aspect-ratio:3/4;
   border-radius:var(--radius);overflow:hidden;
   border:1px solid var(--border);background:var(--surface);
+  backface-visibility:visible;
+  transform-origin:center center;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.8);
   will-change:transform,opacity;
   transition:border-radius .6s,border-color .6s,background .6s;
 }
@@ -526,6 +531,24 @@ section, .section{
   position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
   font-family:'Space Grotesk',monospace;font-size:.55rem;letter-spacing:.5em;
   color:var(--muted);text-transform:uppercase;z-index:5;
+}
+/* ── Preview Mode badge (shown only when DEMO_PRODUCTS are used) ── */
+.corridor-preview{
+  position:absolute;bottom:96px;right:var(--pad-x);
+  display:none;align-items:center;gap:9px;
+  font-family:'Space Grotesk',monospace;font-size:.58rem;letter-spacing:.26em;
+  text-transform:uppercase;font-weight:700;color:#000;background:var(--accent);
+  padding:7px 15px;border-radius:999px;z-index:6;pointer-events:none;
+  box-shadow:0 8px 34px rgba(0,0,0,.5);
+}
+.corridor-preview.show{display:inline-flex}
+.corridor-preview::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:#000;
+  animation:previewPulse 1.6s ease-in-out infinite;
+}
+@keyframes previewPulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.3;transform:scale(.65)}
 }
 
 /* ═══════════════════════════════════════════════════
@@ -908,6 +931,7 @@ html[data-theme="soldout"] .shop-grid{gap:24px}
       <h2>The Corridor</h2>
     </div>
     <div class="corridor-stage" id="corridor-stage"></div>
+    <div class="corridor-preview" id="corridor-preview">◈ Preview Mode</div>
     <div class="corridor-progress"><div class="corridor-progress-fill" id="corridor-fill"></div></div>
     <div class="corridor-hint">Scroll</div>
   </div>
@@ -1328,15 +1352,22 @@ function drawParticles(){
 drawParticles();
 
 /* ═══════════════════════════════════════════════════════════════
-   LENIS
+   LENIS  (GSAP ticker driven + ScrollTrigger sync)
    ═══════════════════════════════════════════════════════════════ */
+gsap.registerPlugin(ScrollTrigger);
+
 const lenis = new Lenis({
   duration: 1.3,
   easing: t => Math.min(1, 1.001 - Math.pow(2, -10*t)),
   smoothWheel: true, smoothTouch: false,
 });
-function raf(t){ lenis.raf(t); requestAnimationFrame(raf); }
-requestAnimationFrame(raf);
+
+/* Keep ScrollTrigger in sync with Lenis' virtual scroll */
+lenis.on('scroll', ScrollTrigger.update);
+
+/* Drive Lenis from the single GSAP ticker instead of a separate rAF loop */
+gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+gsap.ticker.lagSmoothing(0);
 
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click', e=>{
@@ -1458,25 +1489,62 @@ lenis.on('scroll', ({ velocity })=>{
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   PRODUCTS FETCH
+   PRODUCTS FETCH  (with DEMO fallback so the corridor is never empty)
    ═══════════════════════════════════════════════════════════════ */
+
+/* Shown when the API is down or the DB has no products yet —
+   keeps the 3D corridor and the shop grid alive in Preview Mode. */
+const DEMO_PRODUCTS = [
+  { _id:'demo-01', name:'Concrete Hoodie',      price:420, category:'Outerwear',
+    sizes:[{size:'S',stock:3},{size:'M',stock:5},{size:'L',stock:2},{size:'XL',stock:0}] },
+  { _id:'demo-02', name:'Static Cargo Pant',    price:360, category:'Bottoms',
+    sizes:[{size:'30',stock:2},{size:'32',stock:4},{size:'34',stock:4},{size:'36',stock:1}] },
+  { _id:'demo-03', name:'Void Heavy Tee',       price:180, category:'Tops',
+    sizes:[{size:'M',stock:8},{size:'L',stock:8},{size:'XXL',stock:3}] },
+  { _id:'demo-04', name:'Signal Bomber',        price:640, category:'Outerwear',
+    sizes:[{size:'M',stock:1},{size:'L',stock:2},{size:'XL',stock:1}] },
+  { _id:'demo-05', name:'Archive Tote 01',      price:95,  category:'Accessories' },
+  { _id:'demo-06', name:'Monolith Cap',         price:140, category:'Accessories',
+    sizes:[{size:'One Size',stock:6}] }
+].map(p => ({ ...p, isDemo:true }));
+
 let allProducts = [];
+let usingDemoProducts = false;
+
+function setPreviewMode(on){
+  usingDemoProducts = !!on;
+  const badge = document.getElementById('corridor-preview');
+  if(badge) badge.classList.toggle('show', usingDemoProducts);
+}
+
+function useDemoProducts(reason){
+  console.warn('⚠ Using DEMO_PRODUCTS —', reason);
+  allProducts = DEMO_PRODUCTS.slice();
+  setPreviewMode(true);
+}
 
 async function fetchProducts(){
   try{
     const res = await fetch(`${API}/api/products`);
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    allProducts = Array.isArray(data) ? data : (data.products || []);
-    console.log('✓ Loaded', allProducts.length, 'products');
+    const list = Array.isArray(data) ? data : (data.products || []);
 
-    renderCorridor(allProducts.slice(0, 6));
-    renderShopGrid(allProducts);
-    ScrollTrigger.refresh();
+    if(list.length){
+      allProducts = list;
+      setPreviewMode(false);
+      console.log('✓ Loaded', allProducts.length, 'products');
+    } else {
+      useDemoProducts('API returned 0 products');
+    }
   }catch(err){
     console.error('fetchProducts error:', err);
-    document.getElementById('shop-grid').innerHTML = '<div class="empty">Connection Error — Retry</div>';
+    useDemoProducts(err && err.message ? err.message : 'API unreachable');
   }
+
+  renderCorridor(allProducts.slice(0, 6));
+  renderShopGrid(allProducts);
+  ScrollTrigger.refresh();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1487,12 +1555,27 @@ const corridorFill  = document.getElementById('corridor-fill');
 let corridorCards = [];
 let corridorST = null;
 
+/* Offset patterns — each card sits at a unique (x,y) so they're
+   NEVER stacked at the start. This is what makes the corridor read. */
+const CORRIDOR_OFFSETS = [
+  { x: -200, y: -110 },
+  { x:  230, y: -140 },
+  { x: -170, y:  130 },
+  { x:  190, y:  110 },
+  { x: -250, y:  -20 },
+  { x:  260, y:   30 }
+];
+
 function renderCorridor(products){
   corridorStage.innerHTML = '';
+  corridorCards = [];
+  if(corridorST){ corridorST.kill(); corridorST = null; }
+
   if(!products.length){
     corridorStage.innerHTML = '<div class="empty">No products</div>';
     return;
   }
+
   products.forEach((p, i)=>{
     const card = document.createElement('div');
     card.className = 'corridor-card';
@@ -1502,44 +1585,85 @@ function renderCorridor(products){
       <span class="cc-price">${esc(String(p.price))} TND</span>
     `;
     corridorStage.appendChild(card);
-    gsap.set(card, {
-      transformPerspective: 1200,
-      xPercent: -50, yPercent: -50,
-      z: -3000, rotateY: 0, opacity: 0, scale: 1
-    });
   });
+
   corridorCards = Array.from(corridorStage.querySelectorAll('.corridor-card'));
   setupCorridorScroll();
 }
 
 function setupCorridorScroll(){
-  if(corridorST) corridorST.kill();
-  if(!corridorCards.length) return;
+  if(corridorST){ corridorST.kill(); corridorST = null; }
+  const N = corridorCards.length;
+  if(!N) return;
 
+  /* ── Layout ──────────────────────────────────────────────── */
+  const NEAREST_Z  = -300;    // was -500  → nearer card, bigger on screen
+  const DEPTH_STEP = 420;     // was 450   → slight tighter corridor
+  const TRAVEL     = Math.abs(NEAREST_Z) + (N - 1) * DEPTH_STEP + 400;
+                              // was +800  → kills the empty tail
+
+  const layout = corridorCards.map((_, i) => {
+    const off = CORRIDOR_OFFSETS[i % CORRIDOR_OFFSETS.length];
+    return {
+      baseZ: NEAREST_Z - i * DEPTH_STEP,
+      xOff:  off.x,
+      yOff:  off.y,
+      dir:   (i % 2 === 0) ? 1 : -1
+    };
+  });
+
+  /* ── Explicit initial state — raw CSS, no GSAP ─────────────
+     This bypasses any GSAP matrix quirks and guarantees the
+     transform string includes translate3d with proper z.     */
+  corridorCards.forEach((c, i) => {
+    const d = layout[i];
+    c.style.transformOrigin = 'center center';
+    c.style.transformStyle  = 'preserve-3d';
+    c.style.transform       = `translate(-50%, -50%) translate3d(${d.xOff}px, ${d.yOff}px, ${d.baseZ}px) rotateY(0deg)`;
+    c.style.opacity         = '1';
+  });
+
+  /* ── Shared update function ──────────────────────────────── */
+  function update(){
+    const p = corridorST ? corridorST.progress : 0;
+    if (corridorFill) corridorFill.style.transform = `scaleX(${p})`;
+
+    const travel = p * TRAVEL;
+
+    corridorCards.forEach((c, i) => {
+      const d = layout[i];
+      const z = d.baseZ + travel;
+
+      /* Fade out only when card is close to / past the camera */
+      let op = 1;
+      if (z > -150) op = Math.max(0, 1 - (z + 150) / 500);
+
+      /* Full turn as it flies past (alternating direction) */
+      const ry = p * 420 * d.dir;
+
+      /* Subtle vertical bob to keep it alive */
+      const yb = d.yOff + Math.sin(p * Math.PI * 3 + i * 0.8) * 12;
+
+      /* Raw transform string — guaranteed to be applied */
+      c.style.transform = `translate(-50%, -50%) translate3d(${d.xOff}px, ${yb}px, ${z}px) rotateY(${ry}deg)`;
+      c.style.opacity   = op;
+    });
+  }
+
+  /* ── ScrollTrigger with scrub ───────────────────────────── */
   corridorST = ScrollTrigger.create({
     trigger: '#corridor',
-    start: 'top top', end: 'bottom bottom',
-    scrub: 1,
-    onUpdate: (self)=>{
-      const p = self.progress;
-      corridorFill.style.transform = `scaleX(${p})`;
-      const N = corridorCards.length;
-      corridorCards.forEach((c, i)=>{
-        const offset = i / N * 0.75;
-        const localP = gsap.utils.clamp(0, 1, (p - offset) / 0.5);
-        const z  = -3000 + localP * 4500;
-        const ry = localP * 360 * (i % 2 === 0 ? 1 : -1);
-        const yb = Math.sin(localP * Math.PI * 2) * 30;
-        const xd = Math.cos(localP * Math.PI * 2) * 40;
-        let op = 1;
-        if(localP < 0.1) op = localP / 0.1;
-        if(localP > 0.85) op = 1 - (localP - 0.85) / 0.15;
-        const sc = 0.4 + localP * 1.15;
-        c.style.transform = `translate3d(calc(-50% + ${xd}px), calc(-50% + ${yb}px), ${z}px) rotateY(${ry}deg) scale(${sc})`;
-        c.style.opacity = op;
-      });
-    }
+    start:   'top top',
+    end:     'bottom bottom',
+    scrub:   1,
+    invalidateOnRefresh: true,
+    onUpdate:  update,
+    onRefresh: update
   });
+
+  /* Fire once immediately so the cards are positioned even
+     before any scroll happens. */
+  update();
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1548,7 +1672,8 @@ function setupCorridorScroll(){
 function renderShopGrid(products){
   const grid = document.getElementById('shop-grid');
   grid.innerHTML = '';
-  document.getElementById('prod-count').textContent = products.length + ' pieces';
+  document.getElementById('prod-count').textContent =
+    usingDemoProducts ? 'Preview · ' + products.length + ' pieces' : products.length + ' pieces';
 
   if(!products.length){
     grid.innerHTML = '<div class="empty">Archive empty</div>';
@@ -1599,6 +1724,7 @@ function renderShopGrid(products){
       </div>
     `;
     card.addEventListener('click', ()=>{
+      if(p.isDemo){ showToast('◈ Preview Mode — demo piece, no detail page'); return; }
       window.location.href = `/product?id=${p._id}`;
     });
     applyTilt(card);
