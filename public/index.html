@@ -470,8 +470,11 @@ section, .section{
    03 — 3D CORRIDOR
    ═══════════════════════════════════════════════════ */
 .corridor{
-  position:relative;z-index:2;height:450vh;
+  position:relative;z-index:2;
+  height:320vh;           /* was 450vh */
   background:var(--bg2);
+  padding-top:0 !important;
+  padding-bottom:0 !important;
   transition:background 1.1s ease;
 }
 .corridor-sticky{
@@ -491,21 +494,25 @@ section, .section{
   letter-spacing:.06em;color:var(--fg);
 }
 .corridor-stage{
-  position:relative;width:100%;height:70%;
-  /* Perspective on the stage: all cards share ONE vanishing point,
-     which is what actually reads as a corridor. */
-  perspective:1000px;
-  perspective-origin:50% 50%;
-  transform-style:preserve-3d;
+  position:relative;
+  width:100%;
+  height:70%;
+  /* NO perspective, NO preserve-3d — pure 2D */
+  overflow: hidden;
 }
+
 .corridor-card{
-  position:absolute;top:50%;left:50%;
-  width:min(340px,32vw);aspect-ratio:3/4;
-  border-radius:var(--radius);overflow:hidden;
-  border:1px solid var(--border);background:var(--surface);
-  backface-visibility:visible;
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:min(340px, 32vw);
+  aspect-ratio:3/4;
+  border-radius:var(--radius);
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--surface);
   transform-origin:center center;
-  box-shadow:0 30px 80px -30px rgba(0,0,0,.8);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.85);
   will-change:transform,opacity;
   transition:border-radius .6s,border-color .6s,background .6s;
 }
@@ -1542,7 +1549,7 @@ async function fetchProducts(){
     useDemoProducts(err && err.message ? err.message : 'API unreachable');
   }
 
-  renderCorridor(allProducts.slice(0, 6));
+  renderCorridor(allProducts);
   renderShopGrid(allProducts);
   ScrollTrigger.refresh();
 }
@@ -1555,15 +1562,22 @@ const corridorFill  = document.getElementById('corridor-fill');
 let corridorCards = [];
 let corridorST = null;
 
-/* Offset patterns — each card sits at a unique (x,y) so they're
-   NEVER stacked at the start. This is what makes the corridor read. */
+/* Offset patterns — one distinct (x,y) per corridor slot, so no two
+   cards ever sit on top of each other. Wider spread than 6 slots so a
+   12-card train fills the stage instead of stacking pairwise. */
 const CORRIDOR_OFFSETS = [
-  { x: -200, y: -110 },
-  { x:  230, y: -140 },
-  { x: -170, y:  130 },
-  { x:  190, y:  110 },
-  { x: -250, y:  -20 },
-  { x:  260, y:   30 }
+  { x: -240, y: -120 },
+  { x:  250, y: -150 },
+  { x: -180, y:  140 },
+  { x:  210, y:  120 },
+  { x: -260, y:  -20 },
+  { x:  270, y:   40 },
+  { x:  -90, y: -165 },
+  { x:   60, y:  165 },
+  { x: -305, y:   95 },
+  { x:  315, y:  -85 },
+  { x: -125, y:  -45 },
+  { x:  135, y:   65 }
 ];
 
 function renderCorridor(products){
@@ -1571,12 +1585,22 @@ function renderCorridor(products){
   corridorCards = [];
   if(corridorST){ corridorST.kill(); corridorST = null; }
 
-  if(!products.length){
+  /* ── Fill 12 slots by cycling products ─────────────────────
+     More cards = no visible gap between successive passes.  */
+  const SLOTS = 12;
+  const filled = [];
+  if(products.length){
+    for(let i = 0; i < SLOTS; i++){
+      filled.push(products[i % products.length]);
+    }
+  }
+
+  if(!filled.length){
     corridorStage.innerHTML = '<div class="empty">No products</div>';
     return;
   }
 
-  products.forEach((p, i)=>{
+  filled.forEach((p, i)=>{
     const card = document.createElement('div');
     card.className = 'corridor-card';
     card.innerHTML = `
@@ -1596,57 +1620,67 @@ function setupCorridorScroll(){
   const N = corridorCards.length;
   if(!N) return;
 
-  /* ── Layout ──────────────────────────────────────────────── */
-  const NEAREST_Z  = -300;    // was -500  → nearer card, bigger on screen
-  const DEPTH_STEP = 420;     // was 450   → slight tighter corridor
-  const TRAVEL     = Math.abs(NEAREST_Z) + (N - 1) * DEPTH_STEP + 400;
-                              // was +800  → kills the empty tail
+  /* Responsive scale — offsets shrink on mobile */
+  const scaleFactor = Math.min(1, window.innerWidth / 1100);
 
   const layout = corridorCards.map((_, i) => {
     const off = CORRIDOR_OFFSETS[i % CORRIDOR_OFFSETS.length];
     return {
-      baseZ: NEAREST_Z - i * DEPTH_STEP,
-      xOff:  off.x,
-      yOff:  off.y,
-      dir:   (i % 2 === 0) ? 1 : -1
+      xT:  off.x * scaleFactor,
+      yT:  off.y * scaleFactor,
+      dir: (i % 2 === 0) ? 1 : -1,
+      /* KEY: phase distributed evenly around the cycle, so at ANY
+         scroll position the 12 cards sit at 12 different stages. */
+      phaseOffset: i / N
     };
   });
 
-  /* ── Explicit initial state — raw CSS, no GSAP ─────────────
-     This bypasses any GSAP matrix quirks and guarantees the
-     transform string includes translate3d with proper z.     */
-  corridorCards.forEach((c, i) => {
-    const d = layout[i];
+  /* Initial state — hidden until first update() runs */
+  corridorCards.forEach(c => {
     c.style.transformOrigin = 'center center';
-    c.style.transformStyle  = 'preserve-3d';
-    c.style.transform       = `translate(-50%, -50%) translate3d(${d.xOff}px, ${d.yOff}px, ${d.baseZ}px) rotateY(0deg)`;
-    c.style.opacity         = '1';
+    c.style.transform = 'translate(-50%, -50%) scale(0.2)';
+    c.style.opacity = '0';
   });
 
-  /* ── Shared update function ──────────────────────────────── */
+  /* How many full cycles each card completes over the scroll */
+  const SPEED = 1.6;
+
+  /* ── Update on scroll — pure 2D transform ───────────────────── */
   function update(){
     const p = corridorST ? corridorST.progress : 0;
-    if (corridorFill) corridorFill.style.transform = `scaleX(${p})`;
-
-    const travel = p * TRAVEL;
+    if(corridorFill) corridorFill.style.transform = `scaleX(${p})`;
 
     corridorCards.forEach((c, i) => {
       const d = layout[i];
-      const z = d.baseZ + travel;
 
-      /* Fade out only when card is close to / past the camera */
+      /* Phase in [0, 1): 0 = spawned at center (tiny),
+                         1 = fully past (big, at offset, faded) */
+      let phase = (p * SPEED + d.phaseOffset) % 1;
+      if(phase < 0) phase += 1;
+
+      const cp = phase;
+
+      /* Eased progress — slow start, fast mid, smooth end */
+      const eased = 1 - Math.pow(1 - cp, 1.7);
+
+      /* Scale: small at center → big when passed */
+      const s = 0.2 + cp * 1.0;
+
+      /* Position drifts from center to its target offset */
+      const x = d.xT * eased;
+      const y = d.yT * eased;
+
+      /* Full spin over its lifetime */
+      const ry = cp * 400 * d.dir;
+
+      /* Opacity: fade in fast, hold, fade out fast */
       let op = 1;
-      if (z > -150) op = Math.max(0, 1 - (z + 150) / 500);
+      if(cp < 0.12)       op = cp / 0.12;
+      else if(cp > 0.82)  op = Math.max(0, (1 - cp) / 0.18);
 
-      /* Full turn as it flies past (alternating direction) */
-      const ry = p * 420 * d.dir;
-
-      /* Subtle vertical bob to keep it alive */
-      const yb = d.yOff + Math.sin(p * Math.PI * 3 + i * 0.8) * 12;
-
-      /* Raw transform string — guaranteed to be applied */
-      c.style.transform = `translate(-50%, -50%) translate3d(${d.xOff}px, ${yb}px, ${z}px) rotateY(${ry}deg)`;
-      c.style.opacity   = op;
+      c.style.transform =
+        `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${s}) rotateY(${ry}deg)`;
+      c.style.opacity = op;
     });
   }
 
@@ -1664,6 +1698,14 @@ function setupCorridorScroll(){
   /* Fire once immediately so the cards are positioned even
      before any scroll happens. */
   update();
+
+  /* scaleFactor is measured once — rebuild if the viewport really changed */
+  clearTimeout(setupCorridorScroll._t);
+  setupCorridorScroll._t = setTimeout(()=>{
+    if(Math.abs(Math.min(1, window.innerWidth / 1100) - scaleFactor) > 0.04){
+      setupCorridorScroll();
+    }
+  }, 250);
 }
 
 /* ═══════════════════════════════════════════════════════════════
