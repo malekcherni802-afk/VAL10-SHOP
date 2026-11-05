@@ -157,6 +157,14 @@ function sanitizeProductPayload(body) {
   const name = cleanText(body.name, 'Product name', 120, true);
   const price = Number(body.price);
   if (!Number.isFinite(price) || price <= 0 || price > 10000000) throw new Error('Price must be a positive valid amount.');
+  const promoPercent = body.promoPercent == null || body.promoPercent === '' ? 0 : Number(body.promoPercent);
+  if (!Number.isInteger(promoPercent) || promoPercent < 0 || promoPercent > 90) {
+    throw new Error('Promotion must be a whole percentage between 0 and 90.');
+  }
+  const stock = body.stock == null || body.stock === '' ? 1 : Number(body.stock);
+  if (!Number.isInteger(stock) || stock < 0 || stock > 100000) {
+    throw new Error('Single-item stock must be a whole number between 0 and 100000.');
+  }
 
   const sizesInput = body.sizes == null ? [] : body.sizes;
   const colorsInput = body.colors == null ? [] : body.colors;
@@ -186,6 +194,8 @@ function sanitizeProductPayload(body) {
   return {
     name,
     price,
+    promoPercent,
+    stock,
     category: cleanText(body.category == null ? 'Underground' : String(body.category), 'Category', 80, false) || 'Underground',
     description: cleanText(body.description == null ? '' : String(body.description), 'Description', 5000, false),
     sizes,
@@ -197,6 +207,13 @@ function sanitizeProductPayload(body) {
 function productToPublic(product) {
   const obj = product.toObject ? product.toObject() : { ...product };
   obj.sizes = normalizeSizes(obj.sizes);
+  obj.stock = Number.isInteger(Number(obj.stock)) && Number(obj.stock) >= 0 ? Number(obj.stock) : 1;
+  obj.promoPercent = Number.isInteger(Number(obj.promoPercent)) && Number(obj.promoPercent) >= 0 && Number(obj.promoPercent) <= 90
+    ? Number(obj.promoPercent) : 0;
+  obj.salePrice = obj.promoPercent > 0
+    ? Math.round((Number(obj.price) * (100 - obj.promoPercent) / 100) * 100) / 100
+    : Number(obj.price);
+  obj.isOnSale = obj.promoPercent > 0;
   obj.images = Array.isArray(obj.images) ? obj.images.map((image) => {
     try { return cleanImageSource(image, 'Product image'); } catch (_) { return ''; }
   }).filter(Boolean) : [];
@@ -205,9 +222,13 @@ function productToPublic(product) {
     try { safeImage = cleanImageSource(color.image, 'Color image'); } catch (_) { /* hide invalid legacy image URLs */ }
     return { ...color, image: safeImage, availability: Number(color.stock) > 0 ? 'In Stock' : 'Sold Out' };
   }) : [];
-  const sizeAvailable = obj.sizes.length ? obj.sizes.some((size) => size.stock > 0) : true;
-  const colorAvailable = obj.colors.length ? obj.colors.some((color) => color.stock > 0) : true;
-  obj.hasStock = sizeAvailable && colorAvailable;
+  const hasSizeVariants = obj.sizes.length > 0;
+  const hasColorVariants = obj.colors.length > 0;
+  const sizeAvailable = hasSizeVariants ? obj.sizes.some((size) => size.stock > 0) : true;
+  const colorAvailable = hasColorVariants ? obj.colors.some((color) => color.stock > 0) : true;
+  obj.hasStock = (hasSizeVariants || hasColorVariants)
+    ? sizeAvailable && colorAvailable
+    : obj.stock > 0;
   return obj;
 }
 
@@ -269,6 +290,13 @@ mongoose.connect(DB_URL, { serverSelectionTimeoutMS: 15000 })
         await doc.save();
       }
       if (legacyDocs.length) console.log(`Migrated legacy sizes on ${legacyDocs.length} product(s).`);
+      // Legacy products without variant selectors were effectively unlimited.
+      // Give them one conservative unit so they cannot be oversold indefinitely.
+      const stockMigration = await Product.updateMany(
+        { stock: { $exists: false } },
+        { $set: { stock: 1 } }
+      );
+      if (stockMigration.modifiedCount) console.log(`Initialised single-item stock on ${stockMigration.modifiedCount} legacy product(s).`);
     } catch (migrationError) {
       console.error('Legacy size migration failed:', migrationError.message);
     }
@@ -295,6 +323,9 @@ const colorVariantSchema = new mongoose.Schema({
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, maxlength: 120 },
   price: { type: Number, required: true, min: 0.001, max: 10000000 },
+  promoPercent: { type: Number, min: 0, max: 90, default: 0 },
+  // Used only when a product has no size or colour variants (e.g. One Size).
+  stock: { type: Number, min: 0, max: 100000, default: 1 },
   description: { type: String, default: '', maxlength: 5000 },
   // Mixed retains compatibility with old string-size records during migration.
   sizes: { type: [mongoose.Schema.Types.Mixed], default: [] },
@@ -385,6 +416,18 @@ async function adjustInventoryForOrder(order, direction, session) {
     product.markModified('sizes');
   }
   if (colorIndex >= 0) colors[colorIndex].stock = currentColorStock + direction;
+
+  // Products with no size or colour selectors use the product-level stock.
+  if (!sizes.length && colorIndex < 0) {
+    const currentStock = Number(product.stock);
+    if (!Number.isInteger(currentStock) || currentStock < 0) return false;
+    if (direction < 0 && currentStock <= 0) {
+      const error = new Error('This product is sold out.');
+      error.statusCode = 409;
+      throw error;
+    }
+    product.stock = currentStock + direction;
+  }
   await product.save({ session });
   return true;
 }
@@ -406,14 +449,45 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT.startsWith('mailto:')
   console.log('Web Push not configured; add VAPID keys and a mailto: subject to Render.');
 }
 
+async function deliverPushToAll(payload) {
+  const subscriptions = await PushSubscription.find().lean();
+  if (!subscriptions.length) return { total: 0, sent: 0, failed: 0 };
+
+  const results = await Promise.allSettled(subscriptions.map(async (saved) => {
+    try {
+      await webpush.sendNotification(
+        { endpoint: saved.endpoint, keys: saved.keys },
+        JSON.stringify(payload),
+        { TTL: 86400, urgency: 'high' }
+      );
+      return true;
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 410) {
+        await PushSubscription.deleteOne({ _id: saved._id });
+      }
+      throw error;
+    }
+  }));
+
+  const sent = results.filter((result) => result.status === 'fulfilled').length;
+  const failures = results
+    .filter((result) => result.status === 'rejected')
+    .map((result) => ({
+      statusCode: Number(result.reason && result.reason.statusCode) || null,
+      message: String(result.reason && result.reason.message || 'Push provider rejected the request').slice(0, 180)
+    }));
+  return { total: subscriptions.length, sent, failed: subscriptions.length - sent, failures };
+}
+
 async function sendNewOrderPush(order) {
-  if (!pushConfigured) return;
+  if (!pushConfigured) {
+    console.warn('Order saved, but push was skipped: VAPID keys are not configured.');
+    return;
+  }
   try {
-    const subscriptions = await PushSubscription.find().lean();
-    if (!subscriptions.length) return;
     const orderId = String(order._id);
     const shortId = orderId.slice(-6).toUpperCase();
-    const payload = JSON.stringify({
+    const stats = await deliverPushToAll({
       title: 'VAL10 — New Order',
       body: `Order #${shortId} · ${order.productName} · ${order.totalPrice} TND`,
       icon: '/icons/valio-192.png',
@@ -422,16 +496,8 @@ async function sendNewOrderPush(order) {
       orderId,
       url: `/admin?section=orders&orderId=${encodeURIComponent(orderId)}`
     });
-    const results = await Promise.allSettled(subscriptions.map(async (saved) => {
-      try {
-        await webpush.sendNotification({ endpoint: saved.endpoint, keys: saved.keys }, payload, { TTL: 86400, urgency: 'high' });
-      } catch (error) {
-        if (error.statusCode === 404 || error.statusCode === 410) await PushSubscription.deleteOne({ _id: saved._id });
-        throw error;
-      }
-    }));
-    const failed = results.filter((result) => result.status === 'rejected').length;
-    if (failed) console.warn(`Web Push delivery failed for ${failed}/${subscriptions.length} device(s).`);
+    if (!stats.total) console.warn('Order saved, but there are no registered push devices.');
+    else console.log(`Order push accepted by provider for ${stats.sent}/${stats.total} device(s); ${stats.failed} failed.`);
   } catch (error) {
     // The saved order is never rolled back because a push provider is unavailable.
     console.error('Web Push delivery error:', error.message);
@@ -551,6 +617,16 @@ app.put('/admin/api/products/:id', requireSameOrigin, async (req, res) => {
     }).select('size colorIndex colorName').lean();
 
     for (const order of activeOrders) {
+      if (order.size === 'One Size' && payload.sizes.length) {
+        const error = new Error('Cannot add size variants while an active One Size order is using this product. Finish or cancel the order first.');
+        error.statusCode = 409;
+        throw error;
+      }
+      if (Number(order.colorIndex) < 0 && payload.colors.length) {
+        const error = new Error('Cannot add colour variants while an active order without a colour is using this product. Finish or cancel the order first.');
+        error.statusCode = 409;
+        throw error;
+      }
       if (order.size && order.size !== 'One Size' && !payload.sizes.some((variant) => variant.size === order.size)) {
         const error = new Error(`Cannot remove size ${order.size} while an active order is using it.`);
         error.statusCode = 409;
@@ -746,9 +822,37 @@ app.post('/admin/api/banner', requireSameOrigin, async (req, res) => {
 app.get('/admin/api/push/config', async (req, res) => {
   try {
     const subscriptionCount = await PushSubscription.countDocuments();
-    res.json({ configured: pushConfigured, publicKey: pushConfigured ? VAPID_PUBLIC_KEY : null, subscriptionCount });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      configured: pushConfigured,
+      publicKey: pushConfigured ? VAPID_PUBLIC_KEY : null,
+      subscriptionCount,
+      subjectConfigured: VAPID_SUBJECT.startsWith('mailto:')
+    });
   } catch (_) {
     res.status(500).json({ error: 'Unable to read notification settings.' });
+  }
+});
+
+app.post('/admin/api/push/test', requireSameOrigin, async (req, res) => {
+  if (!pushConfigured) return res.status(503).json({ error: 'Push is not configured. Add all three VAPID environment variables in Render.' });
+  try {
+    const stats = await deliverPushToAll({
+      title: 'VAL10 — Test Notification',
+      body: 'Your VAL10 order notifications are working on this device.',
+      icon: '/icons/valio-192.png',
+      badge: '/icons/valio-96.png',
+      tag: `val10-test-${Date.now()}`,
+      url: '/admin?section=orders'
+    });
+    if (!stats.total) return res.status(409).json({ error: 'No device is subscribed yet. Enable order alerts on your phone first.', ...stats });
+    if (!stats.sent) return res.status(502).json({ error: 'Push provider rejected the notification. Check the failure status codes and confirm the VAPID key pair has not changed.', ...stats });
+    res.json({ ok: true, ...stats, message: stats.failed
+      ? `Push accepted for ${stats.sent} of ${stats.total} device(s); ${stats.failed} failed.`
+      : `Push accepted for all ${stats.sent} subscribed device(s).` });
+  } catch (error) {
+    console.error('Test push failed:', error.message);
+    res.status(502).json({ error: 'Test push could not be sent. Check Render logs.', detail: error.message });
   }
 });
 
@@ -856,12 +960,22 @@ app.post('/api/orders', rateLimitOrders, async (req, res) => {
         arrayFilters.push({ 'selectedSize.size': selectedSize, 'selectedSize.stock': { $gt: 0 } });
       }
 
+      if (!sizes.length && !colors.length) {
+        filter.stock = { $gt: 0 };
+        update.$inc.stock = -1;
+      }
+
       if (Object.keys(update.$inc).length) {
         const options = { new: true, session };
         if (arrayFilters.length) options.arrayFilters = arrayFilters;
         const updated = await Product.findOneAndUpdate(filter, update, options);
-        if (!updated) { const error = new Error('This variant just sold out. Please refresh and choose another.'); error.statusCode = 409; throw error; }
+        if (!updated) { const error = new Error('This item or selected variant just sold out. Please refresh and choose another.'); error.statusCode = 409; throw error; }
       }
+
+      const promoPercent = Number.isInteger(Number(product.promoPercent)) ? Number(product.promoPercent) : 0;
+      const chargedPrice = promoPercent > 0
+        ? Math.round((Number(product.price) * (100 - promoPercent) / 100) * 100) / 100
+        : Number(product.price);
 
       order = new Order({
         customerName,
@@ -872,10 +986,10 @@ app.post('/api/orders', rateLimitOrders, async (req, res) => {
         productName: product.name,
         size: selectedSize,
         colorName: selectedColor ? selectedColor.name : '',
-        totalPrice: product.price,
+        totalPrice: chargedPrice,
         status: 'Pending',
-        stockTracked: Boolean(colors.length || sizes.length),
-        stockReserved: Boolean(colors.length || sizes.length)
+        stockTracked: true,
+        stockReserved: true
       });
       await order.save({ session });
     });

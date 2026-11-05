@@ -17,7 +17,9 @@ This revision keeps the existing VAL10 storefront identity and the current order
 
 ## Storefront and admin UX
 
-- Fixed sold-out logic so a product with both size and colour variants is unavailable when either required dimension has no stock.
+- Fixed sold-out logic so a product with size and colour variants is unavailable when a required dimension is exhausted; products remain visible and their detail pages remain accessible with a clear Sold Out state.
+- Added product-level stock for items without size/colour options. Legacy simple products get a conservative initial quantity of one and must be updated to their actual quantity in Admin before accepting orders.
+- Added per-product promotion percentage (0–90%) in Admin. The discounted amount is calculated on the server, shown on the homepage/product page/Admin, and saved as the order price; the browser cannot choose the charged price.
 - Homepage prices consistently display `TND`.
 - Confirmation page no longer exposes customer phone details through a public order lookup.
 - Removed the public Admin footer link. Admin access is available at `/admin` and is password protected.
@@ -30,6 +32,8 @@ This revision keeps the existing VAL10 storefront identity and the current order
 
 - Existing Web Push functionality is retained under the authenticated Admin API.
 - New-order push messages are sent only after the order transaction commits.
+- Added an Admin **Test notification** action and server-side delivery diagnostics (subscribed-device count, accepted/failed count, provider status codes).
+- The Admin page detects a stale browser subscription if the VAPID public key has changed and asks that device to subscribe again.
 - Expired subscriptions (HTTP 404/410) are removed.
 
 ## Important platform requirement
@@ -41,4 +45,4 @@ Order creation uses MongoDB transactions. Use MongoDB Atlas or another MongoDB d
 - `node --check server.js` — passed.
 - `node --check public/service-worker.js` — passed.
 - Inline JavaScript syntax checks for `index.html`, `product.html`, `admin.html` and `confirmation.html` — passed.
-- A live Render/MongoDB checkout and real push delivery test has **not** been run from this environment. Those require the owner's Render environment variables, database and an opted-in browser device.
+- A live Render/MongoDB checkout and real push delivery test has **not** been run from this environment. Those require the owner's Render environment variables, database and an opted-in browser device. The Test notification button is included so the live device flow can be checked after deployment.

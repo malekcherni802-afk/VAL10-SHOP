@@ -58,11 +58,13 @@ Set these only when the final links are ready. Unconfigured links stay hidden ra
 2. Confirm all environment variables are saved, then deploy/redeploy.
 3. Open `https://YOUR-SITE/admin` and enter the admin credentials.
 4. Click **Enable order alerts** and allow browser notifications.
-5. Repeat on every browser/device that should receive order notifications.
+5. Repeat on every browser/device that should receive order notifications. Each device needs its own opt-in; enabling alerts on your PC does not subscribe your phone.
+6. Once the phone shows **Order alerts ON**, tap **Test notification** in the Admin top bar. The server reports whether it has any subscribed devices and whether the push provider accepted the message.
+7. Only after the test notification arrives on the phone, place a real test order. In Render Logs, expect `Order push accepted by provider for 1/1 device(s)` (or matching device count).
 
 ### iPhone / iPad
 
-Web Push requires iOS/iPadOS 16.4 or later and the website added to the Home Screen. In Safari, open `/admin`, choose **Share → Add to Home Screen**, open VAL10 from its new Home Screen icon, then enable order alerts.
+Web Push requires iOS/iPadOS 16.4 or later and the website added to the Home Screen. In Safari, open `/admin`, choose **Share → Add to Home Screen**, open VAL10 from its new Home Screen icon, sign in, then enable order alerts from that iPhone. Do not enable only from a desktop browser. Also check iPhone Settings → Notifications → VAL10 (or the installed web app) and make sure notifications and sounds are allowed.
 
 ## 6. Test the real flow
 
@@ -73,7 +75,16 @@ After at least one device is subscribed, place a small test order from the publi
 - a new-order notification arrives on every subscribed device;
 - tapping the notification opens the protected Admin Orders section.
 
-Device Focus/Do Not Disturb settings and browser notification settings may silence alerts. A website cannot force an Instagram-specific notification sound.
+Device Focus/Do Not Disturb settings, Silent mode, battery saver and browser notification settings may silence or delay alerts. A website cannot force an Instagram-specific notification sound. If the VAPID pair was changed after a device had subscribed, the device must unsubscribe and subscribe again; the Admin page detects a key mismatch when the browser exposes the existing key.
+
+## Diagnose a notification that never arrives
+
+- If the Admin button says **Set up push keys**, one or more VAPID variables are missing or invalid. Add all three variables and redeploy.
+- If it says **Enable order alerts**, that browser/device has not subscribed yet. Do this on the phone itself.
+- After enabling, **Test notification** must be visible. Tap it. A `No device is subscribed yet` response means the phone subscription was not saved.
+- A provider status `401` or `403` commonly means the VAPID key pair does not match the subscription or was changed. Keep one stable key pair and subscribe again on each device.
+- A provider status `404` or `410` means that subscription endpoint has expired; the server removes expired endpoints, then subscribe again on that device.
+- If the test notification arrives but a real order notification does not, inspect Render Logs for `Order push accepted by provider` or `Order push was skipped`. The push is sent only after the order transaction commits.
 
 ## Security / owner checks before launch
 
