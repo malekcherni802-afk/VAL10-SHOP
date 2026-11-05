@@ -68,10 +68,6 @@
                     <span class="text-gray-500 uppercase tracking-widest">Total</span>
                     <span id="conf-price" class="text-white font-black text-sm"></span>
                 </div>
-                <div class="flex justify-between text-[11px]">
-                    <span class="text-gray-500 uppercase tracking-widest">Phone</span>
-                    <span id="conf-phone" class="text-gray-300 font-mono"></span>
-                </div>
             </div>
 
             <div class="space-y-3">
@@ -103,7 +99,6 @@
         document.getElementById('conf-size').textContent    = order.size         || '—';
         document.getElementById('conf-color').textContent   = order.colorName    || '—';
         document.getElementById('conf-price').textContent   = `${order.totalPrice} TND`;
-        document.getElementById('conf-phone').textContent   = order.customerPhone || '—';
         document.getElementById('order-summary').classList.remove('hidden');
     } catch (_) { /* order summary is optional — don't crash if fetch fails */ }
 })();

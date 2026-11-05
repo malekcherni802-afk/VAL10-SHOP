@@ -168,9 +168,10 @@
         <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
             <h4 class="gothic-text text-4xl mb-8 tracking-widest">VAL10</h4>
             <div class="flex gap-8 mb-12 text-[10px] tracking-[0.3em] uppercase text-gray-500">
-                <a href="#" class="hover:text-white transition">Instagram</a>
-                <a href="#" class="hover:text-white transition">Privacy</a>
-                <a href="#" class="hover:text-white transition">Terms</a>
+                <a data-store-link="instagram" hidden class="hover:text-white transition" rel="noopener noreferrer" target="_blank">Instagram</a>
+                <a href="/privacy" class="hover:text-white transition">Privacy</a>
+                <a href="/terms" class="hover:text-white transition">Terms</a>
+                <a href="/shipping" class="hover:text-white transition">Shipping</a>
             </div>
             <p class="text-[9px] text-gray-700 tracking-[0.5em] uppercase">© 2026 VAL10 STUDIO. ALL RIGHTS RESERVED.</p>
         </div>
@@ -181,6 +182,10 @@
 'use strict';
 
 /* ── Toast ──────────────────────────────────────────────────────── */
+function escapeHTML(value) {
+    return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function showToast(message, type = 'info') {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
@@ -283,12 +288,8 @@ function buildProductCard(product) {
     const allColorsSoldOut = colors.length > 0 && colors.every(c => (c.stock || 0) === 0);
     const allSizesSoldOut  = sizes.length  > 0 && sizes.every(s => s.stock === 0);
 
-    // Product is fully sold out only when every variant is gone
-    const allSoldOut =
-        (colors.length === 0 && sizes.length === 0)  ? false   // no variants = assume available
-        : (colors.length > 0 && sizes.length > 0)    ? allColorsSoldOut && allSizesSoldOut
-        : (colors.length > 0)                         ? allColorsSoldOut
-        :                                               allSizesSoldOut;
+    // Both dimensions must be available when a product has both sizes and colours.
+    const allSoldOut = allColorsSoldOut || allSizesSoldOut;
 
     /* Card shell */
     const card = document.createElement('div');
@@ -335,8 +336,8 @@ function buildProductCard(product) {
     const topRow = document.createElement('div');
     topRow.className = 'flex justify-between items-start mb-2';
     topRow.innerHTML = `
-        <h3 class="text-base font-bold uppercase tracking-tighter text-gray-100 truncate pr-2">${product.name}</h3>
-        <span class="font-mono text-gray-400 flex-shrink-0">${product.price} DT</span>`;
+        <h3 class="text-base font-bold uppercase tracking-tighter text-gray-100 truncate pr-2">${escapeHTML(product.name)}</h3>
+        <span class="font-mono text-gray-400 flex-shrink-0">${escapeHTML(String(product.price))} TND</span>`;
 
     const subLine = document.createElement('p');
     subLine.className = 'text-[9px] tracking-[0.2em] text-gray-600 uppercase mb-2';
@@ -404,7 +405,7 @@ async function fetchProducts() {
         grid.innerHTML = `
             <div class="col-span-full text-center py-20">
                 <p class="text-red-900 text-[10px] uppercase tracking-widest mb-2">Archive Connection Error</p>
-                <p class="text-gray-600 text-[9px] mb-4">${err.message}</p>
+                <p class="text-gray-600 text-[9px] mb-4">${escapeHTML(err.message)}</p>
                 <button onclick="fetchProducts()"
                         class="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest border border-white/10 px-4 py-2 rounded transition">
                     Retry
@@ -428,7 +429,7 @@ const SS_INTERVAL = 5000;
 function buildSlideEl(slide) {
     const div = document.createElement('div');
     div.className = 'absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0';
-    div.style.backgroundImage    = `url('${slide.imageUrl}')`;
+    div.style.backgroundImage    = `url("${slide.imageUrl.replace(/"/g, "%22")}")`;
     div.style.backgroundSize     = 'cover';
     div.style.backgroundPosition = 'center';
     const a = document.createElement('a');
@@ -519,9 +520,26 @@ async function fetchBanner() {
 }
 
 /* ── Init ───────────────────────────────────────────────────────── */
+async function hydrateStorefrontLinks() {
+    try {
+        const response = await fetch('/api/storefront-settings', { cache: 'no-store' });
+        if (!response.ok) return;
+        const settings = await response.json();
+        document.querySelectorAll('[data-store-link]').forEach(link => {
+            const key = link.dataset.storeLink;
+            const value = key === 'contact' && settings.contactEmail
+                ? `mailto:${settings.contactEmail}`
+                : settings[key];
+            if (value) { link.href = value; link.hidden = false; }
+            else link.hidden = true;
+        });
+    } catch (_) { /* social/contact links remain hidden until configured */ }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     fetchBanner();
     fetchProducts();
+    hydrateStorefrontLinks();
 });
 </script>
 </body>

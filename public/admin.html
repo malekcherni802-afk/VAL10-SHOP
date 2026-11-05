@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0a0a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/valio-192.png" />
 <title>VAL10 — Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
@@ -75,6 +80,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-body);
 .btn:hover { border-color: var(--accent); color: var(--accent); }
 .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
 .btn-primary:hover { background: #d4ff1a; color: #000; }
+#push-alerts-btn.is-enabled { border-color: rgba(200,255,0,.55); color: var(--accent); }
+#push-alerts-btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn-danger { border-color: var(--accent2); color: var(--accent2); }
 .btn-danger:hover { background: var(--accent2); color: #fff; }
 .btn-sm { padding: 5px 10px; font-size: 0.65rem; }
@@ -281,6 +288,13 @@ textarea { resize: vertical; min-height: 72px; }
 .confirm-actions { display: flex; gap: 10px; justify-content: center; }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .topbar { padding: 12px 14px; gap: 8px; flex-wrap: wrap; }
+  .topbar-title { font-size: 1.2rem; }
+  .topbar-actions { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .topbar-actions .btn { padding: 7px 9px; font-size: 0.58rem; }
+  .content { padding: 18px 14px; }
+}
 @media (max-width: 900px) {
   .sidebar { width: 60px; }
   .sidebar-logo h1, .sidebar-logo span, .nav-item span, .sidebar-footer { display: none; }
@@ -310,7 +324,7 @@ textarea { resize: vertical; min-height: 72px; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       <span>Products</span>
     </a>
-    <a class="nav-item" onclick="switchSection('orders',this)">
+    <a class="nav-item" id="orders-nav" onclick="switchSection('orders',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       <span>Orders</span>
     </a>
@@ -330,6 +344,10 @@ textarea { resize: vertical; min-height: 72px; }
       <button class="btn btn-primary" id="add-product-btn" style="display:none" onclick="openAddModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Product
+      </button>
+      <button class="btn" id="push-alerts-btn" onclick="toggleOrderAlerts()" disabled title="Checking notification support">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+        <span id="push-alerts-label">Checking alerts…</span>
       </button>
       <button class="btn" onclick="refreshAll()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.67"/></svg>
@@ -522,7 +540,7 @@ textarea { resize: vertical; min-height: 72px; }
    VAL10 ADMIN — Full Script
    ═══════════════════════════════════════════════════════════════ */
 
-const API = '';
+const API = '/admin/api';
 let allProducts     = [];
 let allOrders       = [];
 let editingId       = null;
@@ -543,7 +561,10 @@ function escHtml(str) {
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `<span>${type === 'success' ? '✓' : '✗'}</span>${msg}`;
+  const icon = document.createElement('span');
+  icon.textContent = type === 'success' ? '✓' : '✗';
+  el.appendChild(icon);
+  el.appendChild(document.createTextNode(String(msg)));
   document.getElementById('toast-container').appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
@@ -579,7 +600,8 @@ function updateStats() {
 /* ─── Products ────────────────────────────────────────────────── */
 async function fetchProducts() {
   try {
-    const res  = await fetch(`${API}/api/products`);
+    const res  = await fetch(`${API}/products`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
     // FIX: handle paginated response { products, total }
     allProducts = Array.isArray(data) ? data : (data.products || []);
@@ -605,12 +627,12 @@ function getSizesDisplay(product) {
     // new format: object with .size and .stock
     if (s && typeof s === 'object' && s.size !== undefined) {
       const hasStock = (s.stock || 0) > 0;
-      return `<span class="size-chip ${hasStock ? 'has-stock' : 'no-stock'}" title="${s.stock ?? 0} in stock">
-        ${s.size}${hasStock ? '' : ' ✗'}
+      return `<span class="size-chip ${hasStock ? 'has-stock' : 'no-stock'}" title="${Number(s.stock) || 0} in stock">
+        ${escHtml(s.size)}${hasStock ? '' : ' ✗'}
       </span>`;
     }
     // legacy format: plain string
-    return `<span class="size-chip has-stock">${s}</span>`;
+    return `<span class="size-chip has-stock">${escHtml(s)}</span>`;
   }).join('')}</div>`;
 }
 
@@ -623,11 +645,11 @@ function renderProducts() {
   tbody.innerHTML = allProducts.map(p => {
     const firstImg = p.colors?.[0]?.image || p.images?.[0] || '';
     const thumb = firstImg
-      ? `<img class="prod-thumb" src="${firstImg}" alt="" />`
+      ? `<img class="prod-thumb" src="${escHtml(firstImg)}" alt="" />`
       : `<div class="prod-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted)">?</div>`;
 
     const dots = (p.colors || []).map(c =>
-      `<span class="color-dot" style="background:${c.hex||'#888'}" title="${c.name} — stock: ${c.stock}"></span>`
+      `<span class="color-dot" style="background:${escHtml(c.hex||'#888')}" title="${escHtml(c.name)} — stock: ${Number(c.stock)||0}"></span>`
     ).join('');
 
     // Total stock = sum of all color stocks + sum of all size stocks
@@ -651,11 +673,11 @@ function renderProducts() {
       <td>${stockBadge}</td>
       <td>
         <div class="actions-cell">
-          <button class="btn btn-sm" onclick="openEditModal('${p._id}')">
+          <button class="btn btn-sm" onclick="openEditModal('${escHtml(p._id)}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
           </button>
-          <button class="btn btn-sm btn-danger" onclick="confirmDelete('product','${p._id}','${p.name.replace(/'/g,"\\'")}')">
+          <button class="btn btn-sm btn-danger" onclick="confirmDelete('product','${escHtml(p._id)}','product')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
@@ -728,15 +750,17 @@ function clearForm() {
 function addSizeRow(sizeName = '', stock = 0) {
   const list = document.getElementById('sizes-list');
   const row  = document.createElement('div');
+  const safeSizeName = escHtml(sizeName);
+  const safeStock = Number.isInteger(Number(stock)) && Number(stock) >= 0 ? Number(stock) : 0;
   row.className = 'size-row';
   row.innerHTML = `
     <div>
       <span class="size-row-label">Size Name</span>
-      <input type="text" class="size-name-input" placeholder="e.g. M, 42, One Size…" value="${sizeName}" />
+      <input type="text" class="size-name-input" placeholder="e.g. M, 42, One Size…" value="${safeSizeName}" />
     </div>
     <div class="size-stock-wrap">
       <span class="size-row-label">Stock (units)</span>
-      <input type="number" class="size-stock-input" min="0" value="${stock}" placeholder="0" />
+      <input type="number" class="size-stock-input" min="0" value="${safeStock}" placeholder="0" />
     </div>
     <button type="button" class="remove-size-btn" title="Remove size">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
@@ -788,14 +812,17 @@ function addColorRow(data = {}) {
   const row    = document.createElement('div');
   row.className = 'color-row';
 
-  const imgSrc = data.image || '';
-  const name   = (data.name  || '').replace(/"/g, '&quot;');
-  const hex    = data.hex   || '#000000';
-  const stock  = data.stock !== undefined ? data.stock : 0;
+  const imgSrc = typeof data.image === 'string' ? data.image : '';
+  const name   = escHtml(data.name || '');
+  const rawHex = typeof data.hex === 'string' ? data.hex : '#000000';
+  const hex    = /^#[0-9a-fA-F]{6}$/.test(rawHex) ? rawHex : '#000000';
+  const rawStock = data.stock !== undefined ? Number(data.stock) : 0;
+  const stock  = Number.isInteger(rawStock) && rawStock >= 0 ? rawStock : 0;
+  const safeImage = escHtml(imgSrc);
 
   const imgTag = `<img class="color-img-preview"
-    src="${imgSrc || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}"
-    data-base64="${imgSrc}"
+    src="${safeImage || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}"
+    data-base64="${safeImage}"
     style="${imgSrc ? '' : 'opacity:0.15'}" />`;
 
   row.innerHTML = `
@@ -941,7 +968,7 @@ async function saveProduct() {
   }
 
   const isEdit = !!id;
-  const url    = isEdit ? `${API}/api/products/${id}` : `${API}/api/products`;
+  const url    = isEdit ? `${API}/products/${id}` : `${API}/products`;
   const method = isEdit ? 'PUT' : 'POST';
 
   try {
@@ -967,8 +994,11 @@ async function saveProduct() {
 /* ─── Delete Product ─────────────────────────────────────────── */
 async function deleteProduct(id) {
   try {
-    const res = await fetch(`${API}/api/products/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Delete failed');
+    const res = await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      throw new Error(result.error || 'Delete failed');
+    }
     toast('Product deleted');
     await fetchProducts();
     updateStats();
@@ -980,7 +1010,8 @@ async function deleteProduct(id) {
 /* ─── Orders ─────────────────────────────────────────────────── */
 async function fetchOrders() {
   try {
-    const res  = await fetch(`${API}/api/orders`);
+    const res  = await fetch(`${API}/orders`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
     // FIX: handle paginated response { orders, total }
     allOrders = Array.isArray(data) ? data : (data.orders || []);
@@ -1001,13 +1032,13 @@ function renderOrders() {
   }
   tbody.innerHTML = allOrders.map(o => {
     const date = new Date(o.createdAt).toLocaleDateString();
-    return `<tr>
+    return `<tr id="order-${escHtml(o._id)}">
       <td style="font-weight:500">${escHtml(o.customerName)}</td>
       <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(o.customerPhone)}</td>
       <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(o.customerAddress)}</td>
       <td>${escHtml(o.productName)}</td>
-      <td><span class="badge badge-gray">${o.size || '—'}</span></td>
-      <td>${o.colorName || '—'}</td>
+      <td><span class="badge badge-gray">${escHtml(o.size || '—')}</span></td>
+      <td>${escHtml(o.colorName || '—')}</td>
       <td style="font-family:var(--font-mono)">${escHtml(String(o.totalPrice))} TND</td>
       <td>
         <select class="order-status" onchange="updateOrderStatus('${o._id}', this.value)">
@@ -1018,7 +1049,7 @@ function renderOrders() {
       </td>
       <td style="font-size:0.75rem;color:var(--muted)">${date}</td>
       <td>
-        <button class="btn btn-sm btn-danger" onclick="confirmDelete('order','${o._id}','order #${o._id.slice(-6)}')">
+        <button class="btn btn-sm btn-danger" onclick="confirmDelete('order','${escHtml(o._id)}','order #${escHtml(String(o._id).slice(-6))}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
         </button>
       </td>
@@ -1038,8 +1069,8 @@ function renderDashOrders() {
     return `<tr>
       <td style="font-weight:500">${escHtml(o.customerName)}</td>
       <td>${escHtml(o.productName)}</td>
-      <td><span class="badge badge-gray">${o.size || '—'}</span></td>
-      <td>${o.colorName || '—'}</td>
+      <td><span class="badge badge-gray">${escHtml(o.size || '—')}</span></td>
+      <td>${escHtml(o.colorName || '—')}</td>
       <td style="font-family:var(--font-mono)">${escHtml(String(o.totalPrice))} TND</td>
       <td>${statusBadge(o.status)}</td>
       <td style="font-size:0.75rem;color:var(--muted)">${date}</td>
@@ -1049,28 +1080,38 @@ function renderDashOrders() {
 
 function statusBadge(s) {
   const map = { Pending:'badge-yellow', Confirmed:'badge-green', Shipped:'badge-green', Delivered:'badge-green', Cancelled:'badge-red' };
-  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+  return `<span class="badge ${map[s]||'badge-gray'}">${escHtml(s)}</span>`;
 }
 
 async function updateOrderStatus(id, status) {
   try {
-    const res = await fetch(`${API}/api/orders/${id}`, {
+    const res = await fetch(`${API}/orders/${id}`, {
       method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status })
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      throw new Error(result.error || 'Status update failed.');
+    }
     toast(`Status → ${status}`);
     const idx = allOrders.findIndex(o => o._id === id);
     if (idx !== -1) allOrders[idx].status = status;
     updateStats();
-  } catch { toast('Failed to update status', 'error'); }
+  } catch (error) {
+    toast(error.message || 'Failed to update status', 'error');
+    await fetchOrders(); // Revert the dropdown to the server's actual status.
+  }
 }
 
 async function deleteOrder(id) {
   try {
-    await fetch(`${API}/api/orders/${id}`, { method: 'DELETE' });
+    const response = await fetch(`${API}/orders/${id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || 'Delete failed');
+    }
     toast('Order deleted');
     await fetchOrders();
-  } catch { toast('Delete failed', 'error'); }
+  } catch (error) { toast(error.message || 'Delete failed', 'error'); }
 }
 
 /* ─── Confirm ────────────────────────────────────────────────── */
@@ -1093,7 +1134,8 @@ let bannerSlides = [];
 
 async function fetchBanner() {
   try {
-    const res = await fetch(`${API}/api/banner`);
+    const res = await fetch(`${API}/banner`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
     bannerSlides = data.slides || [];
     renderBannerSlides();
@@ -1109,11 +1151,11 @@ function renderBannerSlides() {
     const hasImg = slide.imageUrl && slide.imageUrl.length > 0;
     row.innerHTML = `
       ${hasImg
-        ? `<img class="banner-thumb" src="${slide.imageUrl}" data-base64="${slide.imageUrl}" />`
+        ? `<img class="banner-thumb" src="${escHtml(slide.imageUrl)}" data-base64="${escHtml(slide.imageUrl)}" alt="Banner preview" />`
         : `<div class="banner-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.2rem;background:var(--surface)">＋</div>`
       }
-      <input type="text" placeholder="Link URL (e.g. /product?id=…)" value="${slide.linkUrl||'/'}" class="banner-link" />
-      <input type="text" placeholder="Caption (optional)" value="${slide.caption||''}" class="banner-caption" />
+      <input type="text" placeholder="Link URL (e.g. /product?id=…)" value="${escHtml(slide.linkUrl||'/')}" class="banner-link" />
+      <input type="text" placeholder="Caption (optional)" value="${escHtml(slide.caption||'')}" class="banner-caption" />
       <div style="display:flex;gap:6px;align-items:center">
         <button class="btn btn-sm" onclick="triggerBannerImg(${i})">Image</button>
         <button class="remove-color-btn" onclick="removeBannerSlide(${i})">
@@ -1154,7 +1196,7 @@ function readBannerFromDOM() {
 async function saveBanner() {
   const slides = readBannerFromDOM();
   try {
-    const res = await fetch(`${API}/api/banner`, {
+    const res = await fetch(`${API}/banner`, {
       method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slides })
     });
     if (!res.ok) throw new Error((await res.json()).error);
@@ -1167,10 +1209,172 @@ document.getElementById('product-modal').addEventListener('click', function(e) {
 document.getElementById('confirm-overlay').addEventListener('click', function(e) { if (e.target===this) closeConfirm(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeConfirm(); } });
 
+/* ─── Web Push Order Alerts ───────────────────────────────────── */
+let pushRegistration = null;
+let pushCurrentSubscription = null;
+let pushPublicKey = null;
+let pushIsConfigured = false;
+
+function setPushButton(label, { enabled = false, disabled = false, title = '' } = {}) {
+  const button = document.getElementById('push-alerts-btn');
+  const text = document.getElementById('push-alerts-label');
+  if (!button || !text) return;
+  text.textContent = label;
+  button.disabled = disabled;
+  button.classList.toggle('is-enabled', enabled);
+  button.title = title || label;
+}
+
+function base64UrlToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from(raw, char => char.charCodeAt(0));
+}
+
+function isIosDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isInstalledWebApp() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+async function initialiseOrderAlerts() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    setPushButton('Push not supported', { disabled: true, title: 'Use a modern browser with notifications enabled.' });
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    setPushButton('HTTPS required', { disabled: true, title: 'Push notifications require HTTPS.' });
+    return;
+  }
+
+  try {
+    pushRegistration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+
+    const response = await fetch('/admin/api/push/config', { credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error(response.status === 401 ? 'Admin authentication expired. Refresh and sign in again.' : 'Could not load push settings.');
+    const config = await response.json();
+    pushIsConfigured = Boolean(config.configured);
+    pushPublicKey = config.publicKey || null;
+
+    if (!pushIsConfigured || !pushPublicKey) {
+      setPushButton('Set up push keys', { disabled: true, title: 'Add VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to the server environment.' });
+      return;
+    }
+
+    const subscription = await pushRegistration.pushManager.getSubscription();
+    pushCurrentSubscription = subscription;
+    if (subscription) {
+      const saveResponse = await fetch('/admin/api/push/subscriptions', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subscription.toJSON(), userAgent: navigator.userAgent })
+      });
+      if (!saveResponse.ok) throw new Error('This device is subscribed, but the server could not refresh its registration.');
+      setPushButton('Order alerts ON', { enabled: true, title: 'Tap to turn off notifications on this device.' });
+    } else if (Notification.permission === 'denied') {
+      setPushButton('Notifications blocked', { disabled: true, title: 'Allow notifications for this site in your browser/device settings.' });
+    } else if (isIosDevice() && !isInstalledWebApp()) {
+      setPushButton('Add to Home Screen', { title: 'On iPhone, add VAL10 to the Home Screen, open it from its icon, then enable alerts.' });
+    } else {
+      setPushButton('Enable order alerts', { title: 'Enable a push notification every time a new order arrives.' });
+    }
+  } catch (error) {
+    console.error('Order alerts setup:', error);
+    setPushButton('Alerts unavailable', { disabled: true, title: error.message || 'Could not initialise push notifications.' });
+  }
+}
+
+async function toggleOrderAlerts() {
+  if (!pushRegistration || !pushIsConfigured || !pushPublicKey) {
+    toast('Order alerts are not configured yet. Check the server VAPID keys.', 'error');
+    return;
+  }
+
+  try {
+    const current = pushCurrentSubscription;
+    if (current) {
+      const response = await fetch('/admin/api/push/subscriptions', {
+        method: 'DELETE', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: current.endpoint })
+      });
+      if (!response.ok) throw new Error('Could not remove this device from the notification list.');
+      await current.unsubscribe();
+      pushCurrentSubscription = null;
+      toast('Order alerts disabled on this device.');
+      setPushButton('Enable order alerts', { title: 'Enable a push notification every time a new order arrives.' });
+      return;
+    }
+
+    if (isIosDevice() && !isInstalledWebApp()) {
+      toast('On iPhone: Share → Add to Home Screen. Open VAL10 from its new icon, then enable alerts.', 'error');
+      return;
+    }
+
+    // Permission is requested directly from this button click, as required by browsers/iOS.
+    const permissionRequest = Notification.permission === 'granted'
+      ? Promise.resolve('granted')
+      : Notification.requestPermission();
+    const permission = await permissionRequest;
+    if (permission !== 'granted') {
+      setPushButton('Notifications blocked', { disabled: true, title: 'Allow notifications in your browser/device settings.' });
+      toast('Notification permission was not granted.', 'error');
+      return;
+    }
+
+    const subscription = await pushRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: base64UrlToUint8Array(pushPublicKey)
+    });
+
+    const response = await fetch('/admin/api/push/subscriptions', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: subscription.toJSON(), userAgent: navigator.userAgent })
+    });
+    if (!response.ok) {
+      await subscription.unsubscribe();
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || 'Could not save this device subscription.');
+    }
+
+    pushCurrentSubscription = subscription;
+    setPushButton('Order alerts ON', { enabled: true, title: 'Tap to turn off notifications on this device.' });
+    toast('Order alerts enabled on this device ✓');
+  } catch (error) {
+    console.error('Toggle order alerts:', error);
+    toast('Could not enable order alerts: ' + (error.message || 'Unknown error'), 'error');
+    await initialiseOrderAlerts();
+  }
+}
+
 /* ─── Boot ───────────────────────────────────────────────────── */
 (async () => {
   await Promise.all([fetchProducts(), fetchOrders()]);
   updateStats();
+
+  const params = new URLSearchParams(window.location.search);
+  const requestedOrderId = params.get('orderId');
+  if (params.get('section') === 'orders' || requestedOrderId) {
+    switchSection('orders', document.getElementById('orders-nav'));
+    if (requestedOrderId) {
+      setTimeout(() => {
+        const target = document.getElementById(`order-${requestedOrderId}`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.style.outline = '1px solid var(--accent)';
+        }
+      }, 350);
+    }
+  }
+
+  initialiseOrderAlerts();
 })();
 </script>
 </body>

@@ -927,19 +927,18 @@ button{background:none;border:none;color:inherit;font-family:inherit}
       <h4>Explore</h4>
       <a href="/">Archive</a>
       <a href="#manifesto">Manifesto</a>
-      <a href="/admin">Admin</a>
     </div>
     <div class="footer-col">
       <h4>Social</h4>
-      <a href="#">Instagram</a>
-      <a href="#">TikTok</a>
-      <a href="#">Contact</a>
+      <a data-store-link="instagram" hidden rel="noopener noreferrer" target="_blank">Instagram</a>
+      <a data-store-link="tiktok" hidden rel="noopener noreferrer" target="_blank">TikTok</a>
+      <a data-store-link="contact" hidden>Contact</a>
     </div>
     <div class="footer-col">
       <h4>Legal</h4>
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
-      <a href="#">Shipping</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/shipping">Shipping</a>
     </div>
   </div>
   <div class="footer-kinetic" id="kinetic">VAL10</div>
@@ -1373,17 +1372,13 @@ function updateStockBadge(){
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
-  const fullySoldOut  = hasVariants ? (!anyColorStock && !anySizeStock) : false;
+  const fullySoldOut  = (colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock);
 
   const badge = document.getElementById('stock-badge');
   const text  = document.getElementById('stock-text');
-  if(fullySoldOut){
-    badge.classList.add('out');
-    text.textContent = 'Sold Out';
-  } else {
-    badge.classList.add('in');
-    text.textContent = 'In Stock';
-  }
+  badge.classList.toggle('out', fullySoldOut);
+  badge.classList.toggle('in', !fullySoldOut);
+  text.textContent = fullySoldOut ? 'Sold Out' : 'In Stock';
 }
 
 /* ── Sold out state ──────────────────────────────────────────── */
@@ -1393,15 +1388,14 @@ function updateSoldOutState(){
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
-  const fullySoldOut  = hasVariants ? (!anyColorStock && !anySizeStock) : false;
+  const fullySoldOut  = (colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock);
 
   const btn = document.getElementById('acquire-btn');
   const msg = document.getElementById('soldout-msg');
-  if(fullySoldOut){
-    btn.classList.add('disabled');
-    btn.querySelector('span').textContent = 'Sold Out';
-    msg.hidden = false;
-  }
+  btn.disabled = fullySoldOut;
+  btn.classList.toggle('disabled', fullySoldOut);
+  btn.querySelector('span').textContent = fullySoldOut ? 'Sold Out' : 'Acquire Piece';
+  msg.hidden = !fullySoldOut;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1447,7 +1441,7 @@ function renderColorSwatches(){
   });
 
   /* Auto-select first in-stock */
-  const firstInStock = colors.find(c => (c.stock||0) > 0) || colors[0];
+  const firstInStock = colors.find(c => (c.stock||0) > 0) || null;
   if(firstInStock && !selectedColor){
     selectedColor = firstInStock;
     const idx = colors.indexOf(firstInStock);
@@ -1584,7 +1578,7 @@ function openOrder(){
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
 
-  if(hasVariants && !anyColorStock && !anySizeStock){
+  if((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock)){
     toast('Fully sold out', 'error'); return;
   }
   if(sizes.length > 0 && !selectedSize){
@@ -1629,14 +1623,17 @@ async function submitOrder(){
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
-  if(hasVariants && !anyColorStock && !anySizeStock){
+  if((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock)){
     toast('Sorry — just sold out', 'error');
     closeOrder(); return;
   }
 
-  const colorIndex = selectedColor
-    ? colors.findIndex(c => c.name === selectedColor.name)
-    : -1;
+  // Keep the exact selected variant; duplicate colour names must not reserve the wrong stock.
+  const colorIndex = selectedColor ? colors.indexOf(selectedColor) : -1;
+  if (colors.length && colorIndex < 0) {
+    toast('Please select a colour again.', 'error');
+    return;
+  }
 
   const orderData = {
     customerName:    name,
@@ -1718,8 +1715,23 @@ async function loadRelated(){
 /* ═══════════════════════════════════════════════════════════════
    BOOT
    ═══════════════════════════════════════════════════════════════ */
+async function hydrateStorefrontLinks(){
+  try{
+    const response = await fetch('/api/storefront-settings', { cache: 'no-store' });
+    if(!response.ok) return;
+    const settings = await response.json();
+    document.querySelectorAll('[data-store-link]').forEach(link=>{
+      const key = link.dataset.storeLink;
+      const value = key === 'contact' && settings.contactEmail ? `mailto:${settings.contactEmail}` : settings[key];
+      if(value){ link.href = value; link.hidden = false; }
+      else link.hidden = true;
+    });
+  }catch(_){ /* links stay hidden until configured */ }
+}
+
 window.addEventListener('DOMContentLoaded', ()=>{
   loadProduct();
+  hydrateStorefrontLinks();
 });
 </script>
 </body>
