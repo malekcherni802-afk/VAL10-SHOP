@@ -399,8 +399,11 @@ button{background:none;border:none;color:inherit;font-family:inherit}
   padding-bottom:24px;border-bottom:1px solid var(--border);
   margin-bottom:28px;flex-wrap:wrap;
 }
-.price{font-family:var(--mono);font-weight:700;font-size:1.5rem;letter-spacing:.05em}
-.price .cur{color:var(--muted);font-size:.85rem;margin-left:6px}
+.price{font-family:var(--mono);font-weight:700;font-size:1.5rem;letter-spacing:.05em;display:inline-flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.price .cur{color:var(--muted);font-size:.85rem;margin-left:0}
+.price-original{font-size:.9rem;color:var(--muted);text-decoration:line-through;font-weight:400}
+.price-sale{color:#ff6262}
+.price-discount{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:#ff6262;border:1px solid rgba(255,98,98,.3);padding:4px 7px;border-radius:3px}
 .stock-badge{
   font-family:var(--mono);font-size:.58rem;letter-spacing:.4em;
   text-transform:uppercase;padding:6px 12px;border-radius:999px;
@@ -841,7 +844,7 @@ button{background:none;border:none;color:inherit;font-family:inherit}
       <div class="info-cat" id="p-cat">Underground</div>
       <h1 class="info-name" id="p-name"><span class="split"><span>Loading…</span></span></h1>
       <div class="price-row">
-        <span class="price"><span id="p-price">—</span><span class="cur">TND</span></span>
+        <span class="price"><span id="p-price">—</span><span id="p-original-price" class="price-original" hidden></span><span id="p-discount" class="price-discount" hidden></span><span class="cur">TND</span></span>
         <span class="stock-badge" id="stock-badge">
           <span class="dot"></span><span id="stock-text">Checking…</span>
         </span>
@@ -1262,16 +1265,26 @@ requestAnimationFrame(tick);
 async function loadProduct(){
   try{
     if(!productId) throw new Error('No product ID in URL');
-    const res = await fetch(`/api/products/${productId}`);
+    const res = await fetch(`/api/products/${productId}`, { cache: 'no-store' });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     currentProduct = await res.json();
 
     document.title = `VAL10 | ${currentProduct.name}`;
 
     /* Populate text */
-    document.getElementById('p-cat').textContent   = currentProduct.category || 'Underground';
-    document.getElementById('p-price').textContent = currentProduct.price;
-    document.getElementById('p-desc').textContent  = currentProduct.description || 'No description provided.';
+    document.getElementById('p-cat').textContent = currentProduct.category || 'Underground';
+    const salePrice = Number(currentProduct.salePrice ?? currentProduct.price);
+    const hasPromo = Number(currentProduct.promoPercent) > 0;
+    const priceEl = document.getElementById('p-price');
+    priceEl.textContent = hasPromo ? salePrice.toFixed(2) : currentProduct.price;
+    priceEl.classList.toggle('price-sale', hasPromo);
+    const originalPriceEl = document.getElementById('p-original-price');
+    originalPriceEl.textContent = hasPromo ? `${currentProduct.price} TND` : '';
+    originalPriceEl.hidden = !hasPromo;
+    const discountEl = document.getElementById('p-discount');
+    discountEl.textContent = hasPromo ? `-${currentProduct.promoPercent}%` : '';
+    discountEl.hidden = !hasPromo;
+    document.getElementById('p-desc').textContent = currentProduct.description || 'No description provided.';
 
     /* Animated name reveal (per word) */
     const nameEl = document.getElementById('p-name');
@@ -1371,8 +1384,10 @@ function updateStockBadge(){
   const colors = currentProduct.colors || [];
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
-  const hasVariants   = colors.length > 0 || sizes.length > 0;
-  const fullySoldOut  = (colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock);
+  const hasVariants = colors.length > 0 || sizes.length > 0;
+  const fullySoldOut = hasVariants
+    ? ((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock))
+    : Number(currentProduct.stock ?? 1) <= 0;
 
   const badge = document.getElementById('stock-badge');
   const text  = document.getElementById('stock-text');
@@ -1387,8 +1402,10 @@ function updateSoldOutState(){
   const colors = currentProduct.colors || [];
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
-  const hasVariants   = colors.length > 0 || sizes.length > 0;
-  const fullySoldOut  = (colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock);
+  const hasVariants = colors.length > 0 || sizes.length > 0;
+  const fullySoldOut = hasVariants
+    ? ((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock))
+    : Number(currentProduct.stock ?? 1) <= 0;
 
   const btn = document.getElementById('acquire-btn');
   const msg = document.getElementById('soldout-msg');
@@ -1414,6 +1431,8 @@ function renderColorSwatches(){
     const sold = (c.stock || 0) === 0;
     const sw = document.createElement('button');
     sw.className = 'sw' + (sold ? ' sold' : '');
+    sw.disabled = sold;
+    if (sold) sw.setAttribute('aria-label', `${c.name || 'Colour'} — sold out`);
     sw.dataset.cursor = '';
     if(c.image){ sw.style.backgroundImage = `url(${c.image})`; }
     else { sw.style.background = c.hex || '#888'; }
@@ -1473,6 +1492,8 @@ function renderSizes(){
     const sold = s.stock === 0;
     const btn = document.createElement('button');
     btn.className = 'sz' + (sold ? ' sold' : '');
+    btn.disabled = sold;
+    if (sold) btn.setAttribute('aria-label', `${s.size} — sold out`);
     btn.dataset.cursor = '';
     btn.innerHTML = `${esc(s.size)}${sold ? '' : `<span class="stock-tip">${s.stock} left</span>`}`;
 
@@ -1578,9 +1599,10 @@ function openOrder(){
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
 
-  if((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock)){
-    toast('Fully sold out', 'error'); return;
-  }
+  const fullySoldOut = (colors.length > 0 || sizes.length > 0)
+    ? ((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock))
+    : Number(currentProduct.stock ?? 1) <= 0;
+  if(fullySoldOut){ toast('Fully sold out', 'error'); return; }
   if(sizes.length > 0 && !selectedSize){
     toast('Select a size first', 'error'); return;
   }
@@ -1591,7 +1613,7 @@ function openOrder(){
   document.getElementById('os-name').textContent  = currentProduct.name;
   document.getElementById('os-size').textContent  = selectedSize || 'One Size';
   document.getElementById('os-color').textContent = selectedColor?.name || '—';
-  document.getElementById('os-price').textContent = `${currentProduct.price} TND`;
+  document.getElementById('os-price').textContent = `${Number(currentProduct.salePrice ?? currentProduct.price).toFixed(2)} TND`;
   document.getElementById('order-summary-line').textContent =
     `${currentProduct.name} · ${selectedSize || 'One Size'}${selectedColor ? ' · ' + selectedColor.name : ''}`;
 
@@ -1623,9 +1645,18 @@ async function submitOrder(){
   const anyColorStock = colors.some(c => (c.stock||0) > 0);
   const anySizeStock  = sizes.some(s => s.stock > 0);
   const hasVariants   = colors.length > 0 || sizes.length > 0;
-  if((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock)){
+  const fullySoldOut = (colors.length > 0 || sizes.length > 0)
+    ? ((colors.length > 0 && !anyColorStock) || (sizes.length > 0 && !anySizeStock))
+    : Number(currentProduct.stock ?? 1) <= 0;
+  if(fullySoldOut){
     toast('Sorry — just sold out', 'error');
     closeOrder(); return;
+  }
+  if (sizes.length && sizes.find(s => s.size === selectedSize)?.stock <= 0) {
+    toast('This size is sold out. Choose another size.', 'error'); return;
+  }
+  if (colors.length && (!selectedColor || Number(selectedColor.stock) <= 0)) {
+    toast('This colour is sold out. Choose another colour.', 'error'); return;
   }
 
   // Keep the exact selected variant; duplicate colour names must not reserve the wrong stock.
@@ -1644,7 +1675,7 @@ async function submitOrder(){
     productName:     currentProduct.name,
     size:            selectedSize || 'One Size',
     colorName:       selectedColor?.name || '',
-    totalPrice:      currentProduct.price
+    totalPrice:      Number(currentProduct.salePrice ?? currentProduct.price)
   };
 
   submitBtn.classList.add('loading');
@@ -1698,7 +1729,7 @@ async function loadRelated(){
         <div class="rel-img"><img src="${img}" alt="" loading="lazy" /></div>
         <div class="rel-info">
           <h4>${esc(p.name)}</h4>
-          <div class="p">${esc(String(p.price))} TND · ${esc(p.category || 'Limited')}</div>
+          <div class="p">${Number(p.promoPercent) > 0 ? `<s style="opacity:.55">${esc(String(p.price))} TND</s> <strong style="color:#ff6262">${Number(p.salePrice ?? p.price).toFixed(2)} TND</strong>` : `${esc(String(p.price))} TND`} · ${esc(p.category || 'Limited')}</div>
         </div>
       `;
       card.addEventListener('click', ()=>{

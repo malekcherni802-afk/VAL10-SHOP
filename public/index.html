@@ -289,7 +289,10 @@ function buildProductCard(product) {
     const allSizesSoldOut  = sizes.length  > 0 && sizes.every(s => s.stock === 0);
 
     // Both dimensions must be available when a product has both sizes and colours.
-    const allSoldOut = allColorsSoldOut || allSizesSoldOut;
+    const hasVariants = colors.length > 0 || sizes.length > 0;
+    const allSoldOut = hasVariants
+        ? (allColorsSoldOut || allSizesSoldOut)
+        : Number(product.stock ?? 1) <= 0;
 
     /* Card shell */
     const card = document.createElement('div');
@@ -335,9 +338,13 @@ function buildProductCard(product) {
 
     const topRow = document.createElement('div');
     topRow.className = 'flex justify-between items-start mb-2';
+    const salePrice = Number(product.salePrice ?? product.price);
+    const priceMarkup = Number(product.promoPercent) > 0
+        ? `<span class="inline-flex flex-col items-end gap-0.5 flex-shrink-0"><span class="text-[9px] text-gray-500 line-through">${escapeHTML(String(product.price))} TND</span><span class="font-mono font-bold text-red-400">${escapeHTML(salePrice.toFixed(2))} TND</span><span class="text-[8px] tracking-widest uppercase text-red-400">-${escapeHTML(String(product.promoPercent))}%</span></span>`
+        : `<span class="font-mono text-gray-400 flex-shrink-0">${escapeHTML(String(product.price))} TND</span>`;
     topRow.innerHTML = `
         <h3 class="text-base font-bold uppercase tracking-tighter text-gray-100 truncate pr-2">${escapeHTML(product.name)}</h3>
-        <span class="font-mono text-gray-400 flex-shrink-0">${escapeHTML(String(product.price))} TND</span>`;
+        ${priceMarkup}`;
 
     const subLine = document.createElement('p');
     subLine.className = 'text-[9px] tracking-[0.2em] text-gray-600 uppercase mb-2';
@@ -383,7 +390,7 @@ function buildProductCard(product) {
 async function fetchProducts() {
     const grid = document.getElementById('product-grid');
     try {
-        const res = await fetch('/api/products');
+        const res = await fetch('/api/products', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data     = await res.json();
         // FIX: server now returns { products: [...], total, page, limit }

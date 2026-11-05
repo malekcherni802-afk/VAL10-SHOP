@@ -349,6 +349,7 @@ textarea { resize: vertical; min-height: 72px; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
         <span id="push-alerts-label">Checking alerts…</span>
       </button>
+      <button class="btn" id="push-test-btn" onclick="testOrderAlerts()" style="display:none" disabled title="Send a test push notification to subscribed devices">Test notification</button>
       <button class="btn" onclick="refreshAll()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.67"/></svg>
         Refresh
@@ -454,6 +455,16 @@ textarea { resize: vertical; min-height: 72px; }
         <div class="form-group">
           <label>Price (TND) *</label>
           <input type="number" id="f-price" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Promotion (%)</label>
+          <input type="number" id="f-promo-percent" placeholder="0 = no promotion" min="0" max="90" step="1" value="0" />
+          <span style="font-size:.62rem;color:var(--muted);margin-top:5px">Optional. Discount is applied to this product only.</span>
+        </div>
+        <div class="form-group">
+          <label>One-size stock</label>
+          <input type="number" id="f-stock" placeholder="1" min="0" max="100000" step="1" value="1" />
+          <span style="font-size:.62rem;color:var(--muted);margin-top:5px">Used only when this product has no size or colour variants.</span>
         </div>
         <div class="form-group">
           <label>Category</label>
@@ -659,7 +670,13 @@ function renderProducts() {
       if (sz && typeof sz === 'object') return s + (sz.stock || 0);
       return s;
     }, 0);
-    const totalStock = colorStock || sizeStock;
+    const hasSizeVariants = Array.isArray(p.sizes) && p.sizes.length > 0;
+    const hasColorVariants = Array.isArray(p.colors) && p.colors.length > 0;
+    const totalStock = hasSizeVariants && hasColorVariants
+      ? Math.min(sizeStock, colorStock)
+      : hasSizeVariants ? sizeStock
+      : hasColorVariants ? colorStock
+      : Number(p.stock ?? 1);
     const stockBadge = totalStock > 0
       ? `<span class="badge badge-green">${totalStock}</span>`
       : `<span class="badge badge-red">SOLD OUT</span>`;
@@ -667,7 +684,9 @@ function renderProducts() {
     return `<tr>
       <td>${thumb}</td>
       <td style="font-weight:500">${escHtml(p.name)}</td>
-      <td style="font-family:var(--font-mono)">${escHtml(String(p.price))} TND</td>
+      <td style="font-family:var(--font-mono)">${Number(p.promoPercent) > 0
+        ? `<span style="display:block;color:var(--muted);font-size:.68rem;text-decoration:line-through">${escHtml(String(p.price))} TND</span><strong style="color:#ff6262">${escHtml(Number(p.salePrice ?? p.price).toFixed(2))} TND</strong><small style="display:block;color:#ff6262">-${escHtml(String(p.promoPercent))}%</small>`
+        : `${escHtml(String(p.price))} TND`}</td>
       <td>${getSizesDisplay(p)}</td>
       <td><div class="color-dots">${dots || '<span style="color:var(--muted)">—</span>'}</div></td>
       <td>${stockBadge}</td>
@@ -703,6 +722,8 @@ function openEditModal(id) {
   document.getElementById('edit-product-id').value  = id;
   document.getElementById('f-name').value           = p.name        || '';
   document.getElementById('f-price').value          = p.price       || '';
+  document.getElementById('f-promo-percent').value  = p.promoPercent ?? 0;
+  document.getElementById('f-stock').value          = p.stock ?? 1;
   document.getElementById('f-category').value       = p.category    || '';
   document.getElementById('f-description').value    = p.description || '';
 
@@ -734,6 +755,8 @@ function clearForm() {
   ['f-name','f-price','f-category','f-description','edit-product-id'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('f-promo-percent').value = '0';
+  document.getElementById('f-stock').value = '1';
   document.getElementById('sizes-list').innerHTML  = '';
   document.getElementById('colors-list').innerHTML = '';
 }
@@ -937,6 +960,8 @@ async function saveProduct() {
   const id          = document.getElementById('edit-product-id').value;
   const name        = document.getElementById('f-name').value.trim();
   const price       = parseFloat(document.getElementById('f-price').value);
+  const promoPercent = parseInt(document.getElementById('f-promo-percent').value || '0', 10);
+  const stock       = parseInt(document.getElementById('f-stock').value || '1', 10);
   const category    = document.getElementById('f-category').value.trim() || 'Underground';
   const description = document.getElementById('f-description').value.trim();
 
@@ -945,7 +970,9 @@ async function saveProduct() {
   const colors = readColorsFromDOM();
 
   if (!name)        { toast('Product name is required', 'error'); return; }
-  if (isNaN(price)) { toast('Valid price is required',  'error'); return; }
+  if (!Number.isFinite(price) || price <= 0) { toast('Valid price is required', 'error'); return; }
+  if (!Number.isInteger(promoPercent) || promoPercent < 0 || promoPercent > 90) { toast('Promotion must be 0–90%', 'error'); return; }
+  if (!Number.isInteger(stock) || stock < 0 || stock > 100000) { toast('One-size stock must be 0–100000', 'error'); return; }
 
   // Validate color names
   for (let i = 0; i < colors.length; i++) {
@@ -956,7 +983,7 @@ async function saveProduct() {
     }
   }
 
-  const payload = { name, price, category, description, sizes, colors };
+  const payload = { name, price, promoPercent, stock, category, description, sizes, colors };
 
   // Payload size guard
   const sizeKB = new Blob([JSON.stringify(payload)]).size / 1024;
@@ -1225,11 +1252,26 @@ function setPushButton(label, { enabled = false, disabled = false, title = '' } 
   button.title = title || label;
 }
 
+function setPushTestVisible(visible, disabled = false) {
+  const button = document.getElementById('push-test-btn');
+  if (!button) return;
+  button.style.display = visible ? 'inline-flex' : 'none';
+  button.disabled = disabled;
+}
+
 function base64UrlToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = window.atob(base64);
   return Uint8Array.from(raw, char => char.charCodeAt(0));
+}
+
+function subscriptionUsesCurrentVapidKey(subscription, publicKey) {
+  const actual = subscription?.options?.applicationServerKey;
+  if (!actual) return true; // Older browser implementations may not expose the key.
+  const expected = base64UrlToUint8Array(publicKey);
+  const actualBytes = new Uint8Array(actual);
+  return actualBytes.length === expected.length && actualBytes.every((value, index) => value === expected[index]);
 }
 
 function isIosDevice() {
@@ -1263,11 +1305,30 @@ async function initialiseOrderAlerts() {
     pushPublicKey = config.publicKey || null;
 
     if (!pushIsConfigured || !pushPublicKey) {
-      setPushButton('Set up push keys', { disabled: true, title: 'Add VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to the server environment.' });
+      setPushButton('Set up push keys', { disabled: true, title: 'Add VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT (mailto:...) to Render.' });
+      setPushTestVisible(false);
       return;
     }
 
-    const subscription = await pushRegistration.pushManager.getSubscription();
+    if (Notification.permission === 'denied') {
+      pushCurrentSubscription = null;
+      setPushButton('Notifications blocked', { disabled: true, title: 'Allow notifications for VAL10 in your browser/device settings.' });
+      setPushTestVisible(false);
+      return;
+    }
+
+    let subscription = await pushRegistration.pushManager.getSubscription();
+    if (subscription && !subscriptionUsesCurrentVapidKey(subscription, pushPublicKey)) {
+      await fetch('/admin/api/push/subscriptions', {
+        method: 'DELETE', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint })
+      });
+      await subscription.unsubscribe();
+      subscription = null;
+      toast('Notification keys changed. Enable alerts again on this device.', 'error');
+    }
+
     pushCurrentSubscription = subscription;
     if (subscription) {
       const saveResponse = await fetch('/admin/api/push/subscriptions', {
@@ -1277,16 +1338,47 @@ async function initialiseOrderAlerts() {
       });
       if (!saveResponse.ok) throw new Error('This device is subscribed, but the server could not refresh its registration.');
       setPushButton('Order alerts ON', { enabled: true, title: 'Tap to turn off notifications on this device.' });
+      setPushTestVisible(true, false);
     } else if (Notification.permission === 'denied') {
       setPushButton('Notifications blocked', { disabled: true, title: 'Allow notifications for this site in your browser/device settings.' });
     } else if (isIosDevice() && !isInstalledWebApp()) {
       setPushButton('Add to Home Screen', { title: 'On iPhone, add VAL10 to the Home Screen, open it from its icon, then enable alerts.' });
     } else {
       setPushButton('Enable order alerts', { title: 'Enable a push notification every time a new order arrives.' });
+      setPushTestVisible(false);
     }
   } catch (error) {
     console.error('Order alerts setup:', error);
     setPushButton('Alerts unavailable', { disabled: true, title: error.message || 'Could not initialise push notifications.' });
+    setPushTestVisible(false);
+  }
+}
+
+async function testOrderAlerts() {
+  const button = document.getElementById('push-test-btn');
+  if (!button) return;
+  button.disabled = true;
+  const oldLabel = button.textContent;
+  button.textContent = 'Sending…';
+  try {
+    const response = await fetch('/admin/api/push/test', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const codes = Array.isArray(result.failures)
+        ? [...new Set(result.failures.map(item => item.statusCode).filter(Boolean))].join(', ')
+        : '';
+      throw new Error((result.error || 'Test notification failed.') + (codes ? ` (provider status: ${codes})` : ''));
+    }
+    toast(result.message || 'Test push accepted by provider ✓');
+  } catch (error) {
+    toast(error.message || 'Test notification failed.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = oldLabel;
   }
 }
 
@@ -1309,6 +1401,7 @@ async function toggleOrderAlerts() {
       pushCurrentSubscription = null;
       toast('Order alerts disabled on this device.');
       setPushButton('Enable order alerts', { title: 'Enable a push notification every time a new order arrives.' });
+      setPushTestVisible(false);
       return;
     }
 
@@ -1346,6 +1439,7 @@ async function toggleOrderAlerts() {
 
     pushCurrentSubscription = subscription;
     setPushButton('Order alerts ON', { enabled: true, title: 'Tap to turn off notifications on this device.' });
+    setPushTestVisible(true, false);
     toast('Order alerts enabled on this device ✓');
   } catch (error) {
     console.error('Toggle order alerts:', error);
