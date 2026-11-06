@@ -19,6 +19,8 @@ const MAX_BODY_SIZE = '15mb';
 const MAX_IMAGE_LENGTH = 10 * 1024 * 1024;
 const ORDER_RATE_WINDOW_MS = 10 * 60 * 1000;
 const ORDER_RATE_MAX = 10;
+const SHIPPING_FEE_RAW = Number(process.env.SHIPPING_FEE_TND);
+const SHIPPING_FEE_TND = Number.isFinite(SHIPPING_FEE_RAW) && SHIPPING_FEE_RAW >= 0 ? Math.round(SHIPPING_FEE_RAW * 100) / 100 : 8;
 const orderRateBuckets = new Map();
 
 // Basic security headers. A strict CSP is intentionally not imposed because
@@ -344,6 +346,9 @@ const orderSchema = new mongoose.Schema({
   productName: { type: String, required: true, maxlength: 120 },
   size: { type: String, required: true, maxlength: 24 },
   colorName: { type: String, default: '', maxlength: 50 },
+  productSubtotal: { type: Number, min: 0 },
+  shippingFee: { type: Number, min: 0, default: 0 },
+  deliveredAt: { type: Date },
   totalPrice: { type: Number, required: true, min: 0.001 },
   status: { type: String, enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'], default: 'Pending' },
   stockTracked: { type: Boolean, default: false },
@@ -361,6 +366,14 @@ const bannerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { strict: true, versionKey: false });
 
+const expenseSchema = new mongoose.Schema({
+  title: { type: String, required: true, trim: true, maxlength: 120 },
+  category: { type: String, enum: ['Stock / Production', 'Delivery', 'Advertising', 'Packaging', 'Operations', 'Other'], default: 'Other' },
+  amount: { type: Number, required: true, min: 0.01, max: 100000000 },
+  note: { type: String, default: '', maxlength: 500 },
+  createdAt: { type: Date, default: Date.now }
+}, { strict: true, versionKey: false });
+
 const pushSubscriptionSchema = new mongoose.Schema({
   endpoint: { type: String, required: true, unique: true },
   keys: {
@@ -375,6 +388,7 @@ const pushSubscriptionSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema);
 const Order = mongoose.model('Order', orderSchema);
 const Banner = mongoose.model('Banner', bannerSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
 const PushSubscription = mongoose.model('PushSubscription', pushSubscriptionSchema);
 
 // Move stock for an order inside the caller's MongoDB transaction.
@@ -562,7 +576,8 @@ app.get('/api/storefront-settings', (req, res) => {
   res.json({
     instagram: externalUrl(process.env.STORE_INSTAGRAM_URL),
     tiktok: externalUrl(process.env.STORE_TIKTOK_URL),
-    contactEmail: email
+    contactEmail: email,
+    shippingFee: SHIPPING_FEE_TND
   });
 });
 
@@ -570,7 +585,7 @@ app.get('/api/orders/:id', async (req, res) => {
   if (!requireValidObjectId(req.params.id, res)) return;
   try {
     const order = await Order.findById(req.params.id)
-      .select('_id productName size colorName totalPrice createdAt')
+      .select('_id productName size colorName productSubtotal shippingFee totalPrice createdAt')
       .lean();
     if (!order) return res.status(404).json({ error: 'Order not found.' });
     res.json(order);
@@ -698,6 +713,111 @@ app.patch('/admin/api/products/:id/stock', requireSameOrigin, async (req, res) =
   }
 });
 
+app.get('/admin/api/analytics', async (req, res) => {
+  try {
+    const range = ['today', '7d', '30d', 'all'].includes(String(req.query.range)) ? String(req.query.range) : '30d';
+    const now = new Date();
+    const days = range === 'today' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : null;
+    const match = {};
+    let periodStart = null;
+    if (range === 'today') {
+      const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Tunis', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+      periodStart = new Date(`${localDate}T00:00:00+01:00`);
+      match.createdAt = { $gte: periodStart };
+    } else if (days) {
+      periodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      match.createdAt = { $gte: periodStart };
+    }
+
+    // Sales are counted on the date the cash-on-delivery order was marked Delivered.
+    // Older orders without deliveredAt fall back to createdAt for historical continuity.
+    const collectedMatch = { status: 'Delivered' };
+    if (periodStart) collectedMatch.$expr = { $gte: [{ $ifNull: ['$deliveredAt', '$createdAt'] }, periodStart] };
+
+    const [totalsRows, collectedRows, trendRows, topRows, productsCount, expenseRows] = await Promise.all([
+      Order.aggregate([
+        { $match: match },
+        { $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          pendingOrders: { $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] } },
+          confirmedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0] } },
+          shippedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Shipped'] }, 1, 0] } },
+          cancelledOrders: { $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, 1, 0] } },
+          openOrderValue: { $sum: { $cond: [{ $in: ['$status', ['Pending', 'Confirmed', 'Shipped']] }, '$totalPrice', 0] } },
+          cancelledValue: { $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, '$totalPrice', 0] } }
+        } }
+      ]),
+      Order.aggregate([
+        { $match: collectedMatch },
+        { $group: {
+          _id: null,
+          deliveredOrders: { $sum: 1 },
+          collectedRevenue: { $sum: '$totalPrice' },
+          productRevenue: { $sum: { $ifNull: ['$productSubtotal', '$totalPrice'] } },
+          shippingCollected: { $sum: { $ifNull: ['$shippingFee', 0] } }
+        } }
+      ]),
+      Order.aggregate([
+        { $match: collectedMatch },
+        { $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: { $ifNull: ['$deliveredAt', '$createdAt'] }, timezone: 'Africa/Tunis' } },
+          revenue: { $sum: '$totalPrice' },
+          orders: { $sum: 1 }
+        } },
+        { $sort: { _id: -1 } },
+        { $limit: range === 'all' ? 30 : 31 },
+        { $sort: { _id: 1 } }
+      ]),
+      Order.aggregate([
+        { $match: collectedMatch },
+        { $group: { _id: '$productName', orders: { $sum: 1 }, revenue: { $sum: '$totalPrice' } } },
+        { $sort: { orders: -1, revenue: -1 } },
+        { $limit: 5 }
+      ]),
+      Product.countDocuments(),
+      Expense.aggregate([
+        { $match: match },
+        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const totals = totalsRows[0] || {};
+    const collected = collectedRows[0] || {};
+    const expenseTotals = expenseRows[0] || {};
+    const expenseTotal = Number(expenseTotals.total || 0);
+    const collectedRevenue = Number(collected.collectedRevenue || 0);
+    const deliveredOrders = Number(collected.deliveredOrders || 0);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      range,
+      currency: 'TND',
+      shippingFee: SHIPPING_FEE_TND,
+      productsCount,
+      totalOrders: Number(totals.totalOrders || 0),
+      deliveredOrders,
+      pendingOrders: Number(totals.pendingOrders || 0),
+      confirmedOrders: Number(totals.confirmedOrders || 0),
+      shippedOrders: Number(totals.shippedOrders || 0),
+      cancelledOrders: Number(totals.cancelledOrders || 0),
+      collectedRevenue,
+      productRevenue: Number(collected.productRevenue || 0),
+      shippingCollected: Number(collected.shippingCollected || 0),
+      openOrderValue: Number(totals.openOrderValue || 0),
+      cancelledValue: Number(totals.cancelledValue || 0),
+      expenseTotal,
+      expenseCount: Number(expenseTotals.count || 0),
+      netAfterExpenses: collectedRevenue - expenseTotal,
+      averageOrderValue: deliveredOrders ? collectedRevenue / deliveredOrders : 0,
+      salesTrend: trendRows.map(row => ({ date: row._id, revenue: Number(row.revenue || 0), orders: Number(row.orders || 0) })),
+      bestSellers: topRows.map(row => ({ name: row._id || 'Unknown product', orders: Number(row.orders || 0), revenue: Number(row.revenue || 0) }))
+    });
+  } catch (error) {
+    console.error('Admin analytics failed:', error.message);
+    res.status(500).json({ error: 'Unable to calculate store analytics.' });
+  }
+});
+
 app.get('/admin/api/orders', async (req, res) => {
   try {
     const { page, limit, skip } = parsePagination(req.query, 500);
@@ -750,6 +870,8 @@ app.put('/admin/api/orders/:id', requireSameOrigin, async (req, res) => {
       }
 
       order.status = status;
+      if (status === 'Delivered') order.deliveredAt = order.deliveredAt || new Date();
+      else order.deliveredAt = undefined;
       await order.save({ session });
       updatedOrder = order;
     });
@@ -816,6 +938,48 @@ app.post('/admin/api/banner', requireSameOrigin, async (req, res) => {
     res.json(banner);
   } catch (error) {
     res.status(400).json({ error: error.message || 'Unable to save banner.' });
+  }
+});
+
+app.get('/admin/api/expenses', async (req, res) => {
+  try {
+    const { page, limit, skip } = parsePagination(req.query, 200);
+    const [expenses, total] = await Promise.all([
+      Expense.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Expense.countDocuments()
+    ]);
+    res.json({ expenses, total, page, limit });
+  } catch (error) {
+    console.error('Admin GET expenses failed:', error.message);
+    res.status(500).json({ error: 'Unable to load expenses.' });
+  }
+});
+
+app.post('/admin/api/expenses', requireSameOrigin, async (req, res) => {
+  try {
+    const title = cleanText(req.body && req.body.title, 'Expense title', 120, true);
+    const category = cleanText(req.body && req.body.category || 'Other', 'Expense category', 40, true);
+    const allowedCategories = ['Stock / Production', 'Delivery', 'Advertising', 'Packaging', 'Operations', 'Other'];
+    if (!allowedCategories.includes(category)) return res.status(400).json({ error: 'Choose a valid expense category.' });
+    const amount = Number(req.body && req.body.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 100000000) return res.status(400).json({ error: 'Enter a valid expense amount greater than zero.' });
+    const note = cleanText(req.body && req.body.note || '', 'Expense note', 500, false);
+    const expense = await Expense.create({ title, category, amount: Math.round(amount * 100) / 100, note });
+    res.status(201).json(expense);
+  } catch (error) {
+    res.status(400).json({ error: error.message || 'Unable to save expense.' });
+  }
+});
+
+app.delete('/admin/api/expenses/:id', requireSameOrigin, async (req, res) => {
+  if (!requireValidObjectId(req.params.id, res)) return;
+  try {
+    const result = await Expense.findByIdAndDelete(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Expense not found.' });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin delete expense failed:', error.message);
+    res.status(500).json({ error: 'Unable to delete expense.' });
   }
 });
 
@@ -976,6 +1140,8 @@ app.post('/api/orders', rateLimitOrders, async (req, res) => {
       const chargedPrice = promoPercent > 0
         ? Math.round((Number(product.price) * (100 - promoPercent) / 100) * 100) / 100
         : Number(product.price);
+      const shippingFee = SHIPPING_FEE_TND;
+      const orderTotal = Math.round((chargedPrice + shippingFee) * 100) / 100;
 
       order = new Order({
         customerName,
@@ -986,7 +1152,9 @@ app.post('/api/orders', rateLimitOrders, async (req, res) => {
         productName: product.name,
         size: selectedSize,
         colorName: selectedColor ? selectedColor.name : '',
-        totalPrice: chargedPrice,
+        productSubtotal: chargedPrice,
+        shippingFee,
+        totalPrice: orderTotal,
         status: 'Pending',
         stockTracked: true,
         stockReserved: true
@@ -1006,7 +1174,7 @@ app.post('/api/orders', rateLimitOrders, async (req, res) => {
 
   // Send after the transaction committed; provider failure must not affect checkout.
   sendNewOrderPush(order).catch((error) => console.error('Unexpected push error:', error.message));
-  return res.status(201).json({ _id: order._id, status: order.status, productName: order.productName, totalPrice: order.totalPrice });
+  return res.status(201).json({ _id: order._id, status: order.status, productName: order.productName, productSubtotal: order.productSubtotal, shippingFee: order.shippingFee, totalPrice: order.totalPrice });
 });
 
 // ─── HTML routes / static assets ────────────────────────────────────────────────

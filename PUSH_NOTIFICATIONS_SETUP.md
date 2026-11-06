@@ -93,3 +93,11 @@ Device Focus/Do Not Disturb settings, Silent mode, battery saver and browser not
 - Review the Privacy, Terms and Shipping pages and confirm the business details, delivery coverage, return/exchange terms and customer-service channel. The current pages are baseline copy, not a substitute for legal review.
 - Confirm your social links/contact email appear after setting the optional environment variables.
 - Run an end-to-end test on the live Render deployment; syntax checks alone cannot prove database transactions or push delivery.
+
+## Shipping price
+
+The site currently charges **8.00 TND** per order for delivery in Tunisia. The backend is authoritative. To change it, set Render environment variable `SHIPPING_FEE_TND` and redeploy; if omitted, the default is 8.
+
+## Expenses and net cashflow
+
+The Admin Dashboard includes an Expenses area to record production, delivery, advertising, packaging and operating expenses. The dashboard reports collected COD revenue minus those recorded expenses as cashflow after expenses. This is not a full accounting profit figure unless all relevant costs (including product cost and other operating expenses) are entered.

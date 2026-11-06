@@ -61,3 +61,11 @@ The repository commit used for the Render deployment and the supplied project ZI
 ## Important test limitation
 
 Syntax checks can be performed locally, but this package cannot prove push delivery or database transaction behaviour until it is deployed with your real Render environment, MongoDB Atlas cluster, and an opted-in phone.
+
+## Shipping fee and reporting
+
+New orders include a flat delivery fee of **8.00 TND** by default. You can override it in Render with `SHIPPING_FEE_TND`; leave it unset or set it to `8` for the current policy. Historical orders retain the shipping amount that was recorded at purchase time (older orders without a shipping field are treated as having 0 TND shipping). Admin → Dashboard now reports delivered/collected revenue separately from pending, confirmed and shipped COD value, plus a trend, status breakdown and best sellers.
+
+## Expenses and net cashflow
+
+The Admin Dashboard includes an Expenses area to record production, delivery, advertising, packaging and operating expenses. The dashboard reports collected COD revenue minus those recorded expenses as cashflow after expenses. This is not a full accounting profit figure unless all relevant costs (including product cost and other operating expenses) are entered.

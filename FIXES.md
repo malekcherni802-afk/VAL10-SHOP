@@ -46,3 +46,12 @@ Order creation uses MongoDB transactions. Use MongoDB Atlas or another MongoDB d
 - `node --check public/service-worker.js` — passed.
 - Inline JavaScript syntax checks for `index.html`, `product.html`, `admin.html` and `confirmation.html` — passed.
 - A live Render/MongoDB checkout and real push delivery test has **not** been run from this environment. Those require the owner's Render environment variables, database and an opted-in browser device. The Test notification button is included so the live device flow can be checked after deployment.
+
+## Dashboard, cashflow and shipping release (Nov 2026)
+
+- Added an authenticated `/admin/api/analytics` endpoint with date filters: Today, last 7 days, last 30 days and all time.
+- Dashboard now separates delivered/collected COD revenue from open Pending/Confirmed/Shipped order value. Delivered revenue uses `deliveredAt` when available; older records fall back to `createdAt`.
+- Added delivered-order chart, status breakdown, best sellers, average ticket, collected delivery fees, cancelled-order value and product count.
+- Added an Expenses area and authenticated CRUD endpoints. The dashboard's cashflow-after-expenses equals delivered cash collected minus expense entries manually recorded by the store owner. It is not a full accounting profit calculation unless all costs are entered.
+- Added `SHIPPING_FEE_TND` (default 8.00 TND). New orders store product subtotal and shipping fee separately, and the backend calculates the final COD total. The storefront ribbon, product page, checkout, confirmation and Shipping page now display paid delivery instead of free shipping.
+- Added a restrained dark/lime floating-particle motion layer and dashboard micro-animations while preserving VAL10's existing colors and typography. Motion respects `prefers-reduced-motion`.
