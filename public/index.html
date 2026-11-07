@@ -136,21 +136,166 @@
         @media(max-width:420px){.gravity-satellite--left{top:19%;left:18px}.gravity-satellite--right{bottom:16%;right:18px}.gravity-frame-label--tl,.gravity-frame-label--tr{top:23px}.gravity-frame-label--bl,.gravity-frame-label--br{bottom:24px}}
         @media(prefers-reduced-motion:reduce){.val10-gravity{display:none}.antigravity-frame .frame-trace,.gravity-orbit,.gravity-satellite{animation:none!important}.product-reveal{opacity:1;transform:none;transition:none}}
 
+
+        /* VAL10 / 2026 — premium storefront system */
+        :root{--val10-black:#050505;--val10-lime:#c8ff00;--val10-muted:#858585;--val10-line:rgba(255,255,255,.11)}
+        html{scroll-behavior:smooth;scroll-padding-top:110px}
+        body{background:var(--val10-black);color:#f6f6f2}
+        ::selection{background:var(--val10-lime);color:#050505}
+        .val10-promo-ribbon{height:34px;display:flex;align-items:center;overflow:hidden;background:var(--val10-lime);color:#050505;border-bottom:1px solid rgba(0,0,0,.28);position:relative}
+        .val10-promo-ribbon:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(200,255,0,1),transparent 5%,transparent 95%,rgba(200,255,0,1))}
+        .val10-promo-track{display:flex;width:max-content;min-width:200%;animation:val10Marquee 31s linear infinite;will-change:transform}
+        .val10-promo-ribbon:hover .val10-promo-track{animation-play-state:paused}
+        .val10-promo-group{display:flex;align-items:center;justify-content:space-around;flex:0 0 50%;gap:clamp(22px,4vw,62px);padding:0 28px;white-space:nowrap;font:800 9px/1 'Syne',sans-serif;letter-spacing:.24em;text-transform:uppercase}
+        .val10-promo-group .promo-word{display:inline-flex;align-items:center;gap:12px}
+        .val10-promo-group .promo-star{font-size:13px;line-height:1;opacity:.82}
+        .val10-promo-group .promo-shipping{font-weight:900}
+        @keyframes val10Marquee{to{transform:translateX(-50%)}}
+        .val10-nav-row{min-height:76px}
+        .val10-brand-lockup{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+        .val10-brand-lockup h1{line-height:.9}
+        .val10-brand-lockup span{margin-top:7px;color:rgba(255,255,255,.42);font:700 7px/1 'Courier New',monospace;letter-spacing:.43em;text-transform:uppercase}
+        .val10-nav-link{position:relative}
+        .val10-nav-link:after{content:"";position:absolute;left:0;right:100%;bottom:-5px;height:1px;background:var(--val10-lime);transition:right .35s ease}
+        .val10-nav-link:hover:after{right:0}
+        #hero-banner{height:100svh;min-height:700px;max-height:1080px;background:#070807;isolation:isolate}
+        #hero-banner:before{content:"";position:absolute;z-index:11;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,transparent 26%,rgba(0,0,0,.13) 62%,rgba(0,0,0,.76) 100%),radial-gradient(ellipse at 50% 45%,transparent 0%,rgba(0,0,0,.25) 72%)}
+        #hero-slides>div{background-position:center 46%!important}
+        #hero-slides>div.val10-slide{transform:scale(1.035);transition:opacity .9s ease,transform 6s cubic-bezier(.2,.65,.25,1)}
+        #hero-slides>div.val10-slide.is-active{transform:scale(1.105)}
+        .hero-content{padding-top:74px}
+        .hero-copy{max-width:min(900px,90vw);padding:clamp(24px,4vw,46px) clamp(20px,5vw,58px)}
+        .hero-copy:after{content:"";position:absolute;z-index:-1;left:50%;bottom:-26px;width:58%;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(200,255,0,.55),transparent)}
+        #hero-banner .hero-overline{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-bottom:clamp(22px,3vw,38px);color:rgba(255,255,255,.7);font:700 9px/1.4 'Courier New',monospace;letter-spacing:.42em;text-transform:uppercase}
+        #hero-banner .hero-overline:before,#hero-banner .hero-overline:after{content:"";width:30px;height:1px;background:var(--val10-lime);opacity:.7}
+        #hero-banner h2{font-size:clamp(4.5rem,11.2vw,10.7rem);line-height:.79;letter-spacing:-.085em;margin-bottom:clamp(22px,3vw,36px);font-weight:800}
+        #hero-banner h2 .hero-title-glow{margin-top:.09em;color:var(--val10-lime);background:none;-webkit-text-fill-color:var(--val10-lime);font-style:normal;text-shadow:0 0 34px rgba(200,255,0,.18)}
+        .hero-subline{max-width:430px;margin:0 auto 28px;color:rgba(255,255,255,.64);font:500 10px/1.9 'Syne',sans-serif;letter-spacing:.21em;text-transform:uppercase}
+        .hero-cta{min-width:220px;padding:17px 25px!important;font-size:10px!important;letter-spacing:.26em!important}
+        .hero-cta span{margin-left:14px;font-size:15px}
+        .hero-bottom-meta{position:absolute;z-index:35;left:clamp(28px,5vw,76px);right:clamp(28px,5vw,76px);bottom:34px;display:flex;justify-content:space-between;align-items:center;color:rgba(255,255,255,.48);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.2em;text-transform:uppercase;pointer-events:none}
+        .hero-bottom-meta em{color:var(--val10-lime);font-style:normal}
+        .gravity-frame-label{z-index:2}
+        .val10-manifesto{position:relative;padding:clamp(66px,9vw,126px) 24px;background:linear-gradient(180deg,#080908 0%,#050505 100%);border-bottom:1px solid rgba(255,255,255,.07);overflow:hidden}
+        .val10-manifesto:before{content:"V";position:absolute;right:-2vw;top:-.22em;color:rgba(200,255,0,.025);font:900 clamp(260px,43vw,650px)/1 'Syne',sans-serif;pointer-events:none}
+        .val10-manifesto__inner{position:relative;z-index:1;max-width:1280px;margin:0 auto}
+        .val10-manifesto__top,.val10-manifesto__bottom{display:flex;align-items:center;justify-content:space-between;gap:20px;color:rgba(255,255,255,.4);font:700 8px/1.4 'Courier New',monospace;letter-spacing:.24em;text-transform:uppercase}
+        .val10-manifesto__top{padding-bottom:23px;border-bottom:1px solid var(--val10-line)}
+        .val10-manifesto__top em{color:var(--val10-lime);font-style:normal}
+        .val10-manifesto__grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(240px,.7fr);align-items:end;gap:clamp(32px,7vw,100px);padding:clamp(42px,6vw,82px) 0}
+        .val10-manifesto__title{margin:0;color:#f4f4ef;font:800 clamp(3.2rem,7.1vw,7.5rem)/.86 'Syne',sans-serif;letter-spacing:-.085em;text-transform:uppercase}
+        .val10-manifesto__title span{color:var(--val10-lime);display:block}
+        .val10-manifesto__copy{max-width:385px;padding-bottom:7px;color:rgba(255,255,255,.56);font:400 12px/2 'Syne',sans-serif;letter-spacing:.045em}
+        .val10-manifesto__copy strong{display:block;margin-bottom:15px;color:#fff;font:800 9px/1.4 'Courier New',monospace;letter-spacing:.25em;text-transform:uppercase}
+        .val10-manifesto__bottom{padding-top:22px;border-top:1px solid var(--val10-line)}
+        .val10-manifesto__bottom span:last-child{color:var(--val10-lime)}
+        .val10-wordline{overflow:hidden;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);background:#0a0b08;color:rgba(255,255,255,.74);padding:17px 0}
+        .val10-wordline__track{display:flex;width:max-content;animation:val10Marquee 38s linear infinite}
+        .val10-wordline__group{display:flex;align-items:center;gap:34px;padding:0 17px;white-space:nowrap;font:800 11px/1 'Syne',sans-serif;letter-spacing:.32em;text-transform:uppercase}
+        .val10-wordline__group b{color:var(--val10-lime);font-size:15px}
+        #shop{max-width:1440px;padding-top:clamp(76px,10vw,142px);padding-bottom:clamp(80px,10vw,140px)}
+        .val10-collection-heading{position:relative;margin-bottom:clamp(34px,5vw,66px);padding-bottom:25px;border-bottom:1px solid var(--val10-line)}
+        .val10-collection-heading:after{content:"";position:absolute;left:0;bottom:-1px;width:105px;height:1px;background:var(--val10-lime);box-shadow:0 0 14px rgba(200,255,0,.55)}
+        .val10-collection-kicker{display:flex;align-items:center;gap:10px;margin-bottom:16px;color:var(--val10-lime);font:700 8px/1 'Courier New',monospace;letter-spacing:.3em;text-transform:uppercase}
+        .val10-collection-kicker:before{content:"";width:20px;height:1px;background:var(--val10-lime)}
+        .val10-collection-title{font-size:clamp(3rem,6vw,6rem)!important;line-height:.9!important;letter-spacing:-.07em!important;margin:0!important}
+        .val10-collection-meta{display:flex;flex-direction:column;align-items:flex-end;gap:8px;color:rgba(255,255,255,.42);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.2em;text-transform:uppercase}
+        .val10-collection-meta strong{color:var(--val10-lime);font-size:10px;letter-spacing:.15em}
+        .val10-grid-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:-16px 0 25px;color:rgba(255,255,255,.38);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.2em;text-transform:uppercase}
+        .val10-grid-toolbar span:last-child{color:var(--val10-lime)}
+        #product-grid{gap:clamp(18px,2vw,30px) clamp(12px,1.65vw,24px)}
+        .product-card{position:relative;min-width:0;padding:0 0 17px;background:transparent;border:1px solid transparent;transition:transform .55s cubic-bezier(.2,.7,.2,1),border-color .4s ease,background .4s ease}
+        .product-card:hover{transform:translateY(-7px);border-color:rgba(200,255,0,.18);background:linear-gradient(180deg,rgba(200,255,0,.025),rgba(255,255,255,.008));box-shadow:0 22px 56px rgba(0,0,0,.35),0 0 26px rgba(200,255,0,.06)}
+        .product-card>div:first-child{position:relative;aspect-ratio:3/4;margin:0 0 17px!important;border:1px solid rgba(255,255,255,.1)!important;background:radial-gradient(ellipse at 50% 40%,#171a13,#090a08 72%)!important}
+        .product-card img{filter:grayscale(.08) saturate(.9) contrast(1.04);transition:transform .85s cubic-bezier(.2,.7,.2,1),filter .65s ease!important}
+        .product-card:hover img{filter:grayscale(0) saturate(1.05) contrast(1.04);transform:scale(1.055)}
+        .product-image-meta{position:absolute;z-index:3;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none}
+        .product-image-meta span{padding:7px 8px;background:rgba(5,5,5,.72);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:rgba(255,255,255,.7);font:700 7px/1 'Courier New',monospace;letter-spacing:.14em;text-transform:uppercase}
+        .product-image-meta span:last-child{color:var(--val10-lime);border-color:rgba(200,255,0,.3)}
+        .product-card>div:last-child{padding:0 12px}
+        .product-card>div:last-child>div:first-child{align-items:center!important;gap:8px}
+        .product-card h3{font-size:clamp(10px,1vw,13px)!important;letter-spacing:.045em!important;line-height:1.35}
+        .product-card .text-gray-400,.product-card .font-mono{font-size:10px}
+        .product-card .text-red-400{color:var(--val10-lime)!important}
+        .product-card .size-pill{font-size:7px;padding:3px 6px}
+        .product-card .color-swatch{width:18px;height:18px}
+        .product-card .text-gray-600{color:rgba(255,255,255,.36)!important}
+        .product-card .group-hover\:opacity-100{background:rgba(0,0,0,.24)!important}
+        .product-card .group-hover\:opacity-100 span{background:var(--val10-lime);color:#050505;padding:13px 18px;letter-spacing:.22em;font-size:8px}
+        .val10-closing{position:relative;overflow:hidden;padding:clamp(72px,10vw,135px) 24px;background:#0b0d07;border-top:1px solid rgba(200,255,0,.17);border-bottom:1px solid rgba(200,255,0,.17);text-align:center;isolation:isolate}
+        .val10-closing:before,.val10-closing:after{content:"";position:absolute;z-index:-1;border:1px solid rgba(200,255,0,.13);border-radius:50%;width:clamp(300px,55vw,720px);aspect-ratio:1;left:50%;top:50%;transform:translate(-50%,-50%);animation:closingOrbit 32s linear infinite}
+        .val10-closing:after{width:clamp(220px,40vw,530px);border-color:rgba(255,255,255,.09);animation-direction:reverse;animation-duration:24s}
+        @keyframes closingOrbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+        .val10-closing__kicker{color:var(--val10-lime);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.4em;text-transform:uppercase}
+        .val10-closing h2{margin:23px 0 18px;color:#f5f5f0;font:800 clamp(3.3rem,8.8vw,8.8rem)/.84 'Syne',sans-serif;letter-spacing:-.09em;text-transform:uppercase}
+        .val10-closing h2 span{color:var(--val10-lime)}
+        .val10-closing p{max-width:420px;margin:0 auto 28px;color:rgba(255,255,255,.48);font:500 10px/1.9 'Syne',sans-serif;letter-spacing:.19em;text-transform:uppercase}
+        .val10-closing a{display:inline-flex;align-items:center;gap:18px;padding:15px 24px;border:1px solid rgba(200,255,0,.55);color:var(--val10-lime);font:800 9px/1 'Syne',sans-serif;letter-spacing:.25em;text-transform:uppercase;transition:background .3s ease,color .3s ease,transform .3s ease}
+        .val10-closing a:hover{background:var(--val10-lime);color:#050505;transform:translateY(-3px)}
+        .val10-footer{position:relative;padding:64px 24px 30px;background:#030303}
+        .val10-footer__top{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;padding-bottom:45px;border-bottom:1px solid rgba(255,255,255,.09)}
+        .val10-footer__brand p{margin-top:12px;color:rgba(255,255,255,.38);font:700 8px/1.8 'Courier New',monospace;letter-spacing:.22em;text-transform:uppercase}
+        .val10-footer__nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:clamp(14px,3vw,36px);color:rgba(255,255,255,.48);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.2em;text-transform:uppercase}
+        .val10-footer__nav a:hover{color:var(--val10-lime)}
+        .val10-footer__bottom{display:flex;justify-content:space-between;gap:16px;padding-top:20px;color:rgba(255,255,255,.28);font:700 7px/1.5 'Courier New',monospace;letter-spacing:.2em;text-transform:uppercase}
+        @media(max-width:767px){
+          .val10-promo-ribbon{height:31px}.val10-promo-group{font-size:8px;letter-spacing:.16em;gap:22px;padding:0 18px}
+          .val10-nav-row{min-height:68px}.val10-brand-lockup h1{font-size:2.3rem}.val10-brand-lockup span{font-size:6px}
+          #hero-banner{min-height:670px;max-height:900px}
+          .hero-content{padding-top:56px}
+          #hero-banner h2{font-size:clamp(4.1rem,16vw,7rem)}
+          .hero-bottom-meta{bottom:25px;font-size:6px;letter-spacing:.12em}
+          .val10-manifesto__grid{grid-template-columns:1fr;gap:28px;padding:40px 0}
+          .val10-manifesto__title{font-size:clamp(3.25rem,13vw,5.5rem)}
+          .val10-manifesto__copy{font-size:11px;max-width:460px}
+          .val10-manifesto__top,.val10-manifesto__bottom{font-size:6px;letter-spacing:.12em}
+          #shop{padding-left:18px;padding-right:18px}
+          .val10-collection-meta{font-size:7px}
+          .product-card>div:last-child{padding:0 7px}
+          .product-card h3{font-size:9px!important}
+          .product-card .text-gray-400,.product-card .font-mono{font-size:8px}
+          .product-image-meta{top:7px;left:7px;right:7px}
+          .product-image-meta span{font-size:6px;padding:5px 5px;letter-spacing:.08em}
+          .val10-footer__top{flex-direction:column}
+          .val10-footer__nav{justify-content:flex-start;gap:16px 22px}
+          .val10-footer__bottom{font-size:6px;flex-direction:column}
+        }
+        @media(max-width:390px){.val10-promo-group{gap:15px;font-size:7px}.val10-nav-row{padding-left:16px;padding-right:16px}.hero-bottom-meta span:nth-child(2){display:none}.val10-grid-toolbar{font-size:7px}}
+        @media(prefers-reduced-motion:reduce){.val10-promo-track,.val10-wordline__track,.val10-closing:before,.val10-closing:after{animation:none!important}.product-card,.product-card img{transition:none!important}#hero-slides>div.val10-slide{transform:none!important;transition:opacity .2s linear}.hero-copy{animation:none!important}}
+
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
     <!-- Nav -->
-    <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
-        <div id="val10-delivery-ribbon" class="w-full text-center py-2 border-b border-white/5 bg-[#101208] text-[9px] tracking-[0.32em] uppercase text-[#c8ff00]">VAL10 DELIVERY · FLAT 8.00 TND THROUGHOUT TUNISIA</div>
-        <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-            <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors"
-                onclick="window.location.href='/'">VAL10</h1>
-            <div class="flex items-center gap-8">
-                <button class="hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-500 hover:text-white transition">Archive</button>
-                <button class="text-[10px] sm:text-xs font-bold tracking-[0.2em] border border-white/20 px-6 py-2.5 hover:bg-white hover:text-black transition-all duration-500 uppercase"
-                        onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">
-                    COLLECTION 2026
+    <nav class="fixed w-full z-[100] bg-black/85 backdrop-blur-xl border-b border-white/10">
+        <div id="val10-delivery-ribbon" class="val10-promo-ribbon" aria-label="VAL10 2026 collection and delivery announcement">
+            <div class="val10-promo-track">
+                <div class="val10-promo-group">
+                    <span class="promo-word">VAL10 <b class="promo-star">✳</b></span>
+                    <span class="promo-word">BE DIFFERENT <b class="promo-star">✳</b></span>
+                    <span class="promo-word">2026 / DROP 001 <b class="promo-star">✳</b></span>
+                    <span class="promo-word promo-shipping" data-shipping-ribbon>FLAT DELIVERY · 8.00 TND</span>
+                    <span class="promo-word">DEFINE YOUR EGO <b class="promo-star">✳</b></span>
+                </div>
+                <div class="val10-promo-group" aria-hidden="true">
+                    <span class="promo-word">VAL10 <b class="promo-star">✳</b></span>
+                    <span class="promo-word">BE DIFFERENT <b class="promo-star">✳</b></span>
+                    <span class="promo-word">2026 / DROP 001 <b class="promo-star">✳</b></span>
+                    <span class="promo-word promo-shipping" data-shipping-ribbon>FLAT DELIVERY · 8.00 TND</span>
+                    <span class="promo-word">DEFINE YOUR EGO <b class="promo-star">✳</b></span>
+                </div>
+            </div>
+        </div>
+        <div class="val10-nav-row max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="val10-brand-lockup">
+                <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-[#c8ff00] transition-colors" onclick="window.location.href='/'">VAL10</h1>
+                <span>Independent Studio / 2026</span>
+            </div>
+            <div class="flex items-center gap-5 sm:gap-8">
+                <button class="val10-nav-link hidden md:block text-[10px] tracking-[0.3em] uppercase text-gray-400 hover:text-white transition" onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">The Archive</button>
+                <button class="text-[9px] sm:text-[10px] font-extrabold tracking-[0.2em] border border-[#c8ff00]/65 text-[#c8ff00] px-4 sm:px-6 py-3 hover:bg-[#c8ff00] hover:text-black transition-all duration-500 uppercase" onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">
+                    Shop 2026 <span aria-hidden="true">↗</span>
                 </button>
             </div>
         </div>
@@ -199,36 +344,54 @@
 
         <div class="hero-content h-full flex flex-col justify-center items-center text-center fade-in px-4 pointer-events-none">
           <div class="hero-copy">
-            <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
-            <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
-                Define <br>
-                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800 hero-title-glow">Your Ego</span>
+            <span class="hero-overline">VAL10 STUDIO <i aria-hidden="true">/</i> EST. MMXXIV <i aria-hidden="true">/</i> 2026</span>
+            <h2 class="uppercase">
+                BE <br>
+                <span class="hero-title-glow">Different.</span>
             </h2>
-            <a href="#shop"
-               class="hero-cta pointer-events-auto inline-block px-12 py-4 font-black text-sm tracking-[0.2em] uppercase">
-                Explore Drop <span aria-hidden="true">↗</span>
+            <p class="hero-subline">Not made to blend in. A new point of view for those who define their own direction.</p>
+            <a href="#shop" class="hero-cta pointer-events-auto inline-block font-black uppercase">
+                Explore the 2026 Drop <span aria-hidden="true">↗</span>
             </a>
-            <p id="hero-caption" class="pointer-events-none mt-6 text-[10px] tracking-[0.3em] text-gray-400 uppercase opacity-0 transition-opacity duration-500"></p>
+            <p id="hero-caption" class="pointer-events-none mt-6 text-[10px] tracking-[0.3em] text-gray-300 uppercase opacity-0 transition-opacity duration-500"></p>
           </div>
         </div>
 
         <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 animate-bounce pointer-events-none">
             <div class="w-[1px] h-12 bg-gradient-to-b from-white to-transparent"></div>
         </div>
+        <div class="hero-bottom-meta"><span><em>01</em> / VAL10 ARCHIVE</span><span>SCROLL TO DISCOVER</span><span>INDEPENDENT BY DESIGN <em>✳</em></span></div>
     </header>
+
+    <!-- VAL10 brand statement -->
+    <section class="val10-manifesto" aria-label="VAL10 brand statement">
+      <div class="val10-manifesto__inner">
+        <div class="val10-manifesto__top"><span><em>✳</em> THE VAL10 CODE</span><span>INDEPENDENT STUDIO / TUNISIA / 2026</span></div>
+        <div class="val10-manifesto__grid">
+          <h2 class="val10-manifesto__title">Not made<br>to blend <span>in.</span></h2>
+          <div class="val10-manifesto__copy"><strong>01 — A DIFFERENT POINT OF VIEW</strong>We do not follow the shape of the crowd. VAL10 is an attitude, a personal signature, and the freedom to define your own direction.</div>
+        </div>
+        <div class="val10-manifesto__bottom"><span>IDENTITY / INDEPENDENCE / EXPRESSION</span><span>BE DIFFERENT. ALWAYS.</span></div>
+      </div>
+    </section>
+    <div class="val10-wordline" aria-hidden="true"><div class="val10-wordline__track">
+      <div class="val10-wordline__group"><span>BE DIFFERENT</span><b>✳</b><span>DEFINE YOUR EGO</span><b>✳</b><span>VAL10 / 2026</span><b>✳</b><span>MOVE YOUR OWN WAY</span><b>✳</b></div>
+      <div class="val10-wordline__group"><span>BE DIFFERENT</span><b>✳</b><span>DEFINE YOUR EGO</span><b>✳</b><span>VAL10 / 2026</span><b>✳</b><span>MOVE YOUR OWN WAY</span><b>✳</b></div>
+    </div></div>
 
     <!-- Shop Grid -->
     <main id="shop" class="max-w-7xl mx-auto px-6 py-32">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-4">
+        <div class="val10-collection-heading flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
-                <h3 class="text-4xl sm:text-6xl gothic-text text-white uppercase mb-2">The Archive</h3>
-                <p class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Season 01 / Selected Pieces</p>
+                <p class="val10-collection-kicker">The 2026 collection / 001</p>
+                <h3 class="val10-collection-title text-4xl sm:text-6xl gothic-text text-white uppercase">The Archive</h3>
+                <p class="mt-4 text-[9px] tracking-[0.28em] text-gray-500 uppercase">Selected pieces. Distinct point of view.</p>
             </div>
-            <div class="h-[1px] flex-1 bg-white/10 mx-10 hidden md:block mb-4"></div>
-            <span class="text-[10px] text-gray-400 tracking-widest uppercase italic">Drop 1.0</span>
+            <div class="val10-collection-meta"><strong>VAL10 / DROP 001</strong><span>Season 01 — 2026</span><span>Curated for the different</span></div>
         </div>
+        <div class="val10-grid-toolbar"><span id="product-count-label">Loading the archive</span><span>Independent / Always</span></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="product-grid">
+        <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8" id="product-grid">
             <div class="col-span-full flex flex-col items-center py-20">
                 <div class="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
                 <p class="text-[10px] tracking-[0.4em] text-gray-500 uppercase">Loading Archive...</p>
@@ -236,17 +399,29 @@
         </div>
     </main>
 
+    <section class="val10-closing" aria-label="VAL10 closing statement">
+      <div class="relative z-10 max-w-4xl mx-auto">
+        <span class="val10-closing__kicker">VAL10 STUDIO / 2026</span>
+        <h2>Stand out.<br><span>Stay different.</span></h2>
+        <p>Your style. Your statement. Your own direction. Explore the archive and define your signature.</p>
+        <a href="#shop">Explore the archive <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
     <!-- Footer -->
-    <footer class="border-t border-white/5 py-20 bg-black">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
-            <h4 class="gothic-text text-4xl mb-8 tracking-widest">VAL10</h4>
-            <div class="flex gap-8 mb-12 text-[10px] tracking-[0.3em] uppercase text-gray-500">
-                <a data-store-link="instagram" hidden class="hover:text-white transition" rel="noopener noreferrer" target="_blank">Instagram</a>
-                <a href="/privacy" class="hover:text-white transition">Privacy</a>
-                <a href="/terms" class="hover:text-white transition">Terms</a>
-                <a href="/shipping" class="hover:text-white transition">Shipping</a>
-            </div>
-            <p class="text-[9px] text-gray-700 tracking-[0.5em] uppercase">© 2026 VAL10 STUDIO. ALL RIGHTS RESERVED.</p>
+    <footer class="val10-footer border-t border-white/5">
+        <div class="max-w-7xl mx-auto">
+          <div class="val10-footer__top">
+            <div class="val10-footer__brand"><h4 class="gothic-text text-5xl tracking-widest">VAL10</h4><p>Be different. Define your ego.<br>Independent studio / 2026.</p></div>
+            <nav class="val10-footer__nav" aria-label="Footer navigation">
+              <a data-store-link="instagram" hidden rel="noopener noreferrer" target="_blank">Instagram ↗</a>
+              <a href="#shop">Archive</a>
+              <a href="/shipping">Shipping</a>
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+            </nav>
+          </div>
+          <div class="val10-footer__bottom"><span>© 2026 VAL10 STUDIO. ALL RIGHTS RESERVED.</span><span>NOT MADE TO BLEND IN.</span></div>
         </div>
     </footer>
 
@@ -370,6 +545,9 @@ function buildProductCard(product) {
     /* Card shell */
     const card = document.createElement('div');
     card.className = 'group cursor-pointer product-card product-reveal';
+    card.setAttribute('role', 'link');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `View ${product.name}`);
 
     /* Image container */
     const imgWrap = document.createElement('div');
@@ -380,6 +558,13 @@ function buildProductCard(product) {
     img.alt       = product.name;
     img.loading   = 'lazy';
     img.className = 'w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500';
+
+    const imageMeta = document.createElement('div');
+    imageMeta.className = 'product-image-meta';
+    const promoPercent = Number(product.promoPercent) || 0;
+    const rightMeta = allSoldOut ? 'SOLD OUT' : (promoPercent > 0 ? `PROMO · ${promoPercent}% OFF` : 'DROP 001 / 2026');
+    imageMeta.innerHTML = `<span>VAL10 / ARCHIVE</span><span>${escapeHTML(rightMeta)}</span>`;
+    imgWrap.appendChild(imageMeta);
 
     /* Hover overlay */
     const hoverOverlay = document.createElement('div');
@@ -401,8 +586,10 @@ function buildProductCard(product) {
     imgWrap.appendChild(hoverOverlay);
 
     /* Navigate on click */
-    card.addEventListener('click', () => {
-        window.location.href = `/product?id=${product._id}`;
+    const openProduct = () => { window.location.href = `/product?id=${encodeURIComponent(product._id)}`; };
+    card.addEventListener('click', openProduct);
+    card.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openProduct(); }
     });
 
     /* Info section */
@@ -490,6 +677,9 @@ async function fetchProducts() {
         const products = Array.isArray(data) ? data : (data.products || []);
         grid.innerHTML = '';
 
+        const countLabel = document.getElementById('product-count-label');
+        if (countLabel) countLabel.textContent = `${products.length} ${products.length === 1 ? 'Piece' : 'Pieces'} / 2026 Archive`;
+
         if (!products.length) {
             grid.innerHTML = `
                 <div class="col-span-full text-center py-20">
@@ -529,7 +719,7 @@ const SS_INTERVAL = 5000;
 
 function buildSlideEl(slide) {
     const div = document.createElement('div');
-    div.className = 'absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0';
+    div.className = 'absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 val10-slide';
     div.style.backgroundImage    = `url("${slide.imageUrl.replace(/"/g, "%22")}")`;
     div.style.backgroundSize     = 'cover';
     div.style.backgroundPosition = 'center';
@@ -577,8 +767,10 @@ function goToSlide(index) {
     const dots     = document.querySelectorAll('#hero-dots button');
     _ssCurrent = ((index % _ssSlides.length) + _ssSlides.length) % _ssSlides.length;
     slideEls.forEach((el, i) => {
-        el.style.opacity = i === _ssCurrent ? '1' : '0';
-        el.style.zIndex  = i === _ssCurrent ? '1' : '0';
+        const active = i === _ssCurrent;
+        el.style.opacity = active ? '1' : '0';
+        el.style.zIndex  = active ? '1' : '0';
+        el.classList.toggle('is-active', active);
     });
     dots.forEach((dot, i) => {
         const active = i === _ssCurrent;
@@ -605,6 +797,10 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft')  slideshowStep(-1);
     if (e.key === 'ArrowRight') slideshowStep(1);
 });
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearInterval(_ssTimer);
+    else startAutoAdvance();
+});
 
 async function fetchBanner() {
     try {
@@ -627,8 +823,11 @@ async function hydrateStorefrontLinks() {
         if (!response.ok) return;
         const settings = await response.json();
         const shippingFee = Number(settings.shippingFee);
-        const ribbon = document.getElementById('val10-delivery-ribbon');
-        if (ribbon && Number.isFinite(shippingFee) && shippingFee >= 0) ribbon.textContent = `VAL10 DELIVERY · FLAT ${shippingFee.toFixed(2)} TND THROUGHOUT TUNISIA`;
+        if (Number.isFinite(shippingFee) && shippingFee >= 0) {
+            document.querySelectorAll('[data-shipping-ribbon]').forEach(node => {
+                node.textContent = `FLAT DELIVERY · ${shippingFee.toFixed(2)} TND`;
+            });
+        }
         document.querySelectorAll('[data-store-link]').forEach(link => {
             const key = link.dataset.storeLink;
             const value = key === 'contact' && settings.contactEmail
