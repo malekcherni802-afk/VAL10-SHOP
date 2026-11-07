@@ -87,10 +87,54 @@
         .toast-error   { background: #ef4444; color: white; }
         .toast-info    { background: #3b82f6; color: white; }
     
-        .val10-gravity{position:absolute;inset:0;width:100%;height:100%;z-index:20;pointer-events:none;opacity:.62}
-        @media(prefers-reduced-motion:reduce){.val10-gravity{display:none}}
+        /* VAL10 ANTIGRAVITY HERO — visible frame + orbital motion */
+        .val10-gravity{position:absolute;inset:0;width:100%;height:100%;z-index:20;pointer-events:none;opacity:.72}
+        .antigravity-ui{position:absolute;inset:0;z-index:25;pointer-events:none;overflow:hidden}
+        .antigravity-frame{position:absolute;inset:clamp(18px,3.15vw,48px);width:auto;height:auto;overflow:visible;filter:drop-shadow(0 0 12px rgba(200,255,0,.08))}
+        .antigravity-frame .frame-base{fill:none;stroke:rgba(255,255,255,.23);stroke-width:1;vector-effect:non-scaling-stroke}
+        .antigravity-frame .frame-trace{fill:none;stroke:#c8ff00;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:150 3842;stroke-dashoffset:0;vector-effect:non-scaling-stroke;animation:frameOrbit 13s linear infinite;filter:drop-shadow(0 0 5px rgba(200,255,0,.9))}
+        .antigravity-frame .frame-trace.frame-trace-secondary{stroke:rgba(200,255,0,.55);stroke-width:1;stroke-dasharray:54 3938;animation-duration:19s;animation-direction:reverse}
+        @keyframes frameOrbit{to{stroke-dashoffset:-3992}}
+        .gravity-orbit{position:absolute;z-index:15;left:50%;top:48%;width:min(76vw,760px);aspect-ratio:1;border:1px solid rgba(200,255,0,.16);border-radius:50%;transform:translate(-50%,-50%) rotate(-18deg);opacity:.52;animation:orbitDrift 24s linear infinite}
+        .gravity-orbit::before,.gravity-orbit::after{content:"";position:absolute;inset:8%;border:1px solid rgba(255,255,255,.12);border-radius:50%;transform:rotate(58deg) scaleY(.42)}
+        .gravity-orbit::after{inset:19%;transform:rotate(-42deg) scaleY(.6);border-color:rgba(200,255,0,.12)}
+        .gravity-orbit__node{position:absolute;width:9px;height:9px;border-radius:50%;background:#c8ff00;box-shadow:0 0 9px #c8ff00,0 0 24px rgba(200,255,0,.72)}
+        .gravity-orbit__node--one{top:12%;left:18%}
+        .gravity-orbit__node--two{right:8%;top:52%;width:5px;height:5px;background:#fff;box-shadow:0 0 12px #fff}
+        .gravity-orbit__node--three{bottom:13%;left:61%;width:6px;height:6px}
+        @keyframes orbitDrift{from{transform:translate(-50%,-50%) rotate(-18deg)}to{transform:translate(-50%,-50%) rotate(342deg)}}
+        .gravity-satellite{position:absolute;display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid rgba(200,255,0,.3);background:rgba(5,5,5,.48);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 36px rgba(0,0,0,.25),inset 0 0 22px rgba(200,255,0,.035);animation:satelliteFloat 6s ease-in-out infinite}
+        .gravity-satellite::before{content:"";width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#c8ff00;box-shadow:0 0 12px #c8ff00}
+        .gravity-satellite small{display:block;color:rgba(255,255,255,.48);font:700 8px/1.5 'Courier New',monospace;letter-spacing:.24em;text-transform:uppercase}
+        .gravity-satellite strong{display:block;color:#f6ffd7;font:800 10px/1.5 'Syne',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+        .gravity-satellite--left{left:clamp(34px,7vw,112px);top:36%;animation-delay:-1.4s}
+        .gravity-satellite--right{right:clamp(34px,7vw,112px);bottom:30%;animation-delay:-3.2s}
+        @keyframes satelliteFloat{0%,100%{transform:translate3d(0,0,0) rotate(-2deg)}50%{transform:translate3d(0,-13px,0) rotate(2deg)}}
+        .gravity-frame-label{position:absolute;color:rgba(255,255,255,.42);font:700 8px/1.4 'Courier New',monospace;letter-spacing:.28em;text-transform:uppercase}
+        .gravity-frame-label--tl{left:clamp(28px,4vw,62px);top:clamp(25px,3.8vw,58px)}
+        .gravity-frame-label--tr{right:clamp(28px,4vw,62px);top:clamp(25px,3.8vw,58px);text-align:right}
+        .gravity-frame-label--bl{left:clamp(28px,4vw,62px);bottom:clamp(25px,3.8vw,58px)}
+        .gravity-frame-label--br{right:clamp(28px,4vw,62px);bottom:clamp(25px,3.8vw,58px);text-align:right}
+        .gravity-frame-label em{color:#c8ff00;font-style:normal}
+        .hero-centerline{position:absolute;top:13%;bottom:13%;left:50%;width:1px;background:linear-gradient(transparent,rgba(200,255,0,.18),transparent);opacity:.5}
+        .hero-copy{position:relative;isolation:isolate}
+        .hero-copy::before{content:"";position:absolute;z-index:-1;inset:-34px -56px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,.3),rgba(0,0,0,0) 72%);clip-path:polygon(0 0,22% 0,22% 1px,78% 1px,78% 0,100% 0,100% 100%,78% 100%,78% calc(100% - 1px),22% calc(100% - 1px),22% 100%,0 100%);pointer-events:none}
+        .hero-title-glow{display:inline-block;text-shadow:0 0 28px rgba(200,255,0,.08)}
+        .hero-cta{position:relative;overflow:hidden;border:1px solid rgba(200,255,0,.72);background:#c8ff00;color:#050505;box-shadow:0 0 22px rgba(200,255,0,.18);transition:transform .35s ease,box-shadow .35s ease,background .35s ease}
+        .hero-cta::after{content:"";position:absolute;top:-120%;left:-35%;width:24%;height:340%;background:rgba(255,255,255,.65);transform:rotate(24deg);transition:left .65s cubic-bezier(.2,.7,.2,1)}
+        .hero-cta:hover{transform:translateY(-3px);background:#e0ff70;box-shadow:0 0 34px rgba(200,255,0,.34)}
+        .hero-cta:hover::after{left:130%}
+        .hero-content{position:relative;z-index:40}
         .product-card{will-change:transform;transform:translateZ(0)}
-        .product-card:hover{box-shadow:0 22px 56px rgba(0,0,0,.35),0 0 26px rgba(200,255,0,.055)}
+        .product-card:hover{box-shadow:0 22px 56px rgba(0,0,0,.35),0 0 26px rgba(200,255,0,.09)}
+        .product-reveal{opacity:0;transform:translate3d(0,28px,0) scale(.985);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.75,.2,1)}
+        .product-reveal.is-visible{opacity:1;transform:translate3d(0,0,0) scale(1)}
+        .product-reveal.is-visible:hover{transform:translate3d(0,-10px,0) scale(1.01)}
+        .product-reveal:nth-child(3n+2){transition-delay:.08s}
+        .product-reveal:nth-child(3n){transition-delay:.16s}
+        @media(max-width:700px){.gravity-orbit{width:112vw;opacity:.34}.gravity-satellite{display:none;padding:8px 10px}.gravity-satellite--left{left:24px;top:23%}.gravity-satellite--right{right:24px;bottom:20%}.gravity-satellite strong{font-size:8px}.gravity-frame-label{font-size:6px;letter-spacing:.16em}.hero-copy::before{inset:-24px -12px}.antigravity-frame .frame-trace{stroke-width:2}}
+        @media(max-width:420px){.gravity-satellite--left{top:19%;left:18px}.gravity-satellite--right{bottom:16%;right:18px}.gravity-frame-label--tl,.gravity-frame-label--tr{top:23px}.gravity-frame-label--bl,.gravity-frame-label--br{bottom:24px}}
+        @media(prefers-reduced-motion:reduce){.val10-gravity{display:none}.antigravity-frame .frame-trace,.gravity-orbit,.gravity-satellite{animation:none!important}.product-reveal{opacity:1;transform:none;transition:none}}
 
     </style>
 </head>
@@ -116,7 +160,26 @@
     <header id="hero-banner" class="relative h-screen overflow-hidden">
         <div id="hero-slides" class="absolute inset-0"></div>
         <div class="absolute inset-0 bg-black/55 z-10 pointer-events-none"></div>
+        <div class="gravity-orbit" aria-hidden="true">
+            <span class="gravity-orbit__node gravity-orbit__node--one"></span>
+            <span class="gravity-orbit__node gravity-orbit__node--two"></span>
+            <span class="gravity-orbit__node gravity-orbit__node--three"></span>
+        </div>
         <canvas id="val10-gravity" class="val10-gravity" aria-hidden="true"></canvas>
+        <div class="antigravity-ui" aria-hidden="true">
+            <svg class="antigravity-frame" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                <rect class="frame-base" x="1" y="1" width="998" height="998" rx="2"></rect>
+                <rect class="frame-trace" x="1" y="1" width="998" height="998" rx="2"></rect>
+                <rect class="frame-trace frame-trace-secondary" x="1" y="1" width="998" height="998" rx="2"></rect>
+            </svg>
+            <div class="hero-centerline"></div>
+            <div class="gravity-frame-label gravity-frame-label--tl"><em>●</em> VAL10 / ANTIGRAVITY FIELD</div>
+            <div class="gravity-frame-label gravity-frame-label--tr">DROP 001 / 2026</div>
+            <div class="gravity-frame-label gravity-frame-label--bl">NO RULES <em>—</em> NO ORBIT</div>
+            <div class="gravity-frame-label gravity-frame-label--br">TUNISIA / EST. MMXXIV</div>
+            <div class="gravity-satellite gravity-satellite--left"><div><small>Field status</small><strong>Gravity: Disabled</strong></div></div>
+            <div class="gravity-satellite gravity-satellite--right"><div><small>Archive / 001</small><strong>Move Different</strong></div></div>
+        </div>
         <div id="hero-dots" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2"></div>
 
         <button id="hero-prev" onclick="slideshowStep(-1)"
@@ -134,17 +197,19 @@
             </svg>
         </button>
 
-        <div class="relative z-20 h-full flex flex-col justify-center items-center text-center fade-in px-4 pointer-events-none">
+        <div class="hero-content h-full flex flex-col justify-center items-center text-center fade-in px-4 pointer-events-none">
+          <div class="hero-copy">
             <span class="text-[10px] tracking-[0.8em] uppercase text-gray-400 mb-4 block">Est. MMXXIV</span>
             <h2 class="text-6xl sm:text-8xl md:text-9xl font-extrabold uppercase tracking-tighter leading-none mb-8">
                 Define <br>
-                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800">Your Ego</span>
+                <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-800 hero-title-glow">Your Ego</span>
             </h2>
             <a href="#shop"
-               class="pointer-events-auto inline-block bg-white text-black px-12 py-4 font-black text-sm hover:bg-gray-200 transition-all tracking-[0.2em] uppercase shadow-2xl">
-                Explore Drop
+               class="hero-cta pointer-events-auto inline-block px-12 py-4 font-black text-sm tracking-[0.2em] uppercase">
+                Explore Drop <span aria-hidden="true">↗</span>
             </a>
             <p id="hero-caption" class="pointer-events-none mt-6 text-[10px] tracking-[0.3em] text-gray-400 uppercase opacity-0 transition-opacity duration-500"></p>
+          </div>
         </div>
 
         <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 animate-bounce pointer-events-none">
@@ -304,7 +369,7 @@ function buildProductCard(product) {
 
     /* Card shell */
     const card = document.createElement('div');
-    card.className = 'group cursor-pointer fade-in product-card';
+    card.className = 'group cursor-pointer product-card product-reveal';
 
     /* Image container */
     const imgWrap = document.createElement('div');
@@ -394,6 +459,26 @@ function buildProductCard(product) {
     return card;
 }
 
+/* ── Scroll-reveal product motion ───────────────────────────────── */
+let productRevealObserver = null;
+function revealProductCards(root) {
+    const cards = root.querySelectorAll('.product-reveal');
+    if (!('IntersectionObserver' in window)) {
+        cards.forEach(card => card.classList.add('is-visible'));
+        return;
+    }
+    if (!productRevealObserver) {
+        productRevealObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                productRevealObserver.unobserve(entry.target);
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
+    }
+    cards.forEach(card => productRevealObserver.observe(card));
+}
+
 /* ── Fetch & Render Products ────────────────────────────────────── */
 async function fetchProducts() {
     const grid = document.getElementById('product-grid');
@@ -414,6 +499,7 @@ async function fetchProducts() {
         }
 
         products.forEach(product => grid.appendChild(buildProductCard(product)));
+        revealProductCards(grid);
 
     } catch (err) {
         console.error('fetchProducts error:', err);
@@ -569,11 +655,11 @@ window.addEventListener('DOMContentLoaded', () => {
   if (!ctx) return;
   let width = 0, height = 0, raf = 0, visible = true;
   const pointer = { x: -1000, y: -1000 };
-  const count = window.innerWidth < 700 ? 24 : 48;
+  const count = window.innerWidth < 700 ? 30 : 64;
   const particles = Array.from({ length: count }, () => ({
     x: Math.random(), y: Math.random(), r: .7 + Math.random() * 1.7,
     speed: .00012 + Math.random() * .00028, drift: (Math.random() - .5) * .00025,
-    phase: Math.random() * Math.PI * 2, alpha: .12 + Math.random() * .38
+    phase: Math.random() * Math.PI * 2, alpha: .2 + Math.random() * .48
   }));
   function resize() {
     const box = canvas.parentElement.getBoundingClientRect();
@@ -587,8 +673,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!visible) return;
     ctx.clearRect(0, 0, width, height);
     for (const p of particles) {
-      p.y -= p.speed * 16;
-      p.x += p.drift * 16 + Math.sin(time * .00035 + p.phase) * .00008;
+      p.y -= p.speed * 20;
+      p.x += p.drift * 20 + Math.sin(time * .00035 + p.phase) * .00008;
       if (p.y < -.04) { p.y = 1.04; p.x = Math.random(); }
       if (p.x < -.03) p.x = 1.03;
       if (p.x > 1.03) p.x = -.03;
