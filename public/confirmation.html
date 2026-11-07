@@ -65,7 +65,15 @@
                     <span id="conf-color" class="text-gray-300"></span>
                 </div>
                 <div class="flex justify-between text-[11px] pt-2 border-t border-white/8 mt-2">
-                    <span class="text-gray-500 uppercase tracking-widest">Total</span>
+                    <span class="text-gray-500 uppercase tracking-widest">Product</span>
+                    <span id="conf-subtotal" class="text-gray-300"></span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-gray-500 uppercase tracking-widest">Shipping</span>
+                    <span id="conf-shipping" class="text-gray-300"></span>
+                </div>
+                <div class="flex justify-between text-[11px] pt-2 border-t border-white/8 mt-2">
+                    <span class="text-gray-500 uppercase tracking-widest">Total · COD</span>
                     <span id="conf-price" class="text-white font-black text-sm"></span>
                 </div>
             </div>
@@ -98,7 +106,9 @@
         document.getElementById('conf-product').textContent = order.productName  || '—';
         document.getElementById('conf-size').textContent    = order.size         || '—';
         document.getElementById('conf-color').textContent   = order.colorName    || '—';
-        document.getElementById('conf-price').textContent   = `${order.totalPrice} TND`;
+        document.getElementById('conf-subtotal').textContent = `${Number(order.productSubtotal ?? order.totalPrice).toFixed(2)} TND`;
+        document.getElementById('conf-shipping').textContent = `${Number(order.shippingFee || 0).toFixed(2)} TND`;
+        document.getElementById('conf-price').textContent   = `${Number(order.totalPrice).toFixed(2)} TND`;
         document.getElementById('order-summary').classList.remove('hidden');
     } catch (_) { /* order summary is optional — don't crash if fetch fails */ }
 })();

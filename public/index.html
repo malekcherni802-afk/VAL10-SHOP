@@ -86,12 +86,19 @@
         .toast-success { background: #10b981; color: white; }
         .toast-error   { background: #ef4444; color: white; }
         .toast-info    { background: #3b82f6; color: white; }
+    
+        .val10-gravity{position:absolute;inset:0;width:100%;height:100%;z-index:20;pointer-events:none;opacity:.62}
+        @media(prefers-reduced-motion:reduce){.val10-gravity{display:none}}
+        .product-card{will-change:transform;transform:translateZ(0)}
+        .product-card:hover{box-shadow:0 22px 56px rgba(0,0,0,.35),0 0 26px rgba(200,255,0,.055)}
+
     </style>
 </head>
 <body class="antialiased selection:bg-white selection:text-black">
 
     <!-- Nav -->
     <nav class="fixed w-full z-[100] bg-black/80 backdrop-blur-lg border-b border-white/5">
+        <div id="val10-delivery-ribbon" class="w-full text-center py-2 border-b border-white/5 bg-[#101208] text-[9px] tracking-[0.32em] uppercase text-[#c8ff00]">VAL10 DELIVERY · FLAT 8.00 TND THROUGHOUT TUNISIA</div>
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
             <h1 class="text-4xl sm:text-5xl gothic-text tracking-[0.2em] cursor-pointer hover:text-gray-400 transition-colors"
                 onclick="window.location.href='/'">VAL10</h1>
@@ -109,6 +116,7 @@
     <header id="hero-banner" class="relative h-screen overflow-hidden">
         <div id="hero-slides" class="absolute inset-0"></div>
         <div class="absolute inset-0 bg-black/55 z-10 pointer-events-none"></div>
+        <canvas id="val10-gravity" class="val10-gravity" aria-hidden="true"></canvas>
         <div id="hero-dots" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2"></div>
 
         <button id="hero-prev" onclick="slideshowStep(-1)"
@@ -532,6 +540,9 @@ async function hydrateStorefrontLinks() {
         const response = await fetch('/api/storefront-settings', { cache: 'no-store' });
         if (!response.ok) return;
         const settings = await response.json();
+        const shippingFee = Number(settings.shippingFee);
+        const ribbon = document.getElementById('val10-delivery-ribbon');
+        if (ribbon && Number.isFinite(shippingFee) && shippingFee >= 0) ribbon.textContent = `VAL10 DELIVERY · FLAT ${shippingFee.toFixed(2)} TND THROUGHOUT TUNISIA`;
         document.querySelectorAll('[data-store-link]').forEach(link => {
             const key = link.dataset.storeLink;
             const value = key === 'contact' && settings.contactEmail
@@ -549,5 +560,73 @@ window.addEventListener('DOMContentLoaded', () => {
     hydrateStorefrontLinks();
 });
 </script>
+
+<script>
+(() => {
+  const canvas = document.getElementById('val10-gravity');
+  if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  if (!ctx) return;
+  let width = 0, height = 0, raf = 0, visible = true;
+  const pointer = { x: -1000, y: -1000 };
+  const count = window.innerWidth < 700 ? 24 : 48;
+  const particles = Array.from({ length: count }, () => ({
+    x: Math.random(), y: Math.random(), r: .7 + Math.random() * 1.7,
+    speed: .00012 + Math.random() * .00028, drift: (Math.random() - .5) * .00025,
+    phase: Math.random() * Math.PI * 2, alpha: .12 + Math.random() * .38
+  }));
+  function resize() {
+    const box = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    width = box.width; height = box.height;
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function draw(time) {
+    if (!visible) return;
+    ctx.clearRect(0, 0, width, height);
+    for (const p of particles) {
+      p.y -= p.speed * 16;
+      p.x += p.drift * 16 + Math.sin(time * .00035 + p.phase) * .00008;
+      if (p.y < -.04) { p.y = 1.04; p.x = Math.random(); }
+      if (p.x < -.03) p.x = 1.03;
+      if (p.x > 1.03) p.x = -.03;
+      const x = p.x * width, y = p.y * height;
+      const dx = x - pointer.x, dy = y - pointer.y;
+      const distance = Math.hypot(dx, dy);
+      const push = distance < 110 ? (110 - distance) / 110 : 0;
+      const drawX = x + (distance ? dx / distance * push * 16 : 0);
+      const drawY = y + (distance ? dy / distance * push * 16 : 0);
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(200,255,0,${p.alpha * (1 - push * .35)})`;
+      ctx.arc(drawX, drawY, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      if (p.r > 1.7) {
+        ctx.beginPath(); ctx.strokeStyle = `rgba(200,255,0,${p.alpha * .16})`;
+        ctx.moveTo(drawX, drawY + 3); ctx.lineTo(drawX, drawY + 12); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(draw);
+  }
+  const observer = new IntersectionObserver(entries => {
+    visible = entries[0].isIntersecting;
+    if (visible && !raf) raf = requestAnimationFrame(draw);
+    if (!visible && raf) { cancelAnimationFrame(raf); raf = 0; }
+  });
+  observer.observe(canvas.parentElement);
+  canvas.parentElement.addEventListener('pointermove', e => {
+    const rect = canvas.getBoundingClientRect(); pointer.x = e.clientX - rect.left; pointer.y = e.clientY - rect.top;
+  }, { passive: true });
+  canvas.parentElement.addEventListener('pointerleave', () => { pointer.x = pointer.y = -1000; }, { passive: true });
+  window.addEventListener('resize', resize, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; }
+    else if (visible && !raf) raf = requestAnimationFrame(draw);
+  });
+  resize(); raf = requestAnimationFrame(draw);
+})();
+</script>
+
 </body>
 </html>

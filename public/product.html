@@ -883,7 +883,7 @@ button{background:none;border:none;color:inherit;font-family:inherit}
     </div>
 
     <div class="specs">
-      <div class="spec"><span>Shipping</span><b>Free in TN</b></div>
+      <div class="spec"><span>Shipping</span><b><span id="product-shipping-fee">8.00 TND</span> · Tunisia</b></div>
       <div class="spec"><span>Payment</span><b>Cash · COD</b></div>
       <div class="spec"><span>Edition</span><b>Limited</b></div>
     </div>
@@ -970,6 +970,7 @@ button{background:none;border:none;color:inherit;font-family:inherit}
         <div class="row"><span>Product</span><span id="os-name">—</span></div>
         <div class="row"><span>Size</span><span id="os-size">—</span></div>
         <div class="row"><span>Color</span><span id="os-color">—</span></div>
+        <div class="row"><span>Shipping · Tunisia</span><span id="os-shipping">8.00 TND</span></div>
         <div class="row total"><span>Total</span><span id="os-price">—</span></div>
       </div>
 
@@ -1588,6 +1589,8 @@ function closeSize(){  sizeModal.classList.remove('open');  }
 /* ═══════════════════════════════════════════════════════════════
    14. ORDER FLOW
    ═══════════════════════════════════════════════════════════════ */
+let val10ShippingFee = 8;
+
 document.getElementById('acquire-btn').addEventListener('click', openOrder);
 
 function openOrder(){
@@ -1613,7 +1616,9 @@ function openOrder(){
   document.getElementById('os-name').textContent  = currentProduct.name;
   document.getElementById('os-size').textContent  = selectedSize || 'One Size';
   document.getElementById('os-color').textContent = selectedColor?.name || '—';
-  document.getElementById('os-price').textContent = `${Number(currentProduct.salePrice ?? currentProduct.price).toFixed(2)} TND`;
+  const itemPrice = Number(currentProduct.salePrice ?? currentProduct.price);
+  document.getElementById('os-shipping').textContent = `${val10ShippingFee.toFixed(2)} TND`;
+  document.getElementById('os-price').textContent = `${(itemPrice + val10ShippingFee).toFixed(2)} TND`;
   document.getElementById('order-summary-line').textContent =
     `${currentProduct.name} · ${selectedSize || 'One Size'}${selectedColor ? ' · ' + selectedColor.name : ''}`;
 
@@ -1751,6 +1756,12 @@ async function hydrateStorefrontLinks(){
     const response = await fetch('/api/storefront-settings', { cache: 'no-store' });
     if(!response.ok) return;
     const settings = await response.json();
+    const parsedShipping = Number(settings.shippingFee);
+    if (Number.isFinite(parsedShipping) && parsedShipping >= 0) {
+      val10ShippingFee = parsedShipping;
+      const shippingDisplay = document.getElementById('product-shipping-fee');
+      if (shippingDisplay) shippingDisplay.textContent = `${val10ShippingFee.toFixed(2)} TND`;
+    }
     document.querySelectorAll('[data-store-link]').forEach(link=>{
       const key = link.dataset.storeLink;
       const value = key === 'contact' && settings.contactEmail ? `mailto:${settings.contactEmail}` : settings[key];

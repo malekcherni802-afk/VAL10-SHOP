@@ -304,6 +304,66 @@ textarea { resize: vertical; min-height: 72px; }
   .form-grid { grid-template-columns: 1fr; }
   .size-row { grid-template-columns: 1fr 100px auto; }
 }
+
+/* ─── VAL10 dashboard analytics / antigravity motion ─────────── */
+.dashboard-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:2px 0 22px;animation:dashEnter .55s cubic-bezier(.2,.8,.2,1) both}
+.dashboard-kicker{font:10px var(--font-mono);letter-spacing:.28em;color:var(--accent);text-transform:uppercase;margin-bottom:9px}
+.dashboard-heading h2{font:clamp(28px,4vw,42px)/.95 var(--font-display);letter-spacing:.03em}
+.dashboard-heading p{color:var(--muted);font-size:12px;margin-top:10px;max-width:560px;line-height:1.6}
+.range-control{min-width:150px;max-width:190px}
+.range-control label{display:block;margin:0 0 7px}
+.range-control select{background:#111;border:1px solid #343434;color:#eee;padding:10px 12px;border-radius:5px;font:11px var(--font-mono);letter-spacing:.04em}
+.stats-row.analytics-primary{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px}
+.stats-row.analytics-secondary{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:24px}
+.analytics-card{position:relative;overflow:hidden;min-height:126px;background:linear-gradient(140deg,#171a12 0%,#121212 56%,#151515 100%);border:1px solid rgba(200,255,0,.14);border-radius:9px;padding:19px 20px;transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .35s,box-shadow .35s;animation:dashEnter .6s both;}
+.analytics-card:nth-child(2){animation-delay:.06s}.analytics-card:nth-child(3){animation-delay:.12s}.analytics-card:nth-child(4){animation-delay:.18s}
+.analytics-card:hover{transform:translateY(-4px);border-color:rgba(200,255,0,.5);box-shadow:0 14px 40px rgba(0,0,0,.24),0 0 28px rgba(200,255,0,.045)}
+.analytics-card:after{content:"";position:absolute;width:120px;height:120px;right:-50px;top:-54px;border-radius:50%;border:1px solid rgba(200,255,0,.12);box-shadow:0 0 0 14px rgba(200,255,0,.018),0 0 0 30px rgba(200,255,0,.012);animation:orbitDrift 9s ease-in-out infinite alternate;pointer-events:none}
+.analytics-card .stat-label{position:relative;z-index:1;font-size:9px;letter-spacing:.16em}
+.analytics-card .stat-value{position:relative;z-index:1;font:clamp(24px,2.4vw,34px)/1 var(--font-display);letter-spacing:.02em;color:#eaffac;margin-top:11px;white-space:nowrap}
+.analytics-card .metric-note{position:relative;z-index:1;color:#888;font:9px var(--font-mono);letter-spacing:.04em;margin-top:9px;display:block}
+.analytics-card.secondary{min-height:100px;background:#141414;border-color:#292929;padding:15px 17px}
+.analytics-card.secondary:after{width:70px;height:70px;right:-34px;top:-36px;opacity:.55}
+.analytics-card.secondary .stat-value{font-size:25px;color:#f1f1f1;margin-top:9px}
+.analytics-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:16px;margin-bottom:22px}
+.analytics-panel{background:#121212;border:1px solid #292929;border-radius:9px;overflow:hidden;min-width:0}
+.analytics-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:17px 19px;border-bottom:1px solid #242424}
+.analytics-panel-head h3{font:11px var(--font-mono);letter-spacing:.14em;text-transform:uppercase}
+.analytics-panel-head span{font:9px var(--font-mono);color:#777}
+.chart-area{display:flex;align-items:flex-end;gap:9px;padding:24px 18px 16px;min-height:190px;overflow-x:auto}
+.chart-column{flex:1;min-width:18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:142px;gap:8px}
+.chart-value{font:8px var(--font-mono);color:#aaa;white-space:nowrap;min-height:10px}
+.chart-bar-track{width:min(100%,34px);height:102px;display:flex;align-items:flex-end;background:#1d1d1d;border-radius:4px;overflow:hidden}
+.chart-bar{width:100%;min-height:2px;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#e7ff8c,#9fc900);box-shadow:0 0 18px rgba(200,255,0,.15);transform-origin:bottom;animation:barRise .7s cubic-bezier(.2,.8,.2,1) both}
+.chart-label{font:8px var(--font-mono);color:#777;white-space:nowrap}
+.chart-empty{padding:50px 12px;text-align:center;color:#777;font:10px var(--font-mono);letter-spacing:.08em}
+.status-list{padding:14px 18px 18px;display:grid;gap:13px}
+.status-line{display:grid;grid-template-columns:82px 1fr 32px;align-items:center;gap:9px;font:9px var(--font-mono);color:#aaa}
+.status-track{height:6px;border-radius:10px;background:#242424;overflow:hidden}
+.status-fill{height:100%;border-radius:10px;background:var(--accent);transition:width .65s cubic-bezier(.2,.8,.2,1)}
+.status-line:nth-child(2) .status-fill{background:#a8a8a8}.status-line:nth-child(3) .status-fill{background:#9db8ff}.status-line:nth-child(4) .status-fill{background:#d9b36c}.status-line:nth-child(5) .status-fill{background:#ff6666}
+.status-count{text-align:right;color:#eee}
+.best-sellers{display:grid;gap:0}
+.best-seller{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid #222}
+.best-seller:last-child{border-bottom:0}
+.best-seller-rank{color:var(--accent);font:11px var(--font-mono)}
+.best-seller-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.best-seller-meta{font:8px var(--font-mono);color:#777;margin-top:4px}
+.best-seller-money{font:10px var(--font-mono);color:#dfff8c;white-space:nowrap}
+@keyframes dashEnter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes barRise{from{transform:scaleY(.06);opacity:.25}to{transform:scaleY(1);opacity:1}}
+@keyframes orbitDrift{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(-9px,13px,0) rotate(18deg)}}
+@media(max-width:1050px){.stats-row.analytics-secondary{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.dashboard-heading{align-items:flex-start;flex-direction:column}.range-control{max-width:none;width:100%}.range-control select{width:100%}.stats-row.analytics-primary{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stats-row.analytics-secondary{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.analytics-card{padding:15px;min-height:112px}.analytics-card .stat-value{font-size:25px}.content{padding:18px 14px}.analytics-panel-head{padding:14px}}
+@media(prefers-reduced-motion:reduce){.dashboard-heading,.analytics-card,.chart-bar{animation:none!important;transition:none!important}.analytics-card:after{animation:none!important}}
+
+
+.expense-form{display:grid;grid-template-columns:1.3fr 1fr .8fr 1.4fr auto;gap:10px;align-items:end;padding:18px;border-bottom:1px solid #272727;background:#141414}
+.expense-form .form-group{min-width:0}.expense-form label{font-size:8px;letter-spacing:.13em}.expense-form input,.expense-form select{font-size:11px;padding:10px}
+.expense-table td{font-size:11px}.expense-amount{font:12px var(--font-mono);color:#e6ff9a}.expense-delete{background:none;border:1px solid #393939;color:#aaa;border-radius:4px;padding:5px 8px;cursor:pointer}.expense-delete:hover{border-color:#ff6666;color:#ff6666}
+@media(max-width:1050px){.stats-row.analytics-secondary{grid-template-columns:repeat(4,minmax(0,1fr))}.expense-form{grid-template-columns:1fr 1fr 1fr}.expense-form .form-group.note{grid-column:span 2}}
+@media(max-width:700px){.stats-row.analytics-secondary{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-form{grid-template-columns:1fr 1fr}.expense-form .form-group.note{grid-column:1/-1}.expense-form button{grid-column:1/-1}}
+
 </style>
 </head>
 <body>
@@ -328,6 +388,10 @@ textarea { resize: vertical; min-height: 72px; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       <span>Orders</span>
     </a>
+    <a class="nav-item" onclick="switchSection('expenses',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v13H4z"/><path d="M8 7V4h8v3M8 12h8M8 16h5"/></svg>
+      <span>Expenses</span>
+    </a>
     <a class="nav-item" onclick="switchSection('banner',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
       <span>Banner</span>
@@ -341,6 +405,7 @@ textarea { resize: vertical; min-height: 72px; }
   <div class="topbar">
     <div class="topbar-title" id="page-title">DASHBOARD</div>
     <div class="topbar-actions">
+      <button class="btn btn-primary" id="add-expense-btn" style="display:none" onclick="document.getElementById('expense-title').focus()">+ Add Expense</button>
       <button class="btn btn-primary" id="add-product-btn" style="display:none" onclick="openAddModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Product
@@ -361,14 +426,65 @@ textarea { resize: vertical; min-height: 72px; }
 
     <!-- Dashboard -->
     <div class="section active" id="section-dashboard">
-      <div class="stats-row">
-        <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value" id="stat-products">—</div></div>
-        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="stat-orders">—</div></div>
-        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div>
-        <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value" id="stat-revenue">—</div></div>
+      <div class="dashboard-heading">
+        <div>
+          <div class="dashboard-kicker">VAL10 / Store intelligence</div>
+          <h2>Control room.</h2>
+          <p>Sales performance, collected cash, outstanding orders and your best-selling pieces — in one place.</p>
+        </div>
+        <div class="range-control">
+          <label for="analytics-range">Reporting period</label>
+          <select id="analytics-range" onchange="loadAnalytics()">
+            <option value="today">Today</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d" selected>Last 30 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats-row analytics-primary">
+        <div class="analytics-card"><div class="stat-label">Cash collected · Delivered</div><div class="stat-value" id="stat-revenue">—</div><small class="metric-note">Marked Delivered during the selected period</small></div>
+        <div class="analytics-card"><div class="stat-label">Awaiting collection</div><div class="stat-value" id="stat-open-value">—</div><small class="metric-note">Pending + confirmed + shipped</small></div>
+        <div class="analytics-card"><div class="stat-label">Total orders</div><div class="stat-value" id="stat-orders">—</div><small class="metric-note" id="stat-orders-note">All order statuses</small></div>
+        <div class="analytics-card"><div class="stat-label">Delivered orders</div><div class="stat-value" id="stat-delivered">—</div><small class="metric-note">Cash-on-delivery completed</small></div>
+      </div>
+      <div class="stats-row analytics-secondary">
+        <div class="analytics-card secondary"><div class="stat-label">Products listed</div><div class="stat-value" id="stat-products">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Cancelled</div><div class="stat-value" id="stat-cancelled">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Shipping collected</div><div class="stat-value" id="stat-shipping">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Average order</div><div class="stat-value" id="stat-average">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Expenses logged</div><div class="stat-value" id="stat-expenses">—</div></div>
+        <div class="analytics-card secondary"><div class="stat-label">Cashflow after expenses</div><div class="stat-value" id="stat-net">—</div></div>
+      </div>
+      <div class="analytics-layout">
+        <section class="analytics-panel">
+          <div class="analytics-panel-head"><h3>Collected revenue</h3><span id="chart-caption">LAST 30 DAYS · TND</span></div>
+          <div class="chart-area" id="sales-chart"><div class="chart-empty">Loading sales performance…</div></div>
+        </section>
+        <section class="analytics-panel">
+          <div class="analytics-panel-head"><h3>Order pipeline</h3><span>BY STATUS</span></div>
+          <div class="status-list" id="status-breakdown"><div class="chart-empty">Loading order status…</div></div>
+        </section>
+      </div>
+      <div class="analytics-layout">
+        <section class="analytics-panel">
+          <div class="analytics-panel-head"><h3>Best sellers</h3><span>DELIVERED ORDERS</span></div>
+          <div class="best-sellers" id="best-sellers"><div class="chart-empty">No completed orders yet.</div></div>
+        </section>
+        <section class="analytics-panel">
+          <div class="analytics-panel-head"><h3>Money overview</h3><span>PERIOD TOTALS</span></div>
+          <div class="status-list" id="money-overview">
+            <div class="status-line"><span>Product sales</span><span class="status-track"><span class="status-fill" style="display:block;width:0"></span></span><span class="status-count" id="money-products">—</span></div>
+            <div class="status-line"><span>Shipping</span><span class="status-track"><span class="status-fill" style="display:block;width:0"></span></span><span class="status-count" id="money-shipping">—</span></div>
+            <div class="status-line"><span>Expenses</span><span class="status-track"><span class="status-fill" style="display:block;width:0;background:#d9b36c"></span></span><span class="status-count" id="money-expenses">—</span></div>
+            <div class="status-line"><span>Cancelled</span><span class="status-track"><span class="status-fill" style="display:block;width:0;background:#ff6666"></span></span><span class="status-count" id="money-cancelled">—</span></div>
+          </div>
+          <div style="padding:0 18px 18px;color:#737373;font:8px var(--font-mono);line-height:1.7">Collected revenue counts Delivered orders only. Pending, Confirmed and Shipped COD orders are awaiting collection. Cashflow after expenses subtracts only the expense entries you record in Expenses; it is not product margin unless you log your full product and operating costs.</div>
+        </section>
       </div>
       <div class="panel">
-        <div class="panel-header"><h3>Recent Orders</h3></div>
+        <div class="panel-header"><h3>Recent Orders</h3><span style="font:9px var(--font-mono);color:#777">LATEST ACTIVITY</span></div>
         <div class="panel-body">
           <div class="table-wrap">
             <table>
@@ -408,11 +524,30 @@ textarea { resize: vertical; min-height: 72px; }
         <div class="panel-body" style="padding:0">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Customer</th><th>Phone</th><th>Address</th><th>Product</th><th>Size</th><th>Color</th><th>Amount</th><th>Status</th><th>Date</th><th>Del</th></tr></thead>
-              <tbody id="orders-body"><tr><td colspan="10" class="loading-state"><span class="loader"></span></td></tr></tbody>
+              <thead><tr><th>Customer</th><th>Phone</th><th>Address</th><th>Product</th><th>Size</th><th>Color</th><th>Item</th><th>Shipping</th><th>Total</th><th>Status</th><th>Date</th><th>Del</th></tr></thead>
+              <tbody id="orders-body"><tr><td colspan="12" class="loading-state"><span class="loader"></span></td></tr></tbody>
             </table>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Expenses -->
+    <div class="section" id="section-expenses">
+      <div class="dashboard-heading">
+        <div><div class="dashboard-kicker">VAL10 / Cashflow</div><h2>Money out.</h2><p>Log production, courier, advertising and operating costs. Your dashboard subtracts these from collected delivery orders.</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h3>Record an expense</h3><span style="font:9px var(--font-mono);color:#777">TND · MANUAL ENTRY</span></div>
+        <form class="expense-form" id="expense-form" onsubmit="saveExpense(event)">
+          <div class="form-group"><label for="expense-title">Description</label><input type="text" id="expense-title" maxlength="120" required placeholder="e.g. Hoodie production" /></div>
+          <div class="form-group"><label for="expense-category">Category</label><select id="expense-category"><option>Stock / Production</option><option>Delivery</option><option>Advertising</option><option>Packaging</option><option>Operations</option><option>Other</option></select></div>
+          <div class="form-group"><label for="expense-amount">Amount · TND</label><input type="number" id="expense-amount" min="0.01" max="100000000" step="0.01" required placeholder="0.00" /></div>
+          <div class="form-group note"><label for="expense-note">Note (optional)</label><input type="text" id="expense-note" maxlength="500" placeholder="Reference, supplier, invoice…" /></div>
+          <button class="btn btn-primary" type="submit">Save expense</button>
+        </form>
+        <div class="panel-header"><h3>Expense history</h3><span id="expense-count" style="font:9px var(--font-mono);color:#777">—</span></div>
+        <div class="panel-body" style="padding:0"><div class="table-wrap"><table class="expense-table"><thead><tr><th>Description</th><th>Category</th><th>Note</th><th>Amount</th><th>Date</th><th></th></tr></thead><tbody id="expenses-body"><tr><td colspan="6" class="loading-state">Loading expenses…</td></tr></tbody></table></div></div>
       </div>
     </div>
 
@@ -553,6 +688,7 @@ textarea { resize: vertical; min-height: 72px; }
 
 const API = '/admin/api';
 let allProducts     = [];
+let allProductsTotal = 0;
 let allOrders       = [];
 let editingId       = null;
 let confirmCallback = null;
@@ -588,24 +724,104 @@ function switchSection(name, el) {
   el.classList.add('active');
   document.getElementById('page-title').textContent = name.toUpperCase();
   document.getElementById('add-product-btn').style.display = name === 'products' ? 'flex' : 'none';
+  document.getElementById('add-expense-btn').style.display = name === 'expenses' ? 'inline-flex' : 'none';
   if (name === 'orders') fetchOrders();
+  if (name === 'expenses') fetchExpenses();
   if (name === 'banner') fetchBanner();
 }
 
 /* ─── Refresh ────────────────────────────────────────────────── */
 async function refreshAll() {
-  await Promise.all([fetchProducts(), fetchOrders()]);
+  await Promise.all([fetchProducts(), fetchOrders(), loadAnalytics(), fetchExpenses()]);
   updateStats();
 }
 
+function money(value) {
+  return `${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TND`;
+}
+
 function updateStats() {
-  document.getElementById('stat-products').textContent = allProducts.length;
-  document.getElementById('stat-orders').textContent   = allOrders.length;
-  document.getElementById('stat-pending').textContent  = allOrders.filter(o => o.status === 'Pending').length;
-  // FIX: only count Delivered orders in revenue (exclude Cancelled/Pending)
-  const rev = allOrders.filter(o => o.status === 'Delivered').reduce((s, o) => s + (o.totalPrice || 0), 0);
-  document.getElementById('stat-revenue').textContent  = rev.toFixed(0) + ' TND';
+  document.getElementById('stat-products').textContent = allProductsTotal || allProducts.length;
   renderDashOrders();
+}
+
+async function loadAnalytics() {
+  const range = document.getElementById('analytics-range')?.value || '30d';
+  const chart = document.getElementById('sales-chart');
+  if (!chart) return;
+  try {
+    const response = await fetch(`${API}/analytics?range=${encodeURIComponent(range)}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Analytics server error ${response.status}`);
+    const data = await response.json();
+    const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    put('stat-products', Number(data.productsCount || 0).toLocaleString());
+    put('stat-revenue', money(data.collectedRevenue));
+    put('stat-open-value', money(data.openOrderValue));
+    put('stat-orders', Number(data.totalOrders || 0).toLocaleString());
+    put('stat-orders-note', `${Number(data.cancelledOrders || 0)} cancelled · ${Number(data.confirmedOrders || 0)} confirmed · ${Number(data.shippedOrders || 0)} shipped`);
+    put('stat-delivered', Number(data.deliveredOrders || 0).toLocaleString());
+    put('stat-pending', Number(data.pendingOrders || 0).toLocaleString());
+    put('stat-cancelled', Number(data.cancelledOrders || 0).toLocaleString());
+    put('stat-shipping', money(data.shippingCollected));
+    put('stat-average', money(data.averageOrderValue));
+    put('stat-expenses', money(data.expenseTotal));
+    put('stat-net', money(data.netAfterExpenses));
+    put('money-products', money(data.productRevenue));
+    put('money-shipping', money(data.shippingCollected));
+    put('money-expenses', money(data.expenseTotal));
+    put('money-cancelled', money(data.cancelledValue));
+    const scale = Math.max(1, Number(data.collectedRevenue || 0), Number(data.expenseTotal || 0), Number(data.cancelledValue || 0));
+    const productsTrack = document.querySelector('#money-overview .status-line:nth-child(1) .status-fill');
+    const shippingTrack = document.querySelector('#money-overview .status-line:nth-child(2) .status-fill');
+    const expenseTrack = document.querySelector('#money-overview .status-line:nth-child(3) .status-fill');
+    const cancelledTrack = document.querySelector('#money-overview .status-line:nth-child(4) .status-fill');
+    if (productsTrack) productsTrack.style.width = `${Number(data.productRevenue || 0) / scale * 100}%`;
+    if (shippingTrack) shippingTrack.style.width = `${Number(data.shippingCollected || 0) / scale * 100}%`;
+    if (expenseTrack) expenseTrack.style.width = `${Number(data.expenseTotal || 0) / scale * 100}%`;
+    if (cancelledTrack) cancelledTrack.style.width = `${Number(data.cancelledValue || 0) / scale * 100}%`;
+
+    const labels = { today: 'TODAY', '7d': 'LAST 7 DAYS', '30d': 'LAST 30 DAYS', all: 'ALL TIME · LAST 30 ACTIVE DAYS' };
+    put('chart-caption', `${labels[range] || 'LAST 30 DAYS'} · TND`);
+    renderSalesChart(data.salesTrend || []);
+    renderStatusBreakdown(data);
+    renderBestSellers(data.bestSellers || []);
+  } catch (error) {
+    chart.innerHTML = `<div class="chart-empty">Analytics unavailable: ${escHtml(error.message)}</div>`;
+    toast('Could not load sales analytics', 'error');
+  }
+}
+
+function renderSalesChart(rows) {
+  const chart = document.getElementById('sales-chart');
+  if (!chart) return;
+  if (!rows.length) { chart.innerHTML = '<div class="chart-empty">No delivered revenue in this period yet.</div>'; return; }
+  const max = Math.max(1, ...rows.map(row => Number(row.revenue || 0)));
+  chart.innerHTML = rows.map(row => {
+    const amount = Number(row.revenue || 0);
+    const height = amount > 0 ? Math.max(5, amount / max * 100) : 2;
+    const date = new Date(`${row.date}T12:00:00+01:00`);
+    const label = Number.isNaN(date.getTime()) ? row.date : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return `<div class="chart-column" title="${escHtml(label)} · ${money(amount)} · ${Number(row.orders || 0)} orders"><span class="chart-value">${amount ? Math.round(amount) : '—'}</span><div class="chart-bar-track"><div class="chart-bar" style="height:${height}%"></div></div><span class="chart-label">${escHtml(label)}</span></div>`;
+  }).join('');
+}
+
+function renderStatusBreakdown(data) {
+  const host = document.getElementById('status-breakdown');
+  const rows = [
+    ['Pending', Number(data.pendingOrders || 0)],
+    ['Confirmed', Number(data.confirmedOrders || 0)],
+    ['Shipped', Number(data.shippedOrders || 0)],
+    ['Delivered', Number(data.deliveredOrders || 0)],
+    ['Cancelled', Number(data.cancelledOrders || 0)]
+  ];
+  const max = Math.max(1, ...rows.map(row => row[1]));
+  host.innerHTML = rows.map(([label, count]) => `<div class="status-line"><span>${label}</span><span class="status-track"><span class="status-fill" style="display:block;width:${count / max * 100}%"></span></span><span class="status-count">${count}</span></div>`).join('');
+}
+
+function renderBestSellers(rows) {
+  const host = document.getElementById('best-sellers');
+  if (!rows.length) { host.innerHTML = '<div class="chart-empty">No delivered orders yet. Completed items will rank here.</div>'; return; }
+  host.innerHTML = rows.map((row, index) => `<div class="best-seller"><span class="best-seller-rank">0${index + 1}</span><div style="min-width:0"><div class="best-seller-name">${escHtml(row.name)}</div><div class="best-seller-meta">${Number(row.orders || 0)} delivered orders</div></div><span class="best-seller-money">${money(row.revenue)}</span></div>`).join('');
 }
 
 /* ─── Products ────────────────────────────────────────────────── */
@@ -616,8 +832,9 @@ async function fetchProducts() {
     const data = await res.json();
     // FIX: handle paginated response { products, total }
     allProducts = Array.isArray(data) ? data : (data.products || []);
+    allProductsTotal = Array.isArray(data) ? data.length : Number(data.total ?? allProducts.length);
     renderProducts();
-    document.getElementById('product-count').textContent = `${allProducts.length} items`;
+    document.getElementById('product-count').textContent = `${allProductsTotal} items`;
   } catch (e) {
     toast('Failed to load products', 'error');
   }
@@ -1045,6 +1262,7 @@ async function fetchOrders() {
     renderOrders();
     renderDashOrders();
     updateStats();
+    await loadAnalytics();
     document.getElementById('order-count').textContent = `${allOrders.length} orders`;
   } catch (e) {
     toast('Failed to load orders', 'error');
@@ -1054,7 +1272,7 @@ async function fetchOrders() {
 function renderOrders() {
   const tbody = document.getElementById('orders-body');
   if (!allOrders.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>No orders yet</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><p>No orders yet</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = allOrders.map(o => {
@@ -1066,7 +1284,9 @@ function renderOrders() {
       <td>${escHtml(o.productName)}</td>
       <td><span class="badge badge-gray">${escHtml(o.size || '—')}</span></td>
       <td>${escHtml(o.colorName || '—')}</td>
-      <td style="font-family:var(--font-mono)">${escHtml(String(o.totalPrice))} TND</td>
+      <td style="font-family:var(--font-mono)">${money(o.productSubtotal ?? (Number(o.totalPrice || 0) - Number(o.shippingFee || 0)))}</td>
+      <td style="font-family:var(--font-mono);color:#aaa">${money(o.shippingFee || 0)}</td>
+      <td style="font-family:var(--font-mono);color:var(--accent)">${money(o.totalPrice)}</td>
       <td>
         <select class="order-status" onchange="updateOrderStatus('${o._id}', this.value)">
           ${['Pending','Confirmed','Shipped','Delivered','Cancelled'].map(s =>
@@ -1235,6 +1455,68 @@ async function saveBanner() {
 document.getElementById('product-modal').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
 document.getElementById('confirm-overlay').addEventListener('click', function(e) { if (e.target===this) closeConfirm(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeConfirm(); } });
+
+/* ─── Expenses / money out ───────────────────────────────────── */
+let allExpenses = [];
+
+async function fetchExpenses() {
+  const body = document.getElementById('expenses-body');
+  try {
+    const response = await fetch(`${API}/expenses`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Server error ${response.status}`);
+    const data = await response.json();
+    allExpenses = Array.isArray(data) ? data : (data.expenses || []);
+    document.getElementById('expense-count').textContent = `${data.total ?? allExpenses.length} entries`;
+    renderExpenses();
+  } catch (error) {
+    body.innerHTML = `<tr><td colspan="6" class="loading-state">Could not load expenses: ${escHtml(error.message)}</td></tr>`;
+  }
+}
+
+function renderExpenses() {
+  const body = document.getElementById('expenses-body');
+  if (!allExpenses.length) {
+    body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No expenses logged yet</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = allExpenses.map(item => `<tr>
+    <td style="font-weight:600">${escHtml(item.title)}</td>
+    <td><span class="badge badge-gray">${escHtml(item.category)}</span></td>
+    <td style="color:#888;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(item.note || '—')}</td>
+    <td class="expense-amount">− ${money(item.amount)}</td>
+    <td style="color:#888;font:9px var(--font-mono)">${new Date(item.createdAt).toLocaleDateString()}</td>
+    <td><button class="expense-delete" onclick="deleteExpense('${escHtml(item._id)}')" aria-label="Delete expense">×</button></td>
+  </tr>`).join('');
+}
+
+async function saveExpense(event) {
+  event.preventDefault();
+  const payload = {
+    title: document.getElementById('expense-title').value.trim(),
+    category: document.getElementById('expense-category').value,
+    amount: Number(document.getElementById('expense-amount').value),
+    note: document.getElementById('expense-note').value.trim()
+  };
+  try {
+    const response = await fetch(`${API}/expenses`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Could not save expense.');
+    document.getElementById('expense-form').reset();
+    toast('Expense recorded ✓');
+    await Promise.all([fetchExpenses(), loadAnalytics()]);
+  } catch (error) { toast(error.message, 'error'); }
+}
+
+async function deleteExpense(id) {
+  if (!window.confirm('Delete this expense record?')) return;
+  try {
+    const response = await fetch(`${API}/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Could not delete expense.');
+    toast('Expense deleted');
+    await Promise.all([fetchExpenses(), loadAnalytics()]);
+  } catch (error) { toast(error.message, 'error'); }
+}
 
 /* ─── Web Push Order Alerts ───────────────────────────────────── */
 let pushRegistration = null;
@@ -1450,7 +1732,7 @@ async function toggleOrderAlerts() {
 
 /* ─── Boot ───────────────────────────────────────────────────── */
 (async () => {
-  await Promise.all([fetchProducts(), fetchOrders()]);
+  await Promise.all([fetchProducts(), fetchOrders(), loadAnalytics(), fetchExpenses()]);
   updateStats();
 
   const params = new URLSearchParams(window.location.search);
